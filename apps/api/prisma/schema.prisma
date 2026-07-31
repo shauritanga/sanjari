@@ -110,6 +110,8 @@ model PhoneVerification {
   verifiedAt  DateTime?
   expiresAt   DateTime
   createdAt   DateTime  @default(now())
+
+  @@index([phoneNumber, verifiedAt])
 }
 
 model PasswordReset {

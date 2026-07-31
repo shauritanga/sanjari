@@ -1,4 +1,12 @@
-import { IsBoolean, IsDateString, IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEmail,
+  IsEnum,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -68,4 +76,22 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(12)
   password!: string;
+}
+
+export class PhoneNumberDto {
+  @IsString()
+  @Matches(/^\+[1-9]\d{7,14}$/)
+  phoneNumber!: string;
+}
+
+export class PhoneVerificationDto extends PhoneNumberDto {
+  @IsString()
+  @MinLength(6)
+  code!: string;
+}
+
+export class PhoneLoginDto extends PhoneVerificationDto {
+  @IsString()
+  @MinLength(8)
+  deviceId!: string;
 }

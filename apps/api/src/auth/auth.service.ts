@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { PrismaService } from '../common/database/prisma.service';
 import { EmailVerificationService } from './email-verification.service';
 import { PasswordResetService } from './password-reset.service';
+import { PhoneVerificationService } from './phone-verification.service';
 
 const minimumAge = 18;
 
@@ -78,6 +79,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly emailVerification: EmailVerificationService,
     private readonly passwordReset: PasswordResetService,
+    private readonly phoneVerification: PhoneVerificationService,
   ) {}
 
   async register(
@@ -207,6 +209,38 @@ export class AuthService {
 
   async resetPassword(token: string, password: string): Promise<{ userId: string }> {
     return this.passwordReset.reset(token, password);
+  }
+
+  async requestPhoneVerification(userId: string, phoneNumber: string): Promise<void> {
+    await this.phoneVerification.issue(userId, phoneNumber);
+  }
+
+  async verifyPhone(
+    userId: string,
+    phoneNumber: string,
+    code: string,
+  ): Promise<{ userId: string }> {
+    return this.phoneVerification.verifyForUser(userId, phoneNumber, code);
+  }
+
+  async requestPhoneLogin(phoneNumber: string): Promise<void> {
+    await this.phoneVerification.issueForExistingPhone(phoneNumber);
+  }
+
+  async verifyPhoneLogin(
+    phoneNumber: string,
+    code: string,
+    deviceId: string,
+  ): Promise<SessionResponse> {
+    const { userId } = await this.phoneVerification.verifyForLogin(phoneNumber, code);
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.status !== 'active') {
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Phone number or code is incorrect.',
+      });
+    }
+    return { userId, ...(await this.issueSession(userId, user.email, deviceId)) };
   }
 
   async refresh(refreshToken: string): Promise<SessionResponse> {

@@ -9,6 +9,9 @@ import {
   RegisterDto,
   ResetPasswordDto,
   VerifyEmailDto,
+  PhoneLoginDto,
+  PhoneNumberDto,
+  PhoneVerificationDto,
 } from './dto';
 
 @Controller({ path: 'auth', version: '1' })
@@ -71,5 +74,40 @@ export class AuthController {
   ): Promise<{ data: { userId: string; reset: true } }> {
     const result = await this.authService.resetPassword(dto.token, dto.password);
     return { data: { ...result, reset: true } };
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('phone/request')
+  async requestPhone(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: PhoneNumberDto,
+  ): Promise<{ data: { accepted: true } }> {
+    await this.authService.requestPhoneVerification(request.user!.sub, dto.phoneNumber);
+    return { data: { accepted: true } };
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('phone/verify')
+  async verifyPhone(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: PhoneVerificationDto,
+  ): Promise<{ data: { userId: string; verified: true } }> {
+    const result = await this.authService.verifyPhone(request.user!.sub, dto.phoneNumber, dto.code);
+    return { data: { ...result, verified: true } };
+  }
+
+  @Post('phone/login/request')
+  async requestPhoneLogin(@Body() dto: PhoneNumberDto): Promise<{ data: { accepted: true } }> {
+    await this.authService.requestPhoneLogin(dto.phoneNumber);
+    return { data: { accepted: true } };
+  }
+
+  @Post('phone/login/verify')
+  async verifyPhoneLogin(
+    @Body() dto: PhoneLoginDto,
+  ): Promise<{ data: Awaited<ReturnType<AuthService['verifyPhoneLogin']>> }> {
+    return {
+      data: await this.authService.verifyPhoneLogin(dto.phoneNumber, dto.code, dto.deviceId),
+    };
   }
 }

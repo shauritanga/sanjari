@@ -40,8 +40,14 @@ Authentication routes are versioned under `/api/v1/auth`:
 | `POST` | `/logout-all`              | Revoke all sessions for the authenticated user                                                           |
 | `POST` | `/password-reset/request`  | Request a password reset link with a generic response                                                    |
 | `POST` | `/password-reset/complete` | Set a new password using a single-use reset token                                                        |
+| `POST` | `/phone/request`           | Request OTP for an authenticated user's phone number                                                     |
+| `POST` | `/phone/verify`            | Verify and attach a phone number to the authenticated account                                            |
+| `POST` | `/phone/login/request`     | Request a phone-login OTP with a generic response                                                        |
+| `POST` | `/phone/login/verify`      | Verify phone OTP and create a device-aware session                                                       |
 
 New registrations remain pending until email verification succeeds. Verification codes are hashed, expire after 10 minutes, and stop accepting attempts after five failures. Password reset links are single-use, expire after 30 minutes, and revoke active sessions after completion. Access tokens are short-lived JWTs. Refresh tokens are stored only as SHA-256 hashes. Clients must store tokens in platform-secure storage; never use `AsyncStorage` for authentication tokens.
+
+Phone OTP delivery uses the `SmsService` provider boundary. Local development can use the Mailpit simulator with `SMS_PROVIDER=mailpit`; production must provide an approved SMS provider and must not log OTP values.
 
 Responses use a consistent envelope:
 
