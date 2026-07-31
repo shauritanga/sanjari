@@ -12,6 +12,14 @@ Allow only eligible adults to create and use accounts, with recoverable onboardi
 4. Google/Apple provider adapters, password reset, account recovery, suspicious-login signals, and optional biometric unlock.
 5. Onboarding state machine covering age, identity, preferences, profile, location, privacy, verification, notifications, review, and publish.
 
+## Completed In This Slice
+
+- Email/password registration and login.
+- Short-lived access tokens and hashed, device-aware refresh sessions.
+- Atomic refresh rotation with token-family reuse detection and audit logging.
+- Secure logout and authenticated logout-all-devices.
+- Local migration coverage for session token families.
+
 ## Safety Invariants
 
 - No account under 18 can be activated or discovered.

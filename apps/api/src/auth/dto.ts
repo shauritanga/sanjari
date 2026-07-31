@@ -37,3 +37,11 @@ export class LoginDto {
   @MinLength(8)
   deviceId!: string;
 }
+
+export class RefreshTokenDto {
+  @IsString()
+  @MinLength(32)
+  refreshToken!: string;
+}
+
+export class LogoutDto extends RefreshTokenDto {}
