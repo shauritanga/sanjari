@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const appConfigSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
+  APP_PUBLIC_URL: z.url(),
   PORT: z.coerce.number().int().positive().default(4000),
   APP_NAME: z.string().default('Sanjari'),
   API_PUBLIC_URL: z.url(),

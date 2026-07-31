@@ -5,10 +5,17 @@ import { AuthController } from './auth.controller';
 import { EmailService } from './email.service';
 import { EmailVerificationService } from './email-verification.service';
 import { AuthService } from './auth.service';
+import { PasswordResetService } from './password-reset.service';
 
 @Module({
   imports: [JwtModule.register({})],
   controllers: [AuthController],
-  providers: [AuthService, AccessTokenGuard, EmailService, EmailVerificationService],
+  providers: [
+    AuthService,
+    AccessTokenGuard,
+    EmailService,
+    EmailVerificationService,
+    PasswordResetService,
+  ],
 })
 export class AuthModule {}

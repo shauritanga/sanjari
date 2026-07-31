@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { PrismaService } from '../common/database/prisma.service';
 import { EmailVerificationService } from './email-verification.service';
+import { PasswordResetService } from './password-reset.service';
 
 const minimumAge = 18;
 
@@ -76,6 +77,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly emailVerification: EmailVerificationService,
+    private readonly passwordReset: PasswordResetService,
   ) {}
 
   async register(
@@ -193,6 +195,18 @@ export class AuthService {
 
   async verifyEmail(email: string, code: string): Promise<{ userId: string }> {
     return this.emailVerification.verify(email, code);
+  }
+
+  async resendEmailVerification(email: string): Promise<void> {
+    await this.emailVerification.resend(email);
+  }
+
+  async requestPasswordReset(email: string): Promise<void> {
+    await this.passwordReset.request(email);
+  }
+
+  async resetPassword(token: string, password: string): Promise<{ userId: string }> {
+    return this.passwordReset.reset(token, password);
   }
 
   async refresh(refreshToken: string): Promise<SessionResponse> {

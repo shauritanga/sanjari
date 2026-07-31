@@ -54,3 +54,18 @@ export class VerifyEmailDto {
   @MinLength(6)
   code!: string;
 }
+
+export class EmailAddressDto {
+  @IsEmail()
+  email!: string;
+}
+
+export class ResetPasswordDto {
+  @IsString()
+  @MinLength(32)
+  token!: string;
+
+  @IsString()
+  @MinLength(12)
+  password!: string;
+}

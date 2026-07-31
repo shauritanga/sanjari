@@ -1,7 +1,15 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from './access-token.guard';
 import { AuthService } from './auth.service';
-import { LoginDto, LogoutDto, RefreshTokenDto, RegisterDto, VerifyEmailDto } from './dto';
+import {
+  EmailAddressDto,
+  LoginDto,
+  LogoutDto,
+  RefreshTokenDto,
+  RegisterDto,
+  ResetPasswordDto,
+  VerifyEmailDto,
+} from './dto';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -43,5 +51,25 @@ export class AuthController {
   ): Promise<{ data: { userId: string; verified: true } }> {
     const result = await this.authService.verifyEmail(dto.email, dto.code);
     return { data: { ...result, verified: true } };
+  }
+
+  @Post('email/resend')
+  async resendEmail(@Body() dto: EmailAddressDto): Promise<{ data: { accepted: true } }> {
+    await this.authService.resendEmailVerification(dto.email);
+    return { data: { accepted: true } };
+  }
+
+  @Post('password-reset/request')
+  async requestPasswordReset(@Body() dto: EmailAddressDto): Promise<{ data: { accepted: true } }> {
+    await this.authService.requestPasswordReset(dto.email);
+    return { data: { accepted: true } };
+  }
+
+  @Post('password-reset/complete')
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+  ): Promise<{ data: { userId: string; reset: true } }> {
+    const result = await this.authService.resetPassword(dto.token, dto.password);
+    return { data: { ...result, reset: true } };
   }
 }

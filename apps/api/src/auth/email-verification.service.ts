@@ -93,4 +93,13 @@ export class EmailVerificationService {
 
     return { userId: verification.userId };
   }
+
+  async resend(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
+    if (user && user.status === 'pending_verification') {
+      await this.issue(user.id, user.email);
+    }
+  }
 }

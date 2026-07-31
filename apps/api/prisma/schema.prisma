@@ -119,6 +119,8 @@ model PasswordReset {
   usedAt    DateTime?
   expiresAt DateTime
   createdAt DateTime  @default(now())
+
+  @@index([tokenHash, usedAt])
 }
 
 model Profile {
