@@ -26,6 +26,9 @@ Allow only eligible adults to create and use accounts, with recoverable onboardi
 - Authenticated session inventory and per-device revocation endpoints with audit logging.
 - Login audit events and a persisted `multiple_active_sessions` risk signal when concurrent sessions exceed the review threshold.
 - Mobile registration, email verification, and login screens using SecureStore for token storage.
+- Mobile phone OTP login, password-reset request, resumable profile onboarding, and per-device sign-out screens.
+- A fail-closed `SocialAuthProvider` interface for Google and Apple, ready for owner-supplied provider adapters and credentials.
+- Authentication contract tests covering session ownership, revocation, and unconfigured social-provider behavior.
 
 ## Safety Invariants
 

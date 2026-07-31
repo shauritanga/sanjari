@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { PasswordResetService } from './password-reset.service';
 import { PhoneVerificationService } from './phone-verification.service';
 import { SmsService } from './sms.service';
+import { SocialAuthService } from './social-auth.service';
 
 @Module({
   imports: [JwtModule.register({})],
@@ -20,6 +21,7 @@ import { SmsService } from './sms.service';
     PasswordResetService,
     PhoneVerificationService,
     SmsService,
+    SocialAuthService,
   ],
   exports: [AccessTokenGuard, JwtModule],
 })

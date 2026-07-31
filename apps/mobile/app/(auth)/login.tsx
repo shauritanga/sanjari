@@ -67,6 +67,16 @@ export default function LoginScreen() {
           variant="secondary"
           onPress={() => router.push('/(auth)/signup')}
         />
+        <AppButton
+          label="Log in with phone"
+          variant="secondary"
+          onPress={() => router.push('/(auth)/phone')}
+        />
+        <AppButton
+          label="Forgot password?"
+          variant="secondary"
+          onPress={() => router.push('/(auth)/password-reset')}
+        />
       </View>
     </SafeAreaView>
   );
