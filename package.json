@@ -1,0 +1,26 @@
+{
+  "name": "sanjari",
+  "private": true,
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=11.15.1"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "db:migrate": "pnpm --filter @sanjari/api db:migrate",
+    "db:seed": "pnpm --filter @sanjari/api db:seed"
+  },
+  "devDependencies": {
+    "@sanjari/eslint-config": "workspace:*",
+    "@sanjari/tsconfig": "workspace:*",
+    "prettier": "3.6.2",
+    "turbo": "2.10.6",
+    "typescript": "5.9.2"
+  }
+}

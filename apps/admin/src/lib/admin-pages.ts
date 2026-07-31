@@ -1,0 +1,20 @@
+export const adminPageTitles = {
+  users: 'User search',
+  verification: 'Verification queue',
+  reports: 'Reports queue',
+  moderation: 'Moderation cases',
+  appeals: 'Appeals',
+  subscriptions: 'Subscription overview',
+  payments: 'Payment-event logs',
+  notifications: 'Notification management',
+  flags: 'Feature flags',
+  matching: 'Matching configuration',
+  content: 'Content configuration',
+  support: 'Support cases',
+  audit: 'Audit logs',
+  health: 'System health',
+  versions: 'Application versions',
+  legal: 'Legal-document versions',
+  deletion: 'Data-deletion requests',
+  analytics: 'Analytics'
+} as const;

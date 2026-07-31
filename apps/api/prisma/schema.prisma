@@ -1,0 +1,758 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                   String   @id @default(uuid()) @db.Uuid
+  email                String   @unique @db.Citext
+  phoneNumber          String?  @unique
+  locale               String   @default("en")
+  dateOfBirth          DateTime @db.Date
+  ageEligibilityStatus String   @default("pending")
+  status               String   @default("active")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  deletedAt            DateTime?
+  credentials          UserCredential[]
+  sessions             UserSession[]
+  devices              UserDevice[]
+  profile              Profile?
+  locations            UserLocation[]
+  likesSent            Like[]   @relation("likes_sent")
+  likesReceived        Like[]   @relation("likes_received")
+  passesSent           Pass[]   @relation("passes_sent")
+  matchesA             Match[]  @relation("match_a")
+  matchesB             Match[]  @relation("match_b")
+  blocksSent           Block[]  @relation("blocks_sent")
+  blocksReceived       Block[]  @relation("blocks_received")
+  reportsSubmitted     Report[] @relation("reports_submitted")
+  reportsReceived      Report[] @relation("reports_received")
+  notifications        Notification[]
+  subscriptions        Subscription[]
+  legalAcceptances     LegalAcceptance[]
+  auditLogs            AuditLog[]
+
+  @@index([status, createdAt])
+  @@index([ageEligibilityStatus])
+}
+
+model UserCredential {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  type       String
+  identifier String   @db.Citext
+  secretHash String?
+  verifiedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([type, identifier])
+  @@index([userId])
+}
+
+model UserSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  deviceId         String?
+  refreshTokenHash String
+  ipHash           String?
+  userAgent        String?
+  revokedAt        DateTime?
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model UserDevice {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  deviceHash   String
+  platform     String
+  pushTokenId  String?  @db.Uuid
+  trustedAt    DateTime?
+  lastSeenAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceHash])
+}
+
+model EmailVerification {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  email       String    @db.Citext
+  codeHash    String
+  attempts    Int       @default(0)
+  verifiedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+}
+
+model PhoneVerification {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  phoneNumber String
+  codeHash    String
+  attempts    Int       @default(0)
+  verifiedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+}
+
+model Profile {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @unique @db.Uuid
+  displayName           String?
+  pronouns              String?
+  gender                String?
+  interestedIn          String[]
+  relationshipIntentions String[]
+  biography             String?
+  occupationCategory    String?
+  educationLevel        String?
+  city                  String?
+  heightCm              Int?
+  drinkingPreference    String?
+  smokingPreference     String?
+  exercisePreference    String?
+  childrenPreference    String?
+  culturalPreference    String?
+  verificationStatus    String   @default("unverified")
+  moderationStatus      String   @default("pending")
+  onboardingStatus      String   @default("not_started")
+  discoveryPausedAt     DateTime?
+  version               Int      @default(1)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos                ProfilePhoto[]
+  prompts               PromptAnswer[]
+  interests             ProfileInterest[]
+  languages             ProfileLanguage[]
+  discoveryPreference   DiscoveryPreference?
+
+  @@index([moderationStatus, verificationStatus])
+  @@index([city])
+}
+
+model ProfilePhoto {
+  id               String   @id @default(uuid()) @db.Uuid
+  profileId        String   @db.Uuid
+  storageKey       String
+  thumbnailKey     String?
+  position         Int
+  isPrimary        Boolean  @default(false)
+  moderationStatus String   @default("pending")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  profile          Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, position])
+  @@index([profileId, isPrimary])
+}
+
+model ProfilePrompt {
+  id        String   @id @default(uuid()) @db.Uuid
+  locale    String
+  prompt    String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  answers   PromptAnswer[]
+}
+
+model PromptAnswer {
+  id        String   @id @default(uuid()) @db.Uuid
+  profileId String   @db.Uuid
+  promptId  String   @db.Uuid
+  answer    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  prompt    ProfilePrompt @relation(fields: [promptId], references: [id])
+}
+
+model Interest {
+  id       String   @id @default(uuid()) @db.Uuid
+  slug     String   @unique
+  labelEn  String
+  labelSw  String
+  active   Boolean  @default(true)
+  profiles ProfileInterest[]
+}
+
+model ProfileInterest {
+  profileId  String @db.Uuid
+  interestId String @db.Uuid
+  profile    Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  interest   Interest @relation(fields: [interestId], references: [id])
+
+  @@id([profileId, interestId])
+}
+
+model Language {
+  id       String   @id @default(uuid()) @db.Uuid
+  code     String   @unique
+  labelEn  String
+  labelSw  String
+  profiles ProfileLanguage[]
+}
+
+model ProfileLanguage {
+  profileId  String @db.Uuid
+  languageId String @db.Uuid
+  profile    Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  language   Language @relation(fields: [languageId], references: [id])
+
+  @@id([profileId, languageId])
+}
+
+model DiscoveryPreference {
+  id               String   @id @default(uuid()) @db.Uuid
+  profileId        String   @unique @db.Uuid
+  minAge           Int      @default(18)
+  maxAge           Int      @default(80)
+  maxDistanceKm    Int      @default(50)
+  genders          String[]
+  intentions       String[]
+  showDistance     Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  profile          Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model UserLocation {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  approximateCity   String?
+  protectedPointWkt String
+  accuracyMeters    Int?
+  source            String
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model VerificationCase {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  type        String
+  status      String   @default("submitted")
+  provider    String?
+  confidence  String?
+  reviewedBy  String?  @db.Uuid
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  artifacts   VerificationArtifact[]
+}
+
+model VerificationArtifact {
+  id             String   @id @default(uuid()) @db.Uuid
+  caseId         String   @db.Uuid
+  storageKey     String
+  artifactType   String
+  retentionUntil DateTime
+  createdAt      DateTime @default(now())
+  case           VerificationCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id           String   @id @default(uuid()) @db.Uuid
+  senderId     String   @db.Uuid
+  receiverId   String   @db.Uuid
+  comment      String?
+  priority     Boolean  @default(false)
+  idempotencyKey String?
+  createdAt    DateTime @default(now())
+  sender       User     @relation("likes_sent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver     User     @relation("likes_received", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@unique([senderId, idempotencyKey])
+  @@index([receiverId, createdAt])
+}
+
+model Pass {
+  id         String   @id @default(uuid()) @db.Uuid
+  senderId   String   @db.Uuid
+  receiverId String   @db.Uuid
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+  sender     User     @relation("passes_sent", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+}
+
+model Match {
+  id             String   @id @default(uuid()) @db.Uuid
+  userAId        String   @db.Uuid
+  userBId        String   @db.Uuid
+  status         String   @default("active")
+  idempotencyKey String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  userA          User     @relation("match_a", fields: [userAId], references: [id], onDelete: Cascade)
+  userB          User     @relation("match_b", fields: [userBId], references: [id], onDelete: Cascade)
+  conversation   Conversation?
+
+  @@unique([userAId, userBId])
+  @@index([status, createdAt])
+}
+
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  matchId   String   @unique @db.Uuid
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  members   ConversationMember[]
+  messages  Message[]
+}
+
+model ConversationMember {
+  conversationId String @db.Uuid
+  userId         String @db.Uuid
+  archivedAt     DateTime?
+  lastReadAt     DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+}
+
+model Message {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  senderId       String   @db.Uuid
+  body           String?
+  status         String   @default("sent")
+  deletedForSenderAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  attachments    MessageAttachment[]
+  reactions      MessageReaction[]
+  receipts       MessageReceipt[]
+
+  @@index([conversationId, createdAt])
+}
+
+model MessageAttachment {
+  id         String   @id @default(uuid()) @db.Uuid
+  messageId  String   @db.Uuid
+  storageKey String
+  mimeType   String
+  sizeBytes  Int
+  status     String   @default("pending_scan")
+  createdAt  DateTime @default(now())
+  message    Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @db.Uuid
+  userId    String   @db.Uuid
+  reaction  String
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, reaction])
+}
+
+model MessageReceipt {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @db.Uuid
+  userId    String   @db.Uuid
+  type      String
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, type])
+}
+
+model Block {
+  id        String   @id @default(uuid()) @db.Uuid
+  blockerId String   @db.Uuid
+  blockedId String   @db.Uuid
+  reason    String?
+  createdAt DateTime @default(now())
+  blocker   User     @relation("blocks_sent", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("blocks_received", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+}
+
+model Report {
+  id             String   @id @default(uuid()) @db.Uuid
+  reporterId     String   @db.Uuid
+  reportedUserId String   @db.Uuid
+  category       String
+  description    String?
+  riskScore      Int      @default(0)
+  priority       String   @default("normal")
+  status         String   @default("submitted")
+  assignedToId   String?  @db.Uuid
+  resolution     String?
+  actionTaken    String?
+  appealStatus   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  reporter       User     @relation("reports_submitted", fields: [reporterId], references: [id])
+  reportedUser   User     @relation("reports_received", fields: [reportedUserId], references: [id])
+  evidence       ReportEvidence[]
+  moderationCase ModerationCase?
+
+  @@index([status, priority, createdAt])
+  @@index([reportedUserId, createdAt])
+}
+
+model ReportEvidence {
+  id        String   @id @default(uuid()) @db.Uuid
+  reportId  String   @db.Uuid
+  type      String
+  snapshot  Json
+  createdAt DateTime @default(now())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+model ModerationCase {
+  id        String   @id @default(uuid()) @db.Uuid
+  reportId  String   @unique @db.Uuid
+  status    String   @default("triaged")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  actions   ModerationAction[]
+  appeals   Appeal[]
+}
+
+model ModerationAction {
+  id        String   @id @default(uuid()) @db.Uuid
+  caseId    String   @db.Uuid
+  actorId   String   @db.Uuid
+  action    String
+  reason    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  case      ModerationCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model Appeal {
+  id        String   @id @default(uuid()) @db.Uuid
+  caseId    String   @db.Uuid
+  userId    String   @db.Uuid
+  status    String   @default("submitted")
+  statement String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  case      ModerationCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model RiskSignal {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  type      String
+  severity  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model RiskAssessment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  score     Int
+  reason    Json
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  category  String
+  channel   String
+  title     String
+  body      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationPreference {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  category  String
+  push      Boolean  @default(true)
+  email     Boolean  @default(false)
+  sms       Boolean  @default(false)
+  quietFrom String?
+  quietTo   String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, category])
+}
+
+model PushToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  tokenHash String   @unique
+  provider  String
+  createdAt DateTime @default(now())
+}
+
+model SubscriptionPlan {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique
+  title       String
+  description String
+  priceCents  Int
+  currency    String
+  active      Boolean  @default(true)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  planId    String   @db.Uuid
+  status    String
+  provider  String
+  startsAt  DateTime
+  endsAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  plan      SubscriptionPlan @relation(fields: [planId], references: [id])
+  purchases Purchase[]
+}
+
+model Purchase {
+  id             String   @id @default(uuid()) @db.Uuid
+  subscriptionId String   @db.Uuid
+  provider       String
+  transactionId  String
+  status         String
+  rawEventId     String?
+  createdAt      DateTime @default(now())
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@unique([provider, transactionId])
+}
+
+model PaymentEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  provider       String
+  externalEventId String
+  eventType      String
+  signatureValid Boolean
+  payload        Json
+  processedAt    DateTime?
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, externalEventId])
+}
+
+model FeatureFlag {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  enabled   Boolean  @default(false)
+  rules     Json?
+  updatedAt DateTime @updatedAt
+}
+
+model Experiment {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  status    String
+  variants  Json
+  createdAt DateTime @default(now())
+}
+
+model ExperimentAssignment {
+  id           String   @id @default(uuid()) @db.Uuid
+  experimentId String  @db.Uuid
+  userId       String  @db.Uuid
+  variant      String
+  createdAt    DateTime @default(now())
+
+  @@unique([experimentId, userId])
+}
+
+model Recommendation {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  candidateUserId  String   @db.Uuid
+  generationReason String
+  scoreComponents  Json
+  finalScore        Decimal  @db.Decimal(5, 2)
+  rankingVersion    String
+  shownAt           DateTime?
+  userAction        String?
+  matchOutcome      String?
+  createdAt         DateTime @default(now())
+
+  @@unique([userId, candidateUserId, rankingVersion])
+  @@index([userId, finalScore])
+}
+
+model RecommendationEvent {
+  id               String   @id @default(uuid()) @db.Uuid
+  recommendationId String  @db.Uuid
+  eventType        String
+  metadata         Json?
+  createdAt        DateTime @default(now())
+}
+
+model SupportTicket {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  subject   String
+  status    String   @default("open")
+  priority  String   @default("normal")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LegalDocument {
+  id          String   @id @default(uuid()) @db.Uuid
+  type        String
+  version     String
+  locale      String
+  contentHash String
+  publishedAt DateTime
+
+  @@unique([type, version, locale])
+}
+
+model LegalAcceptance {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  documentType String
+  version      String
+  acceptedAt   DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentType, version])
+}
+
+model DataExportRequest {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  status    String   @default("requested")
+  storageKey String?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AccountDeletionRequest {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  status    String   @default("requested")
+  reason    String?
+  executeAfter DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AdminUser {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique @db.Citext
+  displayName String
+  passwordHash String
+  mfaEnabled Boolean  @default(false)
+  status      String  @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  roles       AdminRole[]
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  permissions RolePermission[]
+  admins      AdminRole[]
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+  role         Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model AdminRole {
+  adminUserId String @db.Uuid
+  roleId      String @db.Uuid
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  role        Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([adminUserId, roleId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  adminUserId String? @db.Uuid
+  actorType String
+  action    String
+  metadata  Json?
+  ipHash    String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([userId, createdAt])
+}
+
+model BackgroundJobRecord {
+  id          String   @id @default(uuid()) @db.Uuid
+  queue       String
+  jobKey      String
+  status      String
+  attempts    Int      @default(0)
+  lastError   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([queue, jobKey])
+}
+
+model ApplicationConfiguration {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}

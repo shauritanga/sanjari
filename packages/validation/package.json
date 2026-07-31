@@ -1,0 +1,22 @@
+{
+  "name": "@sanjari/validation",
+  "private": true,
+  "version": "0.1.0",
+  "type": "commonjs",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@sanjari/shared-utils": "workspace:*",
+    "zod": "4.0.14"
+  },
+  "devDependencies": {
+    "eslint": "9.32.0",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}
