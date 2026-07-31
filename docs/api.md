@@ -55,3 +55,13 @@ Responses use a consistent envelope:
 ```
 
 Errors expose stable codes and safe messages only.
+
+## Onboarding
+
+Onboarding routes require a valid access token and persist progress server-side:
+
+| Method | Route                        | Purpose                                                                    |
+| ------ | ---------------------------- | -------------------------------------------------------------------------- |
+| `GET`  | `/api/v1/onboarding`         | Read current step, completion score, age, and safe profile fields          |
+| `PUT`  | `/api/v1/onboarding`         | Save validated profile fields and advance progress without moving backward |
+| `POST` | `/api/v1/onboarding/publish` | Publish only when profile, media, and verification completion gates pass   |

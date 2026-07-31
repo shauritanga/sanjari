@@ -21,6 +21,7 @@ Allow only eligible adults to create and use accounts, with recoverable onboardi
 - Local migration coverage for session token families.
 - SMTP-backed email verification with hashed six-digit codes, expiry, attempt limits, audit logging, and verification-gated activation.
 - Generic verification resend and password-reset request/complete flows with session revocation after reset.
+- Authenticated onboarding read/update/publish routes with persisted step state, calculated profile completion score, and server-side publish gating.
 
 ## Safety Invariants
 

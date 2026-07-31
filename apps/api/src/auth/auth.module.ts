@@ -17,5 +17,6 @@ import { PasswordResetService } from './password-reset.service';
     EmailVerificationService,
     PasswordResetService,
   ],
+  exports: [AccessTokenGuard, JwtModule],
 })
 export class AuthModule {}

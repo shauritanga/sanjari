@@ -144,6 +144,9 @@ model Profile {
   verificationStatus     String               @default("unverified")
   moderationStatus       String               @default("pending")
   onboardingStatus       String               @default("not_started")
+  onboardingStep         Int                  @default(1)
+  completionScore        Int                  @default(0)
+  publishedAt            DateTime?
   discoveryPausedAt      DateTime?
   version                Int                  @default(1)
   createdAt              DateTime             @default(now())
