@@ -23,6 +23,9 @@ Allow only eligible adults to create and use accounts, with recoverable onboardi
 - Generic verification resend and password-reset request/complete flows with session revocation after reset.
 - Authenticated onboarding read/update/publish routes with persisted step state, calculated profile completion score, and server-side publish gating.
 - Phone OTP provider boundary, verified phone attachment, and phone-based session creation; local testing uses Mailpit without logging codes.
+- Authenticated session inventory and per-device revocation endpoints with audit logging.
+- Login audit events and a persisted `multiple_active_sessions` risk signal when concurrent sessions exceed the review threshold.
+- Mobile registration, email verification, and login screens using SecureStore for token storage.
 
 ## Safety Invariants
 
@@ -31,6 +34,7 @@ Allow only eligible adults to create and use accounts, with recoverable onboardi
 - DOB changes require support review and create an immutable audit record.
 - Auth errors remain generic; rate limits and lockouts do not disclose account existence.
 - Tokens are stored in SecureStore on mobile and secure HTTP-only cookies for admin sessions.
+- Google and Apple adapters remain credential-gated integration points; production client IDs, secrets, redirect URIs, and Apple team configuration must be supplied before those providers can be enabled.
 
 ## Acceptance Criteria
 

@@ -1,9 +1,86 @@
-import { SafeAreaView, Text } from 'react-native';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text } from 'react-native';
+import { AppButton } from '../../src/components/AppButton';
+import { AppTextInput } from '../../src/components/AppTextInput';
+import { theme } from '../../src/theme/theme';
 
+const API_URL = 'http://localhost:4000/api/v1';
+type ApiResponse = { message?: string; error?: { message?: string } };
+async function readApiResponse(response: Response): Promise<ApiResponse> {
+  return (await response.json()) as ApiResponse;
+}
 export default function SignupScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function submit() {
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          dateOfBirth,
+          confirmedAdult: true,
+          acceptedTermsVersion: '2026-01',
+          acceptedPrivacyVersion: '2026-01',
+          locale: 'en',
+        }),
+      });
+      const body = await readApiResponse(response);
+      if (!response.ok)
+        throw new Error(body.message ?? body.error?.message ?? 'Unable to create account.');
+      router.push({ pathname: '/(auth)/verify-email', params: { email } });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to create account.');
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <SafeAreaView>
-      <Text>Create your Sanjari account</Text>
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Create your account</Text>
+        <Text style={styles.copy}>
+          Sanjari is a private space for adults seeking meaningful connection.
+        </Text>
+        <AppTextInput label="Email" value={email} onChangeText={setEmail} />
+        <AppTextInput
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <AppTextInput
+          label="Date of birth (YYYY-MM-DD)"
+          value={dateOfBirth}
+          onChangeText={setDateOfBirth}
+          error={error}
+        />
+        <AppButton
+          label={busy ? 'Creating...' : 'Create account'}
+          onPress={() => {
+            void submit();
+          }}
+        />
+        <AppButton
+          label="I already have an account"
+          variant="secondary"
+          onPress={() => router.push('/(auth)/login')}
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 }
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: theme.colors.warmWhite, padding: theme.spacing.lg },
+  content: { flexGrow: 1, justifyContent: 'center', gap: theme.spacing.md },
+  title: { color: theme.colors.deepPlum, fontSize: 32, fontWeight: '700' },
+  copy: { color: theme.colors.secondaryText, fontSize: 16, lineHeight: 24 },
+});

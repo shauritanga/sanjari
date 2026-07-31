@@ -189,10 +189,12 @@ export class AuthService {
       });
     }
 
-    return {
+    const session = {
       userId: credential.userId,
       ...(await this.issueSession(credential.userId, credential.user.email, parsed.data.deviceId)),
     };
+    await this.recordLoginRisk(credential.userId, parsed.data.deviceId);
+    return session;
   }
 
   async verifyEmail(email: string, code: string): Promise<{ userId: string }> {
@@ -330,6 +332,31 @@ export class AuthService {
     return result.count;
   }
 
+  async listSessions(userId: string) {
+    return this.prisma.userSession.findMany({
+      where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true, deviceId: true, createdAt: true, updatedAt: true, expiresAt: true },
+    });
+  }
+
+  async revokeSession(userId: string, sessionId: string): Promise<boolean> {
+    const result = await this.prisma.userSession.updateMany({
+      where: { id: sessionId, userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    if (result.count > 0)
+      await this.prisma.auditLog.create({
+        data: {
+          userId,
+          actorType: 'user',
+          action: 'auth.session_revoked',
+          metadata: { sessionId },
+        },
+      });
+    return result.count > 0;
+  }
+
   private async verifyRefreshToken(token: string): Promise<{ sub: string; type: 'refresh' }> {
     try {
       const claims = await this.jwt.verifyAsync<{ sub: string; type: 'refresh' }>(token, {
@@ -378,6 +405,29 @@ export class AuthService {
       },
     });
     return tokens;
+  }
+
+  private async recordLoginRisk(userId: string, deviceId: string): Promise<void> {
+    const activeSessionCount = await this.prisma.userSession.count({
+      where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        actorType: 'user',
+        action: 'auth.login',
+        metadata: { deviceId, activeSessionCount },
+      },
+    });
+    if (activeSessionCount >= 4)
+      await this.prisma.riskSignal.create({
+        data: {
+          userId,
+          type: 'multiple_active_sessions',
+          severity: activeSessionCount >= 8 ? 'high' : 'medium',
+          metadata: { deviceId, activeSessionCount },
+        },
+      });
   }
 
   private async createTokens(userId: string, email: string): Promise<IssuedTokens> {

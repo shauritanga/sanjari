@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from './access-token.guard';
 import { AuthService } from './auth.service';
 import {
@@ -46,6 +46,20 @@ export class AuthController {
   @Post('logout-all')
   async logoutAll(@Req() request: AuthenticatedRequest): Promise<{ data: { revoked: number } }> {
     return { data: { revoked: await this.authService.logoutAll(request.user!.sub) } };
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('sessions')
+  async sessions(@Req() request: AuthenticatedRequest) {
+    return { data: await this.authService.listSessions(request.user!.sub) };
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('sessions/:sessionId')
+  async revokeSession(@Req() request: AuthenticatedRequest, @Param('sessionId') sessionId: string) {
+    return {
+      data: { revoked: await this.authService.revokeSession(request.user!.sub, sessionId) },
+    };
   }
 
   @Post('email/verify')
