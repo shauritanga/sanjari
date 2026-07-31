@@ -1,7 +1,7 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from './access-token.guard';
 import { AuthService } from './auth.service';
-import { LoginDto, LogoutDto, RefreshTokenDto, RegisterDto } from './dto';
+import { LoginDto, LogoutDto, RefreshTokenDto, RegisterDto, VerifyEmailDto } from './dto';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -35,5 +35,13 @@ export class AuthController {
   @Post('logout-all')
   async logoutAll(@Req() request: AuthenticatedRequest): Promise<{ data: { revoked: number } }> {
     return { data: { revoked: await this.authService.logoutAll(request.user!.sub) } };
+  }
+
+  @Post('email/verify')
+  async verifyEmail(
+    @Body() dto: VerifyEmailDto,
+  ): Promise<{ data: { userId: string; verified: true } }> {
+    const result = await this.authService.verifyEmail(dto.email, dto.code);
+    return { data: { ...result, verified: true } };
   }
 }

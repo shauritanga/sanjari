@@ -45,3 +45,12 @@ export class RefreshTokenDto {
 }
 
 export class LogoutDto extends RefreshTokenDto {}
+
+export class VerifyEmailDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(6)
+  code!: string;
+}

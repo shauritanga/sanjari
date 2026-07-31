@@ -19,6 +19,7 @@ Allow only eligible adults to create and use accounts, with recoverable onboardi
 - Atomic refresh rotation with token-family reuse detection and audit logging.
 - Secure logout and authenticated logout-all-devices.
 - Local migration coverage for session token families.
+- SMTP-backed email verification with hashed six-digit codes, expiry, attempt limits, audit logging, and verification-gated activation.
 
 ## Safety Invariants
 

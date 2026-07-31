@@ -10,6 +10,7 @@ import { hash, verify } from 'argon2';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { PrismaService } from '../common/database/prisma.service';
+import { EmailVerificationService } from './email-verification.service';
 
 const minimumAge = 18;
 
@@ -74,9 +75,12 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly emailVerification: EmailVerificationService,
   ) {}
 
-  async register(input: RegisterInput): Promise<SessionResponse & { onboardingStatus: string }> {
+  async register(
+    input: RegisterInput,
+  ): Promise<{ userId: string; onboardingStatus: string; emailVerificationRequired: true }> {
     const parsed = registerSchema.safeParse(input);
     if (!parsed.success) {
       throw new BadRequestException({
@@ -102,6 +106,7 @@ export class AuthService {
             locale: parsed.data.locale,
             dateOfBirth: parsed.data.dateOfBirth,
             ageEligibilityStatus: 'confirmed_adult',
+            status: 'pending_verification',
             credentials: {
               create: {
                 type: 'password',
@@ -144,12 +149,12 @@ export class AuthService {
       throw error;
     }
 
-    const tokens = await this.issueSession(user.id, parsed.data.email);
+    await this.emailVerification.issue(user.id, parsed.data.email);
 
     return {
       userId: user.id,
       onboardingStatus: user.profile?.onboardingStatus ?? 'registration_started',
-      ...tokens,
+      emailVerificationRequired: true,
     };
   }
 
@@ -170,6 +175,7 @@ export class AuthService {
 
     if (
       !credential?.secretHash ||
+      !credential.verifiedAt ||
       credential.user.status !== 'active' ||
       !(await verify(credential.secretHash, parsed.data.password))
     ) {
@@ -183,6 +189,10 @@ export class AuthService {
       userId: credential.userId,
       ...(await this.issueSession(credential.userId, credential.user.email, parsed.data.deviceId)),
     };
+  }
+
+  async verifyEmail(email: string, code: string): Promise<{ userId: string }> {
+    return this.emailVerification.verify(email, code);
   }
 
   async refresh(refreshToken: string): Promise<SessionResponse> {
