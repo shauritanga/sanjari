@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
+import { AdminOperationsModule } from './admin-operations/admin-operations.module';
 import { appConfigSchema } from './common/config/app-config.schema';
 import { DatabaseModule } from './common/database/database.module';
 import { ConversationsModule } from './conversations/conversations.module';
@@ -28,6 +29,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     HealthModule,
     AuthModule,
     AdminAuthModule,
+    AdminOperationsModule,
     ProfilesModule,
     DiscoveryModule,
     MatchesModule,
