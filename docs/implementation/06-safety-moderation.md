@@ -46,3 +46,14 @@ The workstream remains open until the W07-owned admin authentication/session con
 - `GET /api/v1/safety/appeals` and the mobile Safety Centre provide a reported-user-only appeal list and statement submission flow.
 - Blocks and suspicious external links now create persisted risk signals in addition to audit events, so they are available to moderation triage.
 - API integration contracts cover these flows in `apps/api/test/moderation.integration.test.ts`.
+
+## Completion Gate
+
+Repository implementation and local operational verification are complete. API build, 32 API tests, API/mobile lint and typechecks pass; PostGIS reports all 9 migrations applied and Redis returns `PONG`.
+
+The workstream remains intentionally open in the roadmap until these external or cross-workstream gates are signed off:
+
+- W07 admin authentication/session console is connected to the permission-gated moderation engine.
+- Production durable export storage credentials/provider are supplied and tested.
+- Legal owner approves the English/Swahili safety, retention, deletion, emergency disclosure, and appeal wording.
+- Emergency/law-enforcement escalation owner and support on-call acknowledge the runbook.
