@@ -10,9 +10,8 @@
     ".next/types/**/*.ts"
   ],
   "compilerOptions": {
-    "isolatedModules": true
+    "isolatedModules": true,
+    "lib": ["dom", "dom.iterable", "esnext"]
   },
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

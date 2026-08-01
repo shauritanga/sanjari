@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
+import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { appConfigSchema } from './common/config/app-config.schema';
 import { DatabaseModule } from './common/database/database.module';
 import { ConversationsModule } from './conversations/conversations.module';
@@ -26,6 +27,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     DatabaseModule,
     HealthModule,
     AuthModule,
+    AdminAuthModule,
     ProfilesModule,
     DiscoveryModule,
     MatchesModule,

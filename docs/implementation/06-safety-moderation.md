@@ -8,7 +8,7 @@ Make user safety visible and operationally enforceable across profiles, discover
 
 In progress. The first user-facing safety slice and moderation review engine are implemented: authenticated block/unblock and block listing, report submission with bounded evidence references, moderation-case creation, high-risk report signals, appeal submission authorization, permission-gated review queues, case transitions, reasoned moderator actions, audit events, messaging block enforcement, bounded evidence retention purge, contextual mobile report/block controls, localized Safety Centre guidance, audited data export/account deletion requests, and scheduled account-deletion execution.
 
-The workstream remains open until the W07-owned admin authentication/session console is connected to this engine, production export storage credentials, contextual report entry points across all clients, legal approval of safety content, and operational escalation runbooks are implemented and verified.
+The workstream remains open until the production MFA verifier/export storage credentials, contextual report entry points across all clients, legal approval of safety content, and operational escalation ownership are implemented and verified.
 
 ## Scope
 
@@ -45,6 +45,7 @@ The workstream remains open until the W07-owned admin authentication/session con
 - Emergency, suspected-underage, scam, and provider-incident procedures are documented in `docs/safety-escalation-runbook.md`.
 - `GET /api/v1/safety/appeals` and the mobile Safety Centre provide a reported-user-only appeal list and statement submission flow.
 - Blocks and suspicious external links now create persisted risk signals in addition to audit events, so they are available to moderation triage.
+- `/api/v1/admin/auth/login` issues a database-backed HTTP-only admin session and CSRF token; admin moderation queue/action routes require the `reports.resolve` permission and CSRF on mutations.
 - API integration contracts cover these flows in `apps/api/test/moderation.integration.test.ts`.
 
 ## Completion Gate
@@ -53,7 +54,7 @@ Repository implementation and local operational verification are complete. API b
 
 The workstream remains intentionally open in the roadmap until these external or cross-workstream gates are signed off:
 
-- W07 admin authentication/session console is connected to the permission-gated moderation engine.
+- Admin authentication/session and moderation-console integration are implemented; production MFA verifier configuration remains an owner input.
 - Production durable export storage credentials/provider are supplied and tested.
 - Legal owner approves the English/Swahili safety, retention, deletion, emergency disclosure, and appeal wording.
 - Emergency/law-enforcement escalation owner and support on-call acknowledge the runbook.

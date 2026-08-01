@@ -18,7 +18,14 @@ body {
   margin: 0;
   background: var(--warm-white);
   color: var(--charcoal);
-  font-family: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Manrope,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 }
 
 a {
@@ -61,6 +68,72 @@ a {
 
 .main {
   padding: 28px;
+}
+
+.auth-main {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+.auth-form {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid var(--rose);
+  border-radius: 8px;
+  padding: 24px;
+}
+.auth-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+.auth-form input {
+  border: 1px solid #d9cdd2;
+  border-radius: 6px;
+  min-height: 44px;
+  padding: 8px 10px;
+  font: inherit;
+}
+button {
+  border: 0;
+  border-radius: 6px;
+  background: var(--coral);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 44px;
+  padding: 8px 14px;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.error-text {
+  color: var(--error);
+}
+.case-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+.case-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--rose);
+  border-radius: 8px;
+  padding: 16px;
+}
+.case-item span {
+  color: var(--secondary);
+  display: block;
+  font-size: 13px;
+  margin-top: 4px;
 }
 
 .metrics {

@@ -25,4 +25,5 @@ export const appConfigSchema = z.object({
   ATTACHMENT_SCAN_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
   MODERATION_EVIDENCE_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
   DATA_EXPORT_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
+  ADMIN_MFA_PROVIDER: z.enum(['disabled', 'owner']).default('disabled'),
 });
