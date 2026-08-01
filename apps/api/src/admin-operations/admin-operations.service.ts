@@ -127,4 +127,55 @@ export class AdminOperationsService {
     });
     return result;
   }
+
+  async dashboard(admin: AdminClaims) {
+    requirePermission(admin, 'analytics.read');
+    const [
+      users,
+      activeUsers,
+      profiles,
+      verifiedProfiles,
+      likes,
+      matches,
+      conversations,
+      messages,
+      reports,
+      suspensions,
+      failedJobs,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { status: 'active' } }),
+      this.prisma.profile.count(),
+      this.prisma.profile.count({ where: { verificationStatus: 'verified' } }),
+      this.prisma.like.count(),
+      this.prisma.match.count({ where: { status: 'active' } }),
+      this.prisma.conversation.count({ where: { status: 'active' } }),
+      this.prisma.message.count(),
+      this.prisma.report.count({ where: { status: { notIn: ['closed', 'dismissed'] } } }),
+      this.prisma.user.count({ where: { status: 'suspended' } }),
+      this.prisma.backgroundJobRecord.count({ where: { status: 'failed' } }),
+    ]);
+    const result = {
+      users,
+      activeUsers,
+      profiles,
+      verifiedProfiles,
+      likes,
+      matches,
+      conversations,
+      messages,
+      reports,
+      suspensions,
+      failedJobs,
+    };
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.dashboard_read',
+        metadata: { metricKeys: Object.keys(result) },
+      },
+    });
+    return result;
+  }
 }

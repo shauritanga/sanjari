@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const navItems = [
-  ['Dashboard', '/dashboard', undefined],
+  ['Dashboard', '/dashboard', 'analytics.read'],
   ['Users', '/users', 'users.read'],
   ['Verification', '/verification', 'verification.review'],
   ['Reports', '/reports', 'reports.resolve'],

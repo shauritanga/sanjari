@@ -27,6 +27,12 @@ export class AdminOperationsController {
     return { data: await this.operations.searchUsers(request.admin!, query) };
   }
 
+  @Get('dashboard')
+  @SetMetadata('adminPermission', 'analytics.read')
+  async dashboard(@Req() request: AdminRequest) {
+    return { data: await this.operations.dashboard(request.admin!) };
+  }
+
   @Patch('users/:userId/suspend')
   @SetMetadata('adminPermission', 'users.suspend')
   @UseGuards(AdminCsrfGuard)
