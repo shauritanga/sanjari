@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Alert } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
 import { api } from '../../src/api';
 import { theme } from '../../src/theme/theme';
@@ -40,6 +41,26 @@ export default function DiscoverScreen() {
       setError(cause instanceof Error ? cause.message : 'Unable to update discovery.');
     }
   }
+  async function block(candidateId: string) {
+    try {
+      await api.post(`/blocks/${candidateId}`, { reason: 'Blocked from discovery.' });
+      setCandidates((current) => current.filter((candidate) => candidate.id !== candidateId));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to block this member.');
+    }
+  }
+  async function report(candidateId: string) {
+    try {
+      await api.post('/reports', {
+        reportedUserId: candidateId,
+        category: 'other',
+        description: 'Reported from discovery.',
+      });
+      setError('Report submitted for review.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to submit report.');
+    }
+  }
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.content}>
@@ -76,6 +97,25 @@ export default function DiscoverScreen() {
                   }}
                 />
               </View>
+              <View style={styles.safetyActions}>
+                <AppButton
+                  label="Block"
+                  variant="secondary"
+                  onPress={() => {
+                    void block(candidate.id);
+                  }}
+                />
+                <AppButton
+                  label="Report"
+                  variant="secondary"
+                  onPress={() => {
+                    Alert.alert('Report profile', 'Submit this profile for safety review?', [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Report', onPress: () => void report(candidate.id) },
+                    ]);
+                  }}
+                />
+              </View>
             </View>
           ))
         )}
@@ -98,6 +138,7 @@ const styles = StyleSheet.create({
   meta: { color: theme.colors.secondaryText },
   explanation: { color: theme.colors.charcoal, lineHeight: 20 },
   actions: { flexDirection: 'row', gap: theme.spacing.sm },
+  safetyActions: { flexDirection: 'row', gap: theme.spacing.sm },
   copy: { color: theme.colors.secondaryText },
   error: { color: theme.colors.error },
 });

@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { api } from '../../src/api';
@@ -45,6 +46,19 @@ export default function ConversationScreen() {
       setError('Message queued and will retry when connected.');
     }
   }
+  async function reportMessage(message: Message) {
+    try {
+      await api.post('/reports', {
+        reportedUserId: message.senderId,
+        category: 'other',
+        description: 'Reported from a conversation.',
+        evidence: [{ type: 'message', referenceId: message.id }],
+      });
+      setError('Report submitted for review.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to submit report.');
+    }
+  }
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -55,6 +69,16 @@ export default function ConversationScreen() {
             {message.status === 'pending_review' ? (
               <Text style={styles.warning}>This message is being reviewed.</Text>
             ) : null}
+            <AppButton
+              label="Report message"
+              variant="secondary"
+              onPress={() => {
+                Alert.alert('Report message', 'Submit this message for safety review?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Report', onPress: () => void reportMessage(message) },
+                ]);
+              }}
+            />
           </View>
         ))}
       </ScrollView>

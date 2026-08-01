@@ -6,7 +6,7 @@ Make user safety visible and operationally enforceable across profiles, discover
 
 ## Delivery Status
 
-In progress. The first user-facing safety slice and moderation review engine are implemented: authenticated block/unblock and block listing, report submission with bounded evidence references, moderation-case creation, high-risk report signals, appeal submission authorization, permission-gated review queues, case transitions, reasoned moderator actions, audit events, messaging block enforcement, and the mobile Safety Centre guidance screen.
+In progress. The first user-facing safety slice and moderation review engine are implemented: authenticated block/unblock and block listing, report submission with bounded evidence references, moderation-case creation, high-risk report signals, appeal submission authorization, permission-gated review queues, case transitions, reasoned moderator actions, audit events, messaging block enforcement, bounded evidence retention purge, contextual mobile report/block controls, and the mobile Safety Centre guidance screen.
 
 The workstream remains open until the W07-owned admin authentication/session console is connected to this engine, retention/deletion automation, contextual report entry points across all clients, localized and legally approved safety content, and operational escalation runbooks are implemented and verified.
 
@@ -35,4 +35,6 @@ The workstream remains open until the W07-owned admin authentication/session con
 - Conversation authorization checks blocks dynamically, so a new block immediately prevents message access in either direction.
 - `GET /api/v1/safety/guidance` powers the mobile Safety Centre and explicitly limits what verification proves.
 - The moderation service exposes a permission-gated queue and case action engine for `reports.resolve`; permanent bans require an investigated or escalated case and a human reason.
+- The `moderation-retention` worker purges evidence only after the configurable `MODERATION_EVIDENCE_RETENTION_DAYS` window and only for closed or dismissed cases, with a system audit event.
+- Mobile discovery cards expose block/report controls and conversation messages expose report-with-evidence controls.
 - API integration contracts cover these flows in `apps/api/test/moderation.integration.test.ts`.

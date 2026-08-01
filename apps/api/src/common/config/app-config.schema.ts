@@ -23,4 +23,5 @@ export const appConfigSchema = z.object({
   SMS_DEV_INBOX: z.email().default('sms@sanjari.test'),
   PUSH_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
   ATTACHMENT_SCAN_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
+  MODERATION_EVIDENCE_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
 });
