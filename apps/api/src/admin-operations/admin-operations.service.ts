@@ -405,4 +405,62 @@ export class AdminOperationsService {
     });
     return updated;
   }
+
+  async notifications(admin: AdminClaims) {
+    requirePermission(admin, 'notifications.manage');
+    const result = await this.prisma.notification.findMany({
+      select: { id: true, userId: true, category: true, channel: true, title: true, readAt: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.notifications_read',
+        metadata: { resultCount: result.length },
+      },
+    });
+    return result;
+  }
+
+  async supportTickets(admin: AdminClaims) {
+    requirePermission(admin, 'support.read');
+    const result = await this.prisma.supportTicket.findMany({
+      select: { id: true, userId: true, subject: true, status: true, priority: true, createdAt: true, updatedAt: true },
+      orderBy: [{ priority: 'desc' }, { updatedAt: 'asc' }],
+      take: 100,
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.support_tickets_read',
+        metadata: { resultCount: result.length },
+      },
+    });
+    return result;
+  }
+
+  async health(admin: AdminClaims) {
+    requirePermission(admin, 'health.read');
+    const [failedJobs, activeJobs, recentJobs] = await Promise.all([
+      this.prisma.backgroundJobRecord.count({ where: { status: 'failed' } }),
+      this.prisma.backgroundJobRecord.count({ where: { status: { in: ['queued', 'running'] } } }),
+      this.prisma.backgroundJobRecord.findMany({
+        select: { id: true, queue: true, jobKey: true, status: true, attempts: true, lastError: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+      }),
+    ]);
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.health_read',
+        metadata: { failedJobs, activeJobs, recentJobCount: recentJobs.length },
+      },
+    });
+    return { failedJobs, activeJobs, recentJobs };
+  }
 }

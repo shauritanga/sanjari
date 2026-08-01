@@ -149,4 +149,24 @@ describe('admin operations RBAC contracts', () => {
     expect(result.enabled).toBe(true);
     expect(tx.auditLog.create).toHaveBeenCalled();
   });
+
+  it('returns operational job health and audits the read', async () => {
+    const audit = vi.fn().mockResolvedValue({});
+    const prisma = {
+      backgroundJobRecord: {
+        count: vi.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(1),
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'job-1', queue: 'ranking', jobKey: 'user-1', status: 'failed', attempts: 3, lastError: 'timeout', updatedAt: new Date() },
+        ]),
+      },
+      auditLog: { create: audit },
+    };
+    const result = await new AdminOperationsService(prisma as never).health(
+      admin(['health.read']),
+    );
+    expect(result.failedJobs).toBe(2);
+    expect(result.activeJobs).toBe(1);
+    expect(result.recentJobs).toHaveLength(1);
+    expect(audit).toHaveBeenCalled();
+  });
 });

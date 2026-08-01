@@ -8,7 +8,7 @@ Give authorized staff a secure, auditable operational console without exposing u
 
 In progress. The implemented W07 slice includes database-backed admin sessions, HTTP-only cookies, CSRF protection, production MFA fail-closed behavior, permission-gated moderation operations, redacted user search, reversible user suspension, role assignment, verification review, audited dashboard metrics, audited feature-flag updates, audit-log access auditing, and permission-aware admin navigation.
 
-Remaining W07 work includes owner-supplied MFA provider integration, configuration/notification/support queues, operational incident analytics, and full admin route coverage.
+Remaining W07 work includes owner-supplied MFA provider integration, write workflows for support/notification queues, deeper operational incident analytics, and the remaining read-only admin routes.
 
 ## Roles And Permissions
 
@@ -36,6 +36,7 @@ Support agent, moderator, senior moderator, verification officer, finance office
 - Moderation queue/action endpoints require `reports.resolve` and CSRF tokens on mutations.
 - `GET /api/v1/admin/operations/roles` and `PATCH /api/v1/admin/operations/admins/:adminUserId/roles` require `configuration.manage` and audit role changes.
 - `GET /api/v1/admin/operations/flags` and `PATCH /api/v1/admin/operations/flags/:flagId` require `configuration.manage`, CSRF for mutations, and audit before/after flag state.
+- Notification, support, and job-health views are exposed through `notifications.manage`, `support.read`, and `health.read`; each read is audited and returns minimized operational metadata.
 - Verification queue/review endpoints require `verification.review`; the admin UI confirms and records approve/reject decisions.
 - The operations dashboard requires `analytics.read` and returns aggregate counts only.
 - User, audit, report, appeal, verification, feature-flag, role, and dashboard admin pages consume live APIs; destructive mutations require browser confirmation.
@@ -43,5 +44,5 @@ Support agent, moderator, senior moderator, verification officer, finance office
 
 ## Verification
 
-- API: 17 test files, 41 tests passing; typecheck and lint passing.
+- API: 17 test files, 42 tests passing; typecheck and lint passing.
 - Admin: typecheck passing; changed-route lint passing; production build passing with `/flags` and `/roles` included.

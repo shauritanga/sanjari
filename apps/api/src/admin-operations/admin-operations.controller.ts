@@ -103,6 +103,24 @@ export class AdminOperationsController {
     return { data: await this.operations.updateFeatureFlag(request.admin!, flagId, dto) };
   }
 
+  @Get('notifications')
+  @SetMetadata('adminPermission', 'notifications.manage')
+  async notifications(@Req() request: AdminRequest) {
+    return { data: await this.operations.notifications(request.admin!) };
+  }
+
+  @Get('support')
+  @SetMetadata('adminPermission', 'support.read')
+  async support(@Req() request: AdminRequest) {
+    return { data: await this.operations.supportTickets(request.admin!) };
+  }
+
+  @Get('health')
+  @SetMetadata('adminPermission', 'health.read')
+  async health(@Req() request: AdminRequest) {
+    return { data: await this.operations.health(request.admin!) };
+  }
+
   @Patch('users/:userId/suspend')
   @SetMetadata('adminPermission', 'users.suspend')
   @UseGuards(AdminCsrfGuard)
