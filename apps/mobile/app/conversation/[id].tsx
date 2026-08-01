@@ -4,6 +4,7 @@ import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { api } from '../../src/api';
+import { drainMessages, enqueueMessage } from '../../src/offline-message-queue';
 import { theme } from '../../src/theme/theme';
 type Message = {
   id: string;
@@ -24,17 +25,24 @@ export default function ConversationScreen() {
       .catch((cause) =>
         setError(cause instanceof Error ? cause.message : 'Unable to load conversation.'),
       );
+    void drainMessages(async (message) => {
+      if (message.conversationId === id)
+        await api.post(`/conversations/${id}/messages`, { body: message.body });
+    });
   }, [id]);
   async function send() {
     if (!body.trim()) return;
+    const text = body.trim();
     try {
       const result = await api.post<Message>(`/conversations/${id}/messages`, {
-        body: body.trim(),
+        body: text,
       });
       if (result.data) setMessages((current) => [result.data!, ...current]);
       setBody('');
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to send message.');
+    } catch {
+      await enqueueMessage({ conversationId: id, body: text });
+      setBody('');
+      setError('Message queued and will retry when connected.');
     }
   }
   return (

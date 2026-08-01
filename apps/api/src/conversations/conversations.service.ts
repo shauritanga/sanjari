@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
 import { AttachmentStorageService } from './attachment-storage.service';
+import { AttachmentScanService } from './attachment-scan.service';
 
 function hasSuspiciousLink(body: string): boolean {
   return /(?:https?:\/\/|www\.)[^\s]+/i.test(body);
@@ -11,6 +12,7 @@ export class ConversationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly attachmentStorage: AttachmentStorageService,
+    private readonly attachmentScan: AttachmentScanService,
   ) {}
 
   private async authorize(userId: string, conversationId: string) {
@@ -267,9 +269,11 @@ export class ConversationsService {
         code: 'ATTACHMENT_NOT_ALLOWED',
         message: 'Attachments can only be added to your own message.',
       });
-    return this.prisma.messageAttachment.create({
+    const attachment = await this.prisma.messageAttachment.create({
       data: { messageId, storageKey, mimeType, sizeBytes, status: 'pending_scan' },
       select: { id: true, status: true, mimeType: true, sizeBytes: true },
     });
+    await this.attachmentScan.enqueue(attachment.id);
+    return attachment;
   }
 }

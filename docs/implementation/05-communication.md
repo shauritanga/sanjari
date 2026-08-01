@@ -29,5 +29,8 @@ Provide reliable, consent-based communication only between active matched users.
 - Authenticated Socket.IO gateway events for message send, recovery, typing, presence, and JWT handshake validation.
 - Private attachment presign/complete contracts with MIME/size checks and pending-scan state.
 - Reactions and server-side push-token hashing/preferences APIs.
+- SecureStore-backed offline message queue with bounded retry recovery.
+- BullMQ attachment-scan worker that fails closed to `pending_review` without a configured scanner.
+- Fail-closed push delivery provider interface with category preference enforcement and generic payloads.
 
-Provider-specific push delivery, offline queue persistence, and the media scanning worker remain infrastructure integrations; notification payloads remain generic by default.
+Provider credentials and a production media scanner remain owner-supplied integrations; notification payloads remain generic by default.

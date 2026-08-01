@@ -29,7 +29,7 @@ function prismaForMessage() {
 describe('communication integration contracts', () => {
   it('holds suspicious links for review and audits the signal', async () => {
     const prisma = prismaForMessage();
-    const result = await new ConversationsService(prisma as never, {} as never).send(
+    const result = await new ConversationsService(prisma as never, {} as never, {} as never).send(
       'user-1',
       'conversation-1',
       'visit https://example.test',
@@ -53,7 +53,7 @@ describe('communication integration contracts', () => {
     const prisma = prismaForMessage();
     prisma.block.findFirst.mockResolvedValue({ id: 'block-1' });
     await expect(
-      new ConversationsService(prisma as never, {} as never).send(
+      new ConversationsService(prisma as never, {} as never, {} as never).send(
         'user-1',
         'conversation-1',
         'hello',
@@ -66,7 +66,7 @@ describe('communication integration contracts', () => {
     const prisma = prismaForMessage();
     prisma.conversation.findFirst.mockResolvedValue(null);
     await expect(
-      new ConversationsService(prisma as never, {} as never).history('user-1', 'conversation-1'),
+      new ConversationsService(prisma as never, {} as never, {} as never).history('user-1', 'conversation-1'),
     ).rejects.toMatchObject({ response: { code: 'CONVERSATION_ACCESS_DENIED' } });
   });
 });
