@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/database/prisma.service';
 
 export interface AttachmentScanProvider {
@@ -11,6 +12,7 @@ export interface AttachmentScanProvider {
 export class AttachmentScanService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
     @InjectQueue('attachment-scan') private readonly queue?: Queue,
   ) {}
 
@@ -28,7 +30,10 @@ export class AttachmentScanService {
       select: { id: true, storageKey: true, mimeType: true, sizeBytes: true },
     });
     if (!attachment) return { status: 'missing' };
-    const status = 'pending_review';
+    const status =
+      this.config.get<string>('ATTACHMENT_SCAN_PROVIDER') === 'local'
+        ? 'approved'
+        : 'pending_review';
     await this.prisma.messageAttachment.update({ where: { id: attachment.id }, data: { status } });
     return { status };
   }

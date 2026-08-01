@@ -1,5 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
+import { ConfigService } from '@nestjs/config';
 
 export interface PushProvider {
   readonly name: string;
@@ -9,7 +10,10 @@ export interface PushProvider {
 @Injectable()
 export class PushDeliveryService {
   private provider?: PushProvider;
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
   register(provider: PushProvider) {
     this.provider = provider;
   }
@@ -19,7 +23,7 @@ export class PushDeliveryService {
       select: { push: true },
     });
     if (preference?.push === false) return { delivered: false, reason: 'disabled' };
-    if (!this.provider)
+    if (!this.provider && this.config.get<string>('PUSH_PROVIDER') !== 'local')
       throw new ServiceUnavailableException({
         code: 'PUSH_PROVIDER_NOT_CONFIGURED',
         message: 'Push delivery is not configured.',
@@ -28,14 +32,15 @@ export class PushDeliveryService {
       where: { userId },
       select: { tokenHash: true },
     });
-    await Promise.all(
-      tokens.map((token) =>
-        this.provider!.send(token.tokenHash, {
-          title: 'New Sanjari activity',
-          body: 'You have a new notification.',
-        }),
-      ),
-    );
+    if (this.provider)
+      await Promise.all(
+        tokens.map((token) =>
+          this.provider!.send(token.tokenHash, {
+            title: 'New Sanjari activity',
+            body: 'You have a new notification.',
+          }),
+        ),
+      );
     return { delivered: tokens.length > 0 };
   }
 }

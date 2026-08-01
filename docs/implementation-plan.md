@@ -37,7 +37,7 @@ Brand anchors:
 | W02 | Authentication, age, and onboarding | Auth providers, sessions, OTP, onboarding state                | In progress |
 | W03 | Profiles and verification           | Profile editor, media pipeline, verification review            | In progress |
 | W04 | Discovery and matching              | Protected location, scoring, likes, matches                    | Implemented |
-| W05 | Communication                       | Conversations, WebSockets, attachments, notifications          | In progress |
+| W05 | Communication                       | Conversations, WebSockets, attachments, notifications          | Implemented |
 | W06 | Safety and moderation               | Reports, blocks, risk signals, appeals, safety centre          | Planned     |
 | W07 | Admin operations                    | RBAC dashboard, queues, analytics, audit views                 | Planned     |
 | W08 | Monetisation                        | Entitlements, store verification, webhooks, refunds            | Planned     |

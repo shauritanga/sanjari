@@ -21,4 +21,6 @@ export const appConfigSchema = z.object({
   SMTP_FROM: z.email().default('support@sanjari.app'),
   SMS_PROVIDER: z.enum(['disabled', 'mailpit']).default('disabled'),
   SMS_DEV_INBOX: z.email().default('sms@sanjari.test'),
+  PUSH_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
+  ATTACHMENT_SCAN_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
 });

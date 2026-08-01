@@ -8,7 +8,10 @@ describe('push delivery provider contract', () => {
       pushToken: { findMany: vi.fn().mockResolvedValue([]) },
     };
     await expect(
-      new PushDeliveryService(prisma as never).deliverGeneric('user-1', 'messages'),
+      new PushDeliveryService(
+        prisma as never,
+        { get: vi.fn().mockReturnValue('disabled') } as never,
+      ).deliverGeneric('user-1', 'messages'),
     ).rejects.toMatchObject({ response: { code: 'PUSH_PROVIDER_NOT_CONFIGURED' } });
   });
 });
