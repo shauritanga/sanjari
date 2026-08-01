@@ -26,4 +26,6 @@ export const appConfigSchema = z.object({
   MODERATION_EVIDENCE_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
   DATA_EXPORT_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
   ADMIN_MFA_PROVIDER: z.enum(['disabled', 'owner']).default('disabled'),
+  PURCHASE_VERIFICATION_PROVIDER: z.enum(['disabled', 'local', 'owner']).default('disabled'),
+  PURCHASE_WEBHOOK_SECRET: z.string().default(''),
 });

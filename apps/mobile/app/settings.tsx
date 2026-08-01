@@ -26,6 +26,9 @@ export default function SettingsScreen() {
         <Link href="/safety" style={styles.safetyLink}>
           Safety Centre
         </Link>
+        <Link href="/premium" style={styles.safetyLink}>
+          Premium access
+        </Link>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {sessions.map((session) => (
           <View key={session.id} style={styles.row}>

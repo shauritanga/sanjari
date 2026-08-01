@@ -16,11 +16,6 @@ export class DiscoveryEntitlementService {
       orderBy: { endsAt: 'desc' },
     });
     const metadata = subscription?.plan.metadata;
-    return (
-      typeof metadata === 'object' &&
-      metadata !== null &&
-      !Array.isArray(metadata) &&
-      (metadata as { undo?: boolean }).undo === true
-    );
+    return typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata) && (metadata as { undo?: boolean }).undo === true;
   }
 }
