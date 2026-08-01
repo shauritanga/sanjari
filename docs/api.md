@@ -88,3 +88,13 @@ Profile routes require a valid access token. Photo uploads are presigned, limite
 | `PATCH`  | `/api/v1/onboarding/discovery-pause`            | Pause or resume discovery visibility                     |
 | `GET`    | `/api/v1/onboarding/verification`               | Read verification case status without exposing artifacts |
 | `POST`   | `/api/v1/onboarding/verification/:type/request` | Request selfie/liveness or identity-document review      |
+
+## Discovery And Matching
+
+Discovery routes require a valid access token. Responses contain broad distance categories only; exact coordinates are never returned.
+
+| Method | Route                            | Purpose                                                                |
+| ------ | -------------------------------- | ---------------------------------------------------------------------- |
+| `GET`  | `/api/v1/discovery`              | Return privacy-safe, explainable discovery candidates                  |
+| `POST` | `/api/v1/discovery/:userId/like` | Record an idempotent like and create a match on reciprocal eligibility |
+| `POST` | `/api/v1/discovery/:userId/pass` | Record an idempotent pass with a cooldown                              |

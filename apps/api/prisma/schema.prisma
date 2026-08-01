@@ -310,11 +310,13 @@ model Pass {
   id         String    @id @default(uuid()) @db.Uuid
   senderId   String    @db.Uuid
   receiverId String    @db.Uuid
+  idempotencyKey String?
   expiresAt  DateTime?
   createdAt  DateTime  @default(now())
   sender     User      @relation("passes_sent", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
+  @@unique([senderId, idempotencyKey])
 }
 
 model Match {

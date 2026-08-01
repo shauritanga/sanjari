@@ -19,3 +19,13 @@ Deliver fast, explainable discovery and mutual matching without exposing exact l
 - Every shown recommendation records generation reason, component scores, ranking version, and outcome.
 - A match exists only when both eligible users like each other.
 - Unmatch, block, and report immediately prevent unauthorized further messaging while retaining required evidence.
+
+## Implemented In This Slice
+
+- Authenticated discovery cards with adult, active, published, approved, unpaused, block, like, and pass exclusions.
+- Privacy-safe age, broad city, distance category, verification status, and primary-photo responses; exact coordinates are never returned.
+- Explainable `w04-rules-v1` scoring and persisted recommendation generation/outcome events.
+- Idempotent like/pass actions and canonical, transaction-safe mutual match creation.
+- Mobile discovery cards with empty, error, like, and pass states.
+
+Protected coordinate distance, daily action limits, undo entitlements, and worker-backed ranking evaluation remain subsequent hardening work.
