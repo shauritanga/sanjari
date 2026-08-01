@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from '../auth/access-token.guard';
-import { AppealDto, BlockDto, ReportDto } from './dto';
+import { AppealDto, BlockDto, DataDeletionDto, ReportDto } from './dto';
 import { ModerationService } from './moderation.service';
 
 @UseGuards(AccessTokenGuard)
@@ -9,8 +9,23 @@ export class ModerationController {
   constructor(private readonly moderation: ModerationService) {}
 
   @Get('safety/guidance')
-  guidance() {
-    return { data: this.moderation.guidance() };
+  guidance(@Query('locale') locale?: string) {
+    return { data: this.moderation.guidance(locale) };
+  }
+
+  @Get('safety/data-controls')
+  async dataControls(@Req() request: AuthenticatedRequest) {
+    return { data: await this.moderation.dataControls(request.user!.sub) };
+  }
+
+  @Post('safety/data-export')
+  async dataExport(@Req() request: AuthenticatedRequest) {
+    return { data: await this.moderation.requestDataExport(request.user!.sub) };
+  }
+
+  @Post('safety/account-deletion')
+  async accountDeletion(@Req() request: AuthenticatedRequest, @Body() dto: DataDeletionDto) {
+    return { data: await this.moderation.requestAccountDeletion(request.user!.sub, dto) };
   }
 
   @Get('blocks')

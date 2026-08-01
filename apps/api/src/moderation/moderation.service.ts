@@ -3,6 +3,7 @@ import { PrismaService } from '../common/database/prisma.service';
 import {
   AppealDto,
   BlockDto,
+  DataDeletionDto,
   ModerationActionDto,
   ModerationCaseUpdateDto,
   ReportDto,
@@ -324,36 +325,145 @@ export class ModerationService {
     return { id: appeal.id, caseId: appeal.caseId, status: appeal.status };
   }
 
-  guidance() {
+  guidance(locale = 'en') {
+    const swahili = locale.toLowerCase().startsWith('sw');
     return {
-      title: 'Sanjari Safety Centre',
-      sections: [
-        {
-          key: 'scams',
-          title: 'Watch for scams',
-          body: 'Never send money, codes, or financial details to someone you met here.',
-        },
-        {
-          key: 'privacy',
-          title: 'Protect your privacy',
-          body: 'Share personal details gradually and keep your home, work, and account information private.',
-        },
-        {
-          key: 'meetings',
-          title: 'Meet safely',
-          body: 'Choose a public place, tell someone you trust, and arrange your own transport.',
-        },
-        {
-          key: 'verification',
-          title: 'What verification means',
-          body: 'Verification supports account authenticity checks. It does not guarantee identity, intent, or safety.',
-        },
-        {
-          key: 'emergency',
-          title: 'Immediate danger',
-          body: 'Contact local emergency services and someone you trust. Use Sanjari reporting for platform action.',
-        },
-      ],
+      title: swahili ? 'Kituo cha Usalama cha Sanjari' : 'Sanjari Safety Centre',
+      sections: swahili
+        ? [
+            {
+              key: 'scams',
+              title: 'Jihadhari na utapeli',
+              body: 'Usitume pesa, misimbo, au taarifa za kifedha kwa mtu uliyekutana naye hapa.',
+            },
+            {
+              key: 'privacy',
+              title: 'Linda faragha yako',
+              body: 'Toa taarifa binafsi taratibu na ficha anwani ya nyumbani, kazi, na akaunti zako.',
+            },
+            {
+              key: 'meetings',
+              title: 'Kutana kwa usalama',
+              body: 'Chagua eneo la wazi, mjulishe mtu unayemwamini, na panga usafiri wako mwenyewe.',
+            },
+            {
+              key: 'guidelines',
+              title: 'Miongozo ya jamii',
+              body: 'Heshimu mipaka, usitishie wengine, na usitumie Sanjari kwa ulaghai au unyanyasaji.',
+            },
+            {
+              key: 'verification',
+              title: 'Maana ya uthibitishaji',
+              body: 'Uthibitishaji unaonyesha ukaguzi uliofanywa. Hauhakikishi utambulisho, nia, au usalama wa mtu.',
+            },
+            {
+              key: 'emergency',
+              title: 'Hatari ya haraka',
+              body: 'Wasiliana na huduma za dharura na mtu unayemwamini. Tumia ripoti ya Sanjari kwa hatua za jukwaa.',
+            },
+            {
+              key: 'data',
+              title: 'Dhibiti data yako',
+              body: 'Unaweza kuomba nakala ya data yako au kuomba kufuta akaunti yako katika sehemu hii.',
+            },
+          ]
+        : [
+            {
+              key: 'scams',
+              title: 'Watch for scams',
+              body: 'Never send money, codes, or financial details to someone you met here.',
+            },
+            {
+              key: 'privacy',
+              title: 'Protect your privacy',
+              body: 'Share personal details gradually and keep your home, work, and account information private.',
+            },
+            {
+              key: 'meetings',
+              title: 'Meet safely',
+              body: 'Choose a public place, tell someone you trust, and arrange your own transport.',
+            },
+            {
+              key: 'guidelines',
+              title: 'Community guidelines',
+              body: 'Respect boundaries, do not threaten others, and never use Sanjari for fraud or harassment.',
+            },
+            {
+              key: 'verification',
+              title: 'What verification means',
+              body: 'Verification supports account authenticity checks. It does not guarantee identity, intent, or safety.',
+            },
+            {
+              key: 'emergency',
+              title: 'Immediate danger',
+              body: 'Contact local emergency services and someone you trust. Use Sanjari reporting for platform action.',
+            },
+            {
+              key: 'data',
+              title: 'Control your data',
+              body: 'You can request a copy of your data or request account deletion from this centre.',
+            },
+          ],
     };
+  }
+
+  async dataControls(userId: string) {
+    const [exports, deletions] = await Promise.all([
+      this.prisma.dataExportRequest.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      this.prisma.accountDeletionRequest.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+    return { exports, deletions };
+  }
+
+  async requestDataExport(userId: string) {
+    const existing = await this.prisma.dataExportRequest.findFirst({
+      where: { userId, status: { in: ['requested', 'processing'] } },
+    });
+    if (existing) return { id: existing.id, status: existing.status };
+    const request = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.dataExportRequest.create({ data: { userId, status: 'requested' } });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          actorType: 'user',
+          action: 'privacy.export_requested',
+          metadata: { requestId: created.id },
+        },
+      });
+      return created;
+    });
+    return { id: request.id, status: request.status };
+  }
+
+  async requestAccountDeletion(userId: string, dto: DataDeletionDto) {
+    const existing = await this.prisma.accountDeletionRequest.findFirst({
+      where: { userId, status: { in: ['requested', 'scheduled'] } },
+    });
+    if (existing)
+      return { id: existing.id, status: existing.status, executeAfter: existing.executeAfter };
+    const executeAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const request = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.accountDeletionRequest.create({
+        data: { userId, status: 'scheduled', reason: dto.reason ?? null, executeAfter },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          actorType: 'user',
+          action: 'privacy.deletion_requested',
+          metadata: { requestId: created.id, executeAfter },
+        },
+      });
+      return created;
+    });
+    return { id: request.id, status: request.status, executeAfter: request.executeAfter };
   }
 }

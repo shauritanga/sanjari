@@ -96,3 +96,10 @@ export class ModerationActionDto {
   @MaxLength(1_000)
   reason!: string;
 }
+
+export class DataDeletionDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}

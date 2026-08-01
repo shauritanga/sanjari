@@ -1,5 +1,4 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import type { Job } from 'bullmq';
 import { ModerationRetentionService } from './moderation-retention.service';
 
 @Processor('moderation-retention')
@@ -8,7 +7,7 @@ export class ModerationRetentionWorker extends WorkerHost {
     super();
   }
 
-  async process(_job: Job) {
+  async process() {
     return this.retention.process();
   }
 }
