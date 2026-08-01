@@ -23,3 +23,12 @@ Create trustworthy, expressive profiles while isolating sensitive verification d
 - Profile content can be pending, approved, rejected, hidden, or under review.
 - Media processing failure leaves no publicly usable object and gives a recoverable client state.
 - Moderator access to verification data is permissioned and auditable.
+
+## Implemented In This Slice
+
+- Profile preview and persisted visibility settings for age, online status, and read receipts.
+- Six-photo direct-upload contract with MIME/size validation, pending-scan moderation state, reorder, primary selection, deletion, and audit events.
+- Discovery pause/resume endpoint and mobile profile editor.
+- Fail-closed selfie/liveness and identity-document provider interfaces with private verification-case status responses and request audit events.
+
+Storage signing, malware scanning, EXIF stripping, thumbnails, and production verification adapters remain worker/provider integrations that require configured infrastructure and owner credentials.

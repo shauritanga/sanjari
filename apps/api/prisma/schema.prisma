@@ -150,6 +150,7 @@ model Profile {
   completionScore        Int                  @default(0)
   publishedAt            DateTime?
   discoveryPausedAt      DateTime?
+  visibilitySettings     Json?
   version                Int                  @default(1)
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
@@ -172,6 +173,9 @@ model ProfilePhoto {
   position         Int
   isPrimary        Boolean  @default(false)
   moderationStatus String   @default("pending")
+  mimeType         String?
+  sizeBytes        Int?
+  processingStatus String   @default("pending_scan")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   profile          Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)

@@ -8,6 +8,8 @@ import {
   MaxLength,
   Min,
   MinLength,
+  IsBoolean,
+  IsIn,
 } from 'class-validator';
 
 export class OnboardingUpdateDto {
@@ -96,4 +98,45 @@ export class OnboardingUpdateDto {
   @IsString()
   @MaxLength(80)
   culturalPreference?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  hideAge?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hideOnlineStatus?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hideReadReceipts?: boolean;
+}
+
+export class PhotoPresignDto {
+  @IsString()
+  @IsIn(['image/jpeg', 'image/png', 'image/webp'])
+  mimeType!: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(10 * 1024 * 1024)
+  sizeBytes!: number;
+}
+
+export class PhotoCompleteDto {
+  @IsString()
+  @MinLength(8)
+  storageKey!: string;
+}
+
+export class PhotoReorderDto {
+  @IsArray()
+  @ArrayMaxSize(6)
+  @IsString({ each: true })
+  photoIds!: string[];
+}
+
+export class DiscoveryPauseDto {
+  @IsBoolean()
+  paused!: boolean;
 }

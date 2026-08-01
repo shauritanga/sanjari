@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
 import { OnboardingUpdateDto } from './dto';
+import { PhotoPresignDto } from './dto';
+import { StorageService } from './storage.service';
 
 const profileFields = [
   'displayName',
@@ -54,7 +56,10 @@ function completionScore(profile: ProfileSnapshot): number {
 
 @Injectable()
 export class ProfilesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   async getOnboarding(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -92,6 +97,7 @@ export class ProfilesService {
         exercisePreference: profile.exercisePreference,
         childrenPreference: profile.childrenPreference,
         culturalPreference: profile.culturalPreference,
+        visibilitySettings: profile.visibilitySettings,
       },
     };
   }
@@ -136,6 +142,24 @@ export class ProfilesService {
         }),
         ...(input.culturalPreference !== undefined && {
           culturalPreference: input.culturalPreference,
+        }),
+        ...((input.hideAge !== undefined ||
+          input.hideOnlineStatus !== undefined ||
+          input.hideReadReceipts !== undefined) && {
+          visibilitySettings: {
+            ...(typeof current.visibilitySettings === 'object' &&
+            current.visibilitySettings !== null &&
+            !Array.isArray(current.visibilitySettings)
+              ? current.visibilitySettings
+              : {}),
+            ...(input.hideAge !== undefined && { hideAge: input.hideAge }),
+            ...(input.hideOnlineStatus !== undefined && {
+              hideOnlineStatus: input.hideOnlineStatus,
+            }),
+            ...(input.hideReadReceipts !== undefined && {
+              hideReadReceipts: input.hideReadReceipts,
+            }),
+          },
         }),
         onboardingStep: Math.max(current.onboardingStep, input.step ?? current.onboardingStep),
         onboardingStatus: 'in_progress',
@@ -185,5 +209,112 @@ export class ProfilesService {
       data: { onboardingStatus: 'published', publishedAt: new Date(), completionScore: 100 },
     });
     return { userId, onboardingStatus: published.onboardingStatus, completionScore: 100 };
+  }
+
+  async preview(userId: string) {
+    return this.getOnboarding(userId);
+  }
+
+  async presignPhoto(userId: string, input: PhotoPresignDto) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!profile)
+      throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+    const count = await this.prisma.profilePhoto.count({ where: { profileId: profile.id } });
+    if (count >= 6)
+      throw new BadRequestException({
+        code: 'PHOTO_LIMIT_REACHED',
+        message: 'You can add up to six profile photos.',
+      });
+    return this.storage.presignProfilePhoto(userId, input.mimeType);
+  }
+
+  async completePhoto(userId: string, storageKey: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!profile || !storageKey.startsWith(`profiles/${userId}/`))
+      throw new BadRequestException({
+        code: 'INVALID_STORAGE_KEY',
+        message: 'The uploaded photo is invalid.',
+      });
+    const count = await this.prisma.profilePhoto.count({ where: { profileId: profile.id } });
+    const photo = await this.prisma.profilePhoto.create({
+      data: {
+        profileId: profile.id,
+        storageKey,
+        position: count,
+        isPrimary: count === 0,
+        moderationStatus: 'pending',
+        processingStatus: 'pending_scan',
+      },
+      select: { id: true, position: true, isPrimary: true, moderationStatus: true },
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        actorType: 'user',
+        action: 'profile.photo_uploaded',
+        metadata: { photoId: photo.id },
+      },
+    });
+    return photo;
+  }
+
+  async reorderPhotos(userId: string, photoIds: string[]) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!profile)
+      throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+    const photos = await this.prisma.profilePhoto.findMany({
+      where: { profileId: profile.id },
+      select: { id: true },
+    });
+    if (photos.length !== photoIds.length || photos.some((photo) => !photoIds.includes(photo.id)))
+      throw new BadRequestException({
+        code: 'INVALID_PHOTO_ORDER',
+        message: 'Photo order does not match your profile photos.',
+      });
+    await this.prisma.$transaction(
+      photoIds.map((id, position) =>
+        this.prisma.profilePhoto.update({
+          where: { id },
+          data: { position, isPrimary: position === 0 },
+        }),
+      ),
+    );
+    return this.prisma.profilePhoto.findMany({
+      where: { profileId: profile.id },
+      orderBy: { position: 'asc' },
+      select: { id: true, position: true, isPrimary: true, moderationStatus: true },
+    });
+  }
+
+  async deletePhoto(userId: string, photoId: string) {
+    const photo = await this.prisma.profilePhoto.findFirst({
+      where: { id: photoId, profile: { userId } },
+      select: { id: true, profileId: true },
+    });
+    if (!photo)
+      throw new NotFoundException({ code: 'PHOTO_NOT_FOUND', message: 'Photo not found.' });
+    await this.prisma.profilePhoto.delete({ where: { id: photo.id } });
+    await this.prisma.auditLog.create({
+      data: { userId, actorType: 'user', action: 'profile.photo_deleted', metadata: { photoId } },
+    });
+    return { deleted: true };
+  }
+
+  async setDiscoveryPaused(userId: string, paused: boolean) {
+    const profile = await this.prisma.profile.update({
+      where: { userId },
+      data: { discoveryPausedAt: paused ? new Date() : null },
+      select: { discoveryPausedAt: true },
+    });
+    return { paused: profile.discoveryPausedAt !== null };
   }
 }

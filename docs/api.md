@@ -73,3 +73,18 @@ Onboarding routes require a valid access token and persist progress server-side:
 | `GET`  | `/api/v1/onboarding`         | Read current step, completion score, age, and safe profile fields          |
 | `PUT`  | `/api/v1/onboarding`         | Save validated profile fields and advance progress without moving backward |
 | `POST` | `/api/v1/onboarding/publish` | Publish only when profile, media, and verification completion gates pass   |
+
+## Profiles And Verification
+
+Profile routes require a valid access token. Photo uploads are presigned, limited to six JPEG/PNG/WebP files up to 10 MB each, and remain pending scan/moderation until a storage worker approves them.
+
+| Method   | Route                                           | Purpose                                                  |
+| -------- | ----------------------------------------------- | -------------------------------------------------------- |
+| `GET`    | `/api/v1/onboarding/preview`                    | Return the caller's safe profile preview                 |
+| `POST`   | `/api/v1/onboarding/photos/presign`             | Create a short-lived direct-upload contract              |
+| `POST`   | `/api/v1/onboarding/photos/complete`            | Register an uploaded photo as pending moderation         |
+| `PATCH`  | `/api/v1/onboarding/photos/reorder`             | Reorder photos and select the primary photo              |
+| `DELETE` | `/api/v1/onboarding/photos/:photoId`            | Delete a caller-owned photo and audit the action         |
+| `PATCH`  | `/api/v1/onboarding/discovery-pause`            | Pause or resume discovery visibility                     |
+| `GET`    | `/api/v1/onboarding/verification`               | Read verification case status without exposing artifacts |
+| `POST`   | `/api/v1/onboarding/verification/:type/request` | Request selfie/liveness or identity-document review      |
