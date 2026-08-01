@@ -143,6 +143,12 @@ export class ModerationService {
           metadata: { riskScore: current.report.riskScore },
         },
       });
+      if (dto.action === 'suspend' || dto.action === 'ban') {
+        await tx.user.update({
+          where: { id: current.report.reportedUserId },
+          data: { status: dto.action === 'ban' ? 'banned' : 'suspended' },
+        });
+      }
       await tx.report.update({
         where: { id: current.reportId },
         data: { actionTaken: dto.action, status: 'actioned' },

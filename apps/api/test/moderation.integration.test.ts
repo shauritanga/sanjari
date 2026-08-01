@@ -11,6 +11,7 @@ function prismaForModeration() {
       create: vi.fn().mockResolvedValue({ id: 'report-1', status: 'submitted', priority: 'high' }),
       update: vi.fn().mockResolvedValue({}),
     },
+    user: { update: vi.fn().mockResolvedValue({}) },
     reportEvidence: { createMany: vi.fn().mockResolvedValue({}) },
     moderationCase: {
       create: vi.fn().mockResolvedValue({ id: 'case-1' }),
@@ -103,5 +104,15 @@ describe('safety and moderation integration contracts', () => {
       }),
     ).rejects.toMatchObject({ response: { code: 'REVIEW_REQUIRED' } });
     expect(prisma.tx.moderationAction.create).not.toHaveBeenCalled();
+  });
+
+  it('applies a human-reviewed suspension to the reported account transactionally', async () => {
+    const prisma = prismaForModeration();
+    const result = await new ModerationService(prisma as never).action('admin-1', 'case-1', {
+      action: 'suspend',
+      reason: 'Human review found an immediate safety risk.',
+    });
+    expect(result).toMatchObject({ caseId: 'case-1', status: 'actioned' });
+    expect(prisma.tx.user.update).toHaveBeenCalled();
   });
 });

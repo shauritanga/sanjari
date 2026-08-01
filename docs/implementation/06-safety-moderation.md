@@ -41,4 +41,6 @@ The workstream remains open until the W07-owned admin authentication/session con
 - The `account-deletion` worker executes due requests by anonymizing identity fields, revoking sessions/devices, removing profile data, and recording completion without deleting the audit trail.
 - The `data-export` worker generates a bounded JSON artifact in local mode, records an expiring download descriptor, and fails closed when `DATA_EXPORT_PROVIDER=disabled`; production durable storage remains an owner input.
 - `GET /api/v1/safety/data-export/:requestId` returns download metadata only to the requesting user while the artifact is unexpired.
+- Human-reviewed `suspend` and `ban` actions now update the target account status in the same transaction as the moderation action and audit event.
+- Emergency, suspected-underage, scam, and provider-incident procedures are documented in `docs/safety-escalation-runbook.md`.
 - API integration contracts cover these flows in `apps/api/test/moderation.integration.test.ts`.
