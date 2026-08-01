@@ -13,11 +13,16 @@ export default function LoginPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
-      const result = await adminRequest<{ csrfToken: string }>('/admin/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password, ...(mfaCode ? { mfaCode } : {}) }),
-      });
+      const result = await adminRequest<{ csrfToken: string; admin: { permissions: string[] } }>(
+        '/admin/auth/login',
+        {
+          method: 'POST',
+          body: JSON.stringify({ email, password, ...(mfaCode ? { mfaCode } : {}) }),
+        },
+      );
       if (result?.csrfToken) window.sessionStorage.setItem('sanjari.admin.csrf', result.csrfToken);
+      if (result?.admin)
+        window.sessionStorage.setItem('sanjari.admin.claims', JSON.stringify(result.admin));
       router.replace('/moderation');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to sign in.');

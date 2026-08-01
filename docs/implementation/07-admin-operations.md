@@ -4,6 +4,12 @@
 
 Give authorized staff a secure, auditable operational console without exposing unnecessary user data.
 
+## Delivery Status
+
+In progress. The first W07 slice is implemented: database-backed admin sessions, HTTP-only cookies, CSRF protection, production MFA fail-closed behavior, permission-gated moderation operations, redacted user search, reversible user suspension, audit-log access auditing, and permission-aware admin navigation.
+
+Remaining W07 work includes MFA provider integration, role/permission administration, verification/finance/configuration queues, operational metrics, and full admin route coverage.
+
 ## Roles And Permissions
 
 Support agent, moderator, senior moderator, verification officer, finance officer, administrator, and super administrator are permission bundles, not UI-only role labels. Enforce permissions such as `users.read`, `users.suspend`, `profiles.review`, `verification.review`, `reports.resolve`, `subscriptions.read`, `refunds.manage`, `configuration.manage`, and `audit.read` in the API.
@@ -20,3 +26,11 @@ Support agent, moderator, senior moderator, verification officer, finance office
 - Every administrative mutation is logged with before/after context appropriate to data minimization.
 - Sensitive fields are redacted by default and access is itself auditable.
 - Destructive actions require confirmation, reason, and reversible workflow where possible.
+
+## Verified Implementation Slice
+
+- `POST /api/v1/admin/auth/login` and logout use database-backed sessions with secure cookies; session tokens are never returned to the browser body.
+- `PATCH /api/v1/admin/operations/users/:userId/suspend` requires `users.suspend`, a reason, revokes active user sessions, and records before/after status metadata.
+- `GET /api/v1/admin/operations/users` requires `users.read`, returns a redacted projection, and audits access.
+- `GET /api/v1/admin/operations/audit` requires `audit.read` and audits the audit-log access itself.
+- Moderation queue/action endpoints require `reports.resolve` and CSRF tokens on mutations.
