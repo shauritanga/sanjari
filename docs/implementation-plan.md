@@ -27,6 +27,7 @@ Brand anchors:
 - Use explainable rules for initial recommendations and record ranking inputs and outcomes.
 - Do not claim end-to-end encryption, biometric certainty, or AI capability unless the implementation and evidence support the claim.
 - Every production feature needs an owner, acceptance criteria, failure states, and a rollback or disable path.
+- Do not advance to the next workstream until the current workstream's acceptance criteria, hardening checklist, migrations, integration tests, operational dependencies, and documentation are complete and verified.
 
 ## Workstreams
 
@@ -35,7 +36,7 @@ Brand anchors:
 | W01 | Foundation and architecture         | Monorepo, contracts, environments, database, CI                | In progress |
 | W02 | Authentication, age, and onboarding | Auth providers, sessions, OTP, onboarding state                | In progress |
 | W03 | Profiles and verification           | Profile editor, media pipeline, verification review            | In progress |
-| W04 | Discovery and matching              | Protected location, scoring, likes, matches                    | In progress |
+| W04 | Discovery and matching              | Protected location, scoring, likes, matches                    | Implemented |
 | W05 | Communication                       | Conversations, WebSockets, attachments, notifications          | In progress |
 | W06 | Safety and moderation               | Reports, blocks, risk signals, appeals, safety centre          | Planned     |
 | W07 | Admin operations                    | RBAC dashboard, queues, analytics, audit views                 | Planned     |

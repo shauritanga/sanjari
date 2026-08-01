@@ -9,6 +9,7 @@ import {
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/database/prisma.service';
 import { DiscoveryEntitlementService } from './entitlement.service';
+import type { ProtectedLocationDto } from './dto';
 
 const rankingVersion = 'w04-rules-v1';
 
@@ -156,6 +157,23 @@ export class DiscoveryService {
         code: 'SELF_ACTION_NOT_ALLOWED',
         message: 'You cannot interact with your own profile.',
       });
+    if (input.idempotencyKey) {
+      const prior = await this.prisma.discoveryAction.findUnique({
+        where: { userId_idempotencyKey: { userId, idempotencyKey: input.idempotencyKey } },
+      });
+      if (prior) {
+        if (prior.targetUserId !== candidateId)
+          throw new BadRequestException({
+            code: 'IDEMPOTENCY_KEY_REUSED',
+            message: 'The idempotency key was already used for another target.',
+          });
+        const existingLike = await this.prisma.like.findUnique({
+          where: { senderId_receiverId: { senderId: userId, receiverId: candidateId } },
+          select: { id: true },
+        });
+        return { liked: true, matched: false, likeId: existingLike?.id ?? prior.id };
+      }
+    }
     const candidate = await this.prisma.user.findUnique({
       where: { id: candidateId },
       select: { id: true, status: true },
@@ -199,6 +217,14 @@ export class DiscoveryService {
         create: { userAId, userBId },
         update: { status: 'active' },
       });
+      await tx.discoveryAction.create({
+        data: {
+          userId,
+          targetUserId: candidateId,
+          action: 'like',
+          ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
+        },
+      });
       await tx.recommendation.updateMany({
         where: { userId, candidateUserId: candidateId, rankingVersion, userAction: null },
         data: { userAction: 'liked', matchOutcome: 'matched' },
@@ -213,6 +239,19 @@ export class DiscoveryService {
         code: 'SELF_ACTION_NOT_ALLOWED',
         message: 'You cannot interact with your own profile.',
       });
+    if (idempotencyKey) {
+      const prior = await this.prisma.discoveryAction.findUnique({
+        where: { userId_idempotencyKey: { userId, idempotencyKey } },
+      });
+      if (prior) {
+        if (prior.targetUserId !== candidateId)
+          throw new BadRequestException({
+            code: 'IDEMPOTENCY_KEY_REUSED',
+            message: 'The idempotency key was already used for another target.',
+          });
+        return { passed: true, idempotencyKey };
+      }
+    }
     await this.prisma.$transaction(async (tx) => {
       await this.consumeDaily(tx, userId, 'pass', 200);
       await tx.pass.upsert({
@@ -285,6 +324,62 @@ export class DiscoveryService {
       });
     });
     return { undone: true, targetUserId: action.targetUserId, action: action.action };
+  }
+
+  async updateLocation(userId: string, input: ProtectedLocationDto) {
+    if (
+      !/^SRID=4326;POINT\s*\(-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\)$/i.test(input.protectedPointWkt)
+    ) {
+      throw new BadRequestException({
+        code: 'INVALID_PROTECTED_LOCATION',
+        message: 'Protected location format is invalid.',
+      });
+    }
+    const previous = await this.prisma.userLocation.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    const current = await this.prisma.userLocation.create({
+      data: {
+        userId,
+        protectedPointWkt: input.protectedPointWkt,
+        approximateCity: input.approximateCity ?? null,
+        accuracyMeters: input.accuracyMeters ?? null,
+        source: input.source,
+      },
+    });
+    if (previous) {
+      const [distance] = await this.prisma.$queryRaw<
+        Array<{ distanceKm: number }>
+      >`SELECT ST_Distance(ST_GeogFromText(${previous.protectedPointWkt}), ST_GeogFromText(${input.protectedPointWkt})) / 1000 AS "distanceKm"`;
+      const elapsedMinutes = Math.max(
+        1,
+        Math.round((current.createdAt.getTime() - previous.createdAt.getTime()) / 60000),
+      );
+      const distanceKm = Number(distance?.distanceKm ?? 0);
+      if (distanceKm > 100 && elapsedMinutes < 180) {
+        const severity = distanceKm > 500 ? 'high' : 'medium';
+        await this.prisma.locationAnomaly.create({
+          data: {
+            userId,
+            previousLocationId: previous.id,
+            currentLocationId: current.id,
+            distanceKm,
+            elapsedMinutes,
+            severity,
+          },
+        });
+        await this.prisma.riskSignal.create({
+          data: {
+            userId,
+            type: 'location_velocity_anomaly',
+            severity,
+            metadata: { distanceKm, elapsedMinutes },
+          },
+        });
+      }
+    }
+    return { saved: true, approximateCity: current.approximateCity };
   }
 
   private distanceCategory(distanceKm?: number): string {

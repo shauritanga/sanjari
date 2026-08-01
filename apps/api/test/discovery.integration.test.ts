@@ -47,6 +47,7 @@ describe('discovery and matching integration contracts', () => {
       recommendation: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     };
     const prisma = {
+      discoveryAction: { findUnique: vi.fn().mockResolvedValue(null) },
       $transaction: vi.fn((callback: (value: typeof tx) => unknown) => callback(tx)),
     };
     await new DiscoveryService(prisma as never, {} as never).pass('user-1', 'user-2', 'pass-1');

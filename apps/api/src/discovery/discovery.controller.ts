@@ -1,6 +1,6 @@
 import { Body, Controller, Param, Post, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from '../auth/access-token.guard';
-import { DiscoveryQueryDto, LikeDto, PassDto, UndoDto } from './dto';
+import { DiscoveryQueryDto, LikeDto, PassDto, ProtectedLocationDto, UndoDto } from './dto';
 import { DiscoveryService } from './discovery.service';
 
 @UseGuards(AccessTokenGuard)
@@ -34,5 +34,10 @@ export class DiscoveryController {
   @Post('undo')
   async undo(@Req() request: AuthenticatedRequest, @Body() dto: UndoDto) {
     return { data: await this.discovery.undo(request.user!.sub, dto.targetUserId) };
+  }
+
+  @Post('location')
+  async location(@Req() request: AuthenticatedRequest, @Body() dto: ProtectedLocationDto) {
+    return { data: await this.discovery.updateLocation(request.user!.sub, dto) };
   }
 }

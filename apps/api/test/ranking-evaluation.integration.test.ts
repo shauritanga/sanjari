@@ -10,6 +10,7 @@ describe('ranking evaluation worker contract', () => {
       recommendation: {
         count: vi.fn().mockResolvedValueOnce(10).mockResolvedValueOnce(4).mockResolvedValueOnce(2),
       },
+      rankingEvaluation: { create: vi.fn().mockResolvedValue({}) },
     };
     const worker = new RankingEvaluationService(prisma as never);
     await expect(worker.enqueue('w04-rules-v1')).resolves.toEqual({

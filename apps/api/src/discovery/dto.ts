@@ -1,4 +1,14 @@
-import { IsBoolean, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class DiscoveryQueryDto {
   @IsOptional()
@@ -40,4 +50,26 @@ export class UndoDto {
   @IsString()
   @MinLength(1)
   targetUserId?: string;
+}
+
+export class ProtectedLocationDto {
+  @IsString()
+  @MinLength(9)
+  protectedPointWkt!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  approximateCity?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10000)
+  accuracyMeters?: number;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(40)
+  source!: string;
 }

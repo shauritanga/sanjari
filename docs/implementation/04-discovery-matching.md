@@ -29,6 +29,7 @@ Deliver fast, explainable discovery and mutual matching without exposing exact l
 - Mobile discovery cards with empty, error, like, and pass states.
 - PostGIS-backed protected-location distance filtering with category-only responses.
 - Server-enforced daily like/pass limits, premium entitlement-gated undo, and persisted action history.
-- Queue-compatible ranking evaluation service with durable job status and action/match-rate metrics.
+- BullMQ ranking evaluation worker with durable job status and persisted action/match-rate metrics.
+- Protected location update endpoint with velocity-anomaly persistence and risk signals.
 
-Production queue transport, entitlement purchase verification, and location anomaly detection remain operational hardening work.
+Store entitlement verification remains governed by W08; W04 only consumes server-side entitlement state and never grants premium access from client state.

@@ -344,6 +344,32 @@ model DiscoveryDailyUsage {
   @@unique([userId, action, day])
 }
 
+model RankingEvaluation {
+  id            String   @id @default(uuid()) @db.Uuid
+  rankingVersion String
+  shown         Int
+  acted         Int
+  matched       Int
+  actionRate    Decimal  @db.Decimal(8, 6)
+  matchRate     Decimal  @db.Decimal(8, 6)
+  createdAt     DateTime @default(now())
+
+  @@index([rankingVersion, createdAt])
+}
+
+model LocationAnomaly {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  previousLocationId String? @db.Uuid
+  currentLocationId  String  @db.Uuid
+  distanceKm     Decimal  @db.Decimal(10, 2)
+  elapsedMinutes Int
+  severity       String
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
 model Match {
   id             String        @id @default(uuid()) @db.Uuid
   userAId        String        @db.Uuid

@@ -45,6 +45,16 @@ export class RankingEvaluationService {
         actionRate: shown === 0 ? 0 : acted / shown,
         matchRate: shown === 0 ? 0 : matched / shown,
       };
+      await this.prisma.rankingEvaluation.create({
+        data: {
+          rankingVersion,
+          shown,
+          acted,
+          matched,
+          actionRate: result.actionRate,
+          matchRate: result.matchRate,
+        },
+      });
       await this.prisma.backgroundJobRecord.update({
         where: { queue_jobKey: { queue: 'ranking-evaluation', jobKey } },
         data: { status: 'completed', lastError: null },
