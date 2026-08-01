@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UserSearchQueryDto {
   @IsOptional()
@@ -24,6 +24,11 @@ export class AuditQueryDto {
 export class RoleAssignmentDto {
   @IsString()
   roleId!: string;
+}
+
+export class FeatureFlagUpdateDto {
+  @IsBoolean()
+  enabled!: boolean;
 }
 
 export class VerificationReviewDto {

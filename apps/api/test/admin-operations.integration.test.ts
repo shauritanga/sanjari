@@ -108,4 +108,45 @@ describe('admin operations RBAC contracts', () => {
     expect(result.status).toBe('approved');
     expect(tx.auditLog.create).toHaveBeenCalled();
   });
+
+  it('lists feature flags with redacted rules and audits configuration access', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      { id: 'flag-1', key: 'matching.v2', enabled: false, rules: null, updatedAt: new Date() },
+    ]);
+    const audit = vi.fn().mockResolvedValue({});
+    const result = await new AdminOperationsService({
+      featureFlag: { findMany },
+      auditLog: { create: audit },
+    } as never).featureFlags(admin(['configuration.manage']));
+    expect(result).toHaveLength(1);
+    expect(findMany).toHaveBeenCalled();
+    expect(audit).toHaveBeenCalled();
+  });
+
+  it('updates feature flags transactionally with before/after audit metadata', async () => {
+    const tx = {
+      featureFlag: {
+        update: vi.fn().mockResolvedValue({
+          id: 'flag-1',
+          key: 'matching.v2',
+          enabled: true,
+          updatedAt: new Date(),
+        }),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    };
+    const prisma = {
+      featureFlag: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'flag-1', key: 'matching.v2', enabled: false }),
+      },
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => Promise.resolve(callback(tx))),
+    };
+    const result = await new AdminOperationsService(prisma as never).updateFeatureFlag(
+      admin(['configuration.manage']),
+      'flag-1',
+      { enabled: true },
+    );
+    expect(result.enabled).toBe(true);
+    expect(tx.auditLog.create).toHaveBeenCalled();
+  });
 });

@@ -16,6 +16,7 @@ import type { AdminRequest } from '../admin-auth/admin-auth.types';
 import { AdminOperationsService } from './admin-operations.service';
 import {
   AuditQueryDto,
+  FeatureFlagUpdateDto,
   RoleAssignmentDto,
   UserSearchQueryDto,
   UserSuspensionDto,
@@ -83,6 +84,23 @@ export class AdminOperationsController {
   @SetMetadata('adminPermission', 'payments.read')
   async payments(@Req() request: AdminRequest) {
     return { data: await this.operations.payments(request.admin!) };
+  }
+
+  @Get('flags')
+  @SetMetadata('adminPermission', 'configuration.manage')
+  async featureFlags(@Req() request: AdminRequest) {
+    return { data: await this.operations.featureFlags(request.admin!) };
+  }
+
+  @Patch('flags/:flagId')
+  @SetMetadata('adminPermission', 'configuration.manage')
+  @UseGuards(AdminCsrfGuard)
+  async updateFeatureFlag(
+    @Req() request: AdminRequest,
+    @Param('flagId') flagId: string,
+    @Body() dto: FeatureFlagUpdateDto,
+  ) {
+    return { data: await this.operations.updateFeatureFlag(request.admin!, flagId, dto) };
   }
 
   @Patch('users/:userId/suspend')

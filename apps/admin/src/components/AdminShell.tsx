@@ -14,6 +14,7 @@ const navItems = [
   ['Payment Events', '/payments', 'payments.read'],
   ['Notifications', '/notifications', 'notifications.manage'],
   ['Feature Flags', '/flags', 'configuration.manage'],
+  ['Roles', '/roles', 'configuration.manage'],
   ['Matching', '/matching', 'configuration.manage'],
   ['Content', '/content', 'configuration.manage'],
   ['Support', '/support', 'support.read'],
@@ -39,7 +40,7 @@ export function AdminShell({ children }: Readonly<{ children: React.ReactNode }>
           {navItems
             .filter(([, , permission]) => !permission || permissions.includes(permission))
             .map(([label, href]) => (
-              <Link key={href} href={href}>
+              <Link key={href} href={href as never}>
                 {label}
               </Link>
             ))}

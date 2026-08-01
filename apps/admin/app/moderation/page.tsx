@@ -21,6 +21,7 @@ export default function ModerationPage() {
       .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to load queue.'));
   }, []);
   async function suspend(caseId: string) {
+    if (!window.confirm('Suspend the reported account after this moderation review?')) return;
     setBusy(caseId);
     try {
       await adminRequest(`/admin/moderation/cases/${caseId}/actions`, {

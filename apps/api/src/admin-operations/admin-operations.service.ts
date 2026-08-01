@@ -3,6 +3,7 @@ import type { AdminClaims } from '../admin-auth/admin-auth.types';
 import { PrismaService } from '../common/database/prisma.service';
 import {
   AuditQueryDto,
+  FeatureFlagUpdateDto,
   RoleAssignmentDto,
   UserSearchQueryDto,
   UserSuspensionDto,
@@ -193,6 +194,11 @@ export class AdminOperationsService {
         name: true,
         description: true,
         permissions: { select: { permission: { select: { key: true, description: true } } } },
+        admins: {
+          select: {
+            adminUser: { select: { id: true, email: true, displayName: true, status: true } },
+          },
+        },
       },
       orderBy: { name: 'asc' },
     });
@@ -346,5 +352,57 @@ export class AdminOperationsService {
       },
     });
     return result;
+  }
+
+  async featureFlags(admin: AdminClaims) {
+    requirePermission(admin, 'configuration.manage');
+    const result = await this.prisma.featureFlag.findMany({
+      select: { id: true, key: true, enabled: true, rules: true, updatedAt: true },
+      orderBy: { key: 'asc' },
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.feature_flags_read',
+        metadata: { resultCount: result.length },
+      },
+    });
+    return result;
+  }
+
+  async updateFeatureFlag(admin: AdminClaims, flagId: string, dto: FeatureFlagUpdateDto) {
+    requirePermission(admin, 'configuration.manage');
+    const current = await this.prisma.featureFlag.findUnique({
+      where: { id: flagId },
+      select: { id: true, key: true, enabled: true },
+    });
+    if (!current)
+      throw new NotFoundException({
+        code: 'FEATURE_FLAG_NOT_FOUND',
+        message: 'Feature flag not found.',
+      });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.featureFlag.update({
+        where: { id: flagId },
+        data: { enabled: dto.enabled },
+        select: { id: true, key: true, enabled: true, updatedAt: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.feature_flag_updated',
+          metadata: {
+            flagId,
+            key: current.key,
+            before: { enabled: current.enabled },
+            after: { enabled: result.enabled },
+          },
+        },
+      });
+      return result;
+    });
+    return updated;
   }
 }
