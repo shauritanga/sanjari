@@ -36,7 +36,7 @@ The workstream remains open until the W07-owned admin authentication/session con
 - `GET /api/v1/safety/guidance` powers the mobile Safety Centre and explicitly limits what verification proves.
 - The moderation service exposes a permission-gated queue and case action engine for `reports.resolve`; permanent bans require an investigated or escalated case and a human reason.
 - The `moderation-retention` worker purges evidence only after the configurable `MODERATION_EVIDENCE_RETENTION_DAYS` window and only for closed or dismissed cases, with a system audit event.
-- Mobile discovery cards expose block/report controls and conversation messages expose report-with-evidence controls.
+- Mobile discovery cards, matches, and conversation messages expose block/report controls; conversation reports preserve bounded message evidence references.
 - Safety guidance supports English and Swahili responses through the `locale` query, and data controls provide export requests plus seven-day account-deletion scheduling.
 - The `account-deletion` worker executes due requests by anonymizing identity fields, revoking sessions/devices, removing profile data, and recording completion without deleting the audit trail.
 - The `data-export` worker generates a bounded JSON artifact in local mode, records an expiring download descriptor, and fails closed when `DATA_EXPORT_PROVIDER=disabled`; production durable storage remains an owner input.
