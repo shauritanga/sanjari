@@ -2,16 +2,25 @@ import { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { AppButton } from '../src/components/AppButton';
+import { AppTextInput } from '../src/components/AppTextInput';
 import { api } from '../src/api';
 import { theme } from '../src/theme/theme';
 
 type Guidance = { title: string; sections: Array<{ key: string; title: string; body: string }> };
+type AppealCase = {
+  id: string;
+  status: string;
+  report: { category: string; appealStatus: string | null };
+  appeals: Array<{ id: string; status: string }>;
+};
 
 export default function SafetyScreen() {
   const { i18n } = useTranslation();
   const [guidance, setGuidance] = useState<Guidance | null>(null);
   const [error, setError] = useState('');
   const [dataMessage, setDataMessage] = useState('');
+  const [appeals, setAppeals] = useState<AppealCase[]>([]);
+  const [statements, setStatements] = useState<Record<string, string>>({});
 
   useEffect(() => {
     void api
@@ -20,7 +29,29 @@ export default function SafetyScreen() {
       .catch((cause) =>
         setError(cause instanceof Error ? cause.message : 'Unable to load safety guidance.'),
       );
+    void api
+      .get<AppealCase[]>('/safety/appeals')
+      .then((result) => setAppeals(result.data ?? []))
+      .catch(() => undefined);
   }, [i18n.language]);
+
+  async function submitAppeal(caseId: string) {
+    const statement = statements[caseId]?.trim();
+    if (!statement) return;
+    try {
+      await api.post(`/moderation/cases/${caseId}/appeals`, { statement });
+      setAppeals((current) =>
+        current.map((item) =>
+          item.id === caseId
+            ? { ...item, report: { ...item.report, appealStatus: 'submitted' } }
+            : item,
+        ),
+      );
+      setStatements((current) => ({ ...current, [caseId]: '' }));
+    } catch (cause) {
+      setDataMessage(cause instanceof Error ? cause.message : 'Unable to submit appeal.');
+    }
+  }
 
   async function requestExport() {
     try {
@@ -70,6 +101,27 @@ export default function SafetyScreen() {
           />
           {dataMessage ? <Text style={styles.footer}>{dataMessage}</Text> : null}
         </View>
+        {appeals.map((item) => (
+          <View key={item.id} style={styles.dataControls}>
+            <Text style={styles.sectionTitle}>Appeal a moderation decision</Text>
+            <Text style={styles.body}>
+              Category: {item.report.category}. Status:{' '}
+              {item.report.appealStatus ?? 'not submitted'}.
+            </Text>
+            {!item.report.appealStatus ? (
+              <>
+                <AppTextInput
+                  label="Your statement"
+                  value={statements[item.id] ?? ''}
+                  onChangeText={(value) =>
+                    setStatements((current) => ({ ...current, [item.id]: value }))
+                  }
+                />
+                <AppButton label="Submit appeal" onPress={() => void submitAppeal(item.id)} />
+              </>
+            ) : null}
+          </View>
+        ))}
         <Text style={styles.footer}>
           Use Block and Report from a profile, match, or conversation when you need help.
         </Text>

@@ -335,6 +335,26 @@ export class ModerationService {
     return { id: appeal.id, caseId: appeal.caseId, status: appeal.status };
   }
 
+  async appealableCases(userId: string) {
+    return this.prisma.moderationCase.findMany({
+      where: {
+        report: { reportedUserId: userId },
+        status: { in: ['actioned', 'suspended', 'banned', 'appealed'] },
+      },
+      select: {
+        id: true,
+        status: true,
+        report: { select: { category: true, appealStatus: true } },
+        appeals: {
+          select: { id: true, status: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
   guidance(locale = 'en') {
     const swahili = locale.toLowerCase().startsWith('sw');
     return {

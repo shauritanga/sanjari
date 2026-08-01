@@ -72,4 +72,9 @@ export class ModerationController {
   ) {
     return { data: await this.moderation.appeal(request.user!.sub, caseId, dto) };
   }
+
+  @Get('safety/appeals')
+  async appealableCases(@Req() request: AuthenticatedRequest) {
+    return { data: await this.moderation.appealableCases(request.user!.sub) };
+  }
 }
