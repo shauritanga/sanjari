@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UserSearchQueryDto {
   @IsOptional()
@@ -29,6 +29,29 @@ export class RoleAssignmentDto {
 export class FeatureFlagUpdateDto {
   @IsBoolean()
   enabled!: boolean;
+}
+
+export class SupportTicketUpdateDto {
+  @IsIn(['open', 'pending', 'resolved', 'closed'])
+  status!: string;
+
+  @IsIn(['normal', 'high', 'urgent'])
+  priority!: string;
+
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1_000)
+  reason!: string;
+}
+
+export class NotificationUpdateDto {
+  @IsIn(['read', 'unread'])
+  status!: string;
+
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1_000)
+  reason!: string;
 }
 
 export class VerificationReviewDto {

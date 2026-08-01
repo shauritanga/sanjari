@@ -4,7 +4,9 @@ import { PrismaService } from '../common/database/prisma.service';
 import {
   AuditQueryDto,
   FeatureFlagUpdateDto,
+  NotificationUpdateDto,
   RoleAssignmentDto,
+  SupportTicketUpdateDto,
   UserSearchQueryDto,
   UserSuspensionDto,
   VerificationReviewDto,
@@ -462,5 +464,89 @@ export class AdminOperationsService {
       },
     });
     return { failedJobs, activeJobs, recentJobs };
+  }
+
+  async updateSupportTicket(admin: AdminClaims, ticketId: string, dto: SupportTicketUpdateDto) {
+    requirePermission(admin, 'support.manage');
+    const current = await this.prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, status: true, priority: true },
+    });
+    if (!current)
+      throw new NotFoundException({ code: 'SUPPORT_TICKET_NOT_FOUND', message: 'Support ticket not found.' });
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.supportTicket.update({
+        where: { id: ticketId },
+        data: { status: dto.status, priority: dto.priority },
+        select: { id: true, status: true, priority: true, updatedAt: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.support_ticket_updated',
+          metadata: {
+            ticketId,
+            before: { status: current.status, priority: current.priority },
+            after: { status: updated.status, priority: updated.priority },
+            reason: dto.reason,
+          },
+        },
+      });
+      return updated;
+    });
+  }
+
+  async updateNotification(admin: AdminClaims, notificationId: string, dto: NotificationUpdateDto) {
+    requirePermission(admin, 'notifications.manage');
+    const current = await this.prisma.notification.findUnique({
+      where: { id: notificationId },
+      select: { id: true, readAt: true },
+    });
+    if (!current)
+      throw new NotFoundException({ code: 'NOTIFICATION_NOT_FOUND', message: 'Notification not found.' });
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.notification.update({
+        where: { id: notificationId },
+        data: { readAt: dto.status === 'read' ? current.readAt ?? new Date() : null },
+        select: { id: true, readAt: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.notification_updated',
+          metadata: {
+            notificationId,
+            before: { read: Boolean(current.readAt) },
+            after: { read: Boolean(updated.readAt) },
+            reason: dto.reason,
+          },
+        },
+      });
+      return updated;
+    });
+  }
+
+  async analytics(admin: AdminClaims) {
+    requirePermission(admin, 'analytics.read');
+    const [unreadNotifications, openSupportTickets, failedExports, failedJobs, recentAuditEvents] =
+      await Promise.all([
+        this.prisma.notification.count({ where: { readAt: null } }),
+        this.prisma.supportTicket.count({ where: { status: { notIn: ['resolved', 'closed'] } } }),
+        this.prisma.dataExportRequest.count({ where: { status: 'failed' } }),
+        this.prisma.backgroundJobRecord.count({ where: { status: 'failed' } }),
+        this.prisma.auditLog.count({ where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } }),
+      ]);
+    const result = { unreadNotifications, openSupportTickets, failedExports, failedJobs, recentAuditEvents };
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.analytics_read',
+        metadata: { metricKeys: Object.keys(result) },
+      },
+    });
+    return result;
   }
 }

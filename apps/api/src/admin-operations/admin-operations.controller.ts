@@ -17,7 +17,9 @@ import { AdminOperationsService } from './admin-operations.service';
 import {
   AuditQueryDto,
   FeatureFlagUpdateDto,
+  NotificationUpdateDto,
   RoleAssignmentDto,
+  SupportTicketUpdateDto,
   UserSearchQueryDto,
   UserSuspensionDto,
   VerificationReviewDto,
@@ -119,6 +121,34 @@ export class AdminOperationsController {
   @SetMetadata('adminPermission', 'health.read')
   async health(@Req() request: AdminRequest) {
     return { data: await this.operations.health(request.admin!) };
+  }
+
+  @Patch('notifications/:notificationId')
+  @SetMetadata('adminPermission', 'notifications.manage')
+  @UseGuards(AdminCsrfGuard)
+  async updateNotification(
+    @Req() request: AdminRequest,
+    @Param('notificationId') notificationId: string,
+    @Body() dto: NotificationUpdateDto,
+  ) {
+    return { data: await this.operations.updateNotification(request.admin!, notificationId, dto) };
+  }
+
+  @Patch('support/:ticketId')
+  @SetMetadata('adminPermission', 'support.manage')
+  @UseGuards(AdminCsrfGuard)
+  async updateSupport(
+    @Req() request: AdminRequest,
+    @Param('ticketId') ticketId: string,
+    @Body() dto: SupportTicketUpdateDto,
+  ) {
+    return { data: await this.operations.updateSupportTicket(request.admin!, ticketId, dto) };
+  }
+
+  @Get('analytics')
+  @SetMetadata('adminPermission', 'analytics.read')
+  async analytics(@Req() request: AdminRequest) {
+    return { data: await this.operations.analytics(request.admin!) };
   }
 
   @Patch('users/:userId/suspend')

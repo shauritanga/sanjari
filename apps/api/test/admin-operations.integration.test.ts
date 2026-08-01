@@ -169,4 +169,40 @@ describe('admin operations RBAC contracts', () => {
     expect(result.recentJobs).toHaveLength(1);
     expect(audit).toHaveBeenCalled();
   });
+
+  it('updates support workflow state transactionally with a reason', async () => {
+    const tx = {
+      supportTicket: {
+        update: vi.fn().mockResolvedValue({ id: 'ticket-1', status: 'resolved', priority: 'high', updatedAt: new Date() }),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    };
+    const prisma = {
+      supportTicket: { findUnique: vi.fn().mockResolvedValue({ id: 'ticket-1', status: 'open', priority: 'high' }) },
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => Promise.resolve(callback(tx))),
+    };
+    const result = await new AdminOperationsService(prisma as never).updateSupportTicket(
+      admin(['support.manage']),
+      'ticket-1',
+      { status: 'resolved', priority: 'high', reason: 'Support review completed successfully.' },
+    );
+    expect(result.status).toBe('resolved');
+    expect(tx.auditLog.create).toHaveBeenCalled();
+  });
+
+  it('returns aggregate operational analytics without private content', async () => {
+    const audit = vi.fn().mockResolvedValue({});
+    const prisma = {
+      notification: { count: vi.fn().mockResolvedValue(3) },
+      supportTicket: { count: vi.fn().mockResolvedValue(4) },
+      dataExportRequest: { count: vi.fn().mockResolvedValue(1) },
+      backgroundJobRecord: { count: vi.fn().mockResolvedValue(2) },
+      auditLog: { count: vi.fn().mockResolvedValue(8), create: audit },
+    };
+    const result = await new AdminOperationsService(prisma as never).analytics(
+      admin(['analytics.read']),
+    );
+    expect(result).toEqual({ unreadNotifications: 3, openSupportTickets: 4, failedExports: 1, failedJobs: 2, recentAuditEvents: 8 });
+    expect(audit).toHaveBeenCalled();
+  });
 });
