@@ -6,9 +6,9 @@ Make user safety visible and operationally enforceable across profiles, discover
 
 ## Delivery Status
 
-In progress. The first user-facing safety slice and moderation review engine are implemented: authenticated block/unblock and block listing, report submission with bounded evidence references, moderation-case creation, high-risk report signals, appeal submission authorization, permission-gated review queues, case transitions, reasoned moderator actions, audit events, messaging block enforcement, bounded evidence retention purge, contextual mobile report/block controls, localized Safety Centre guidance, and audited data export/account deletion requests.
+In progress. The first user-facing safety slice and moderation review engine are implemented: authenticated block/unblock and block listing, report submission with bounded evidence references, moderation-case creation, high-risk report signals, appeal submission authorization, permission-gated review queues, case transitions, reasoned moderator actions, audit events, messaging block enforcement, bounded evidence retention purge, contextual mobile report/block controls, localized Safety Centre guidance, audited data export/account deletion requests, and scheduled account-deletion execution.
 
-The workstream remains open until the W07-owned admin authentication/session console is connected to this engine, deletion execution automation, contextual report entry points across all clients, legal approval of safety content, and operational escalation runbooks are implemented and verified.
+The workstream remains open until the W07-owned admin authentication/session console is connected to this engine, export artifact delivery, contextual report entry points across all clients, legal approval of safety content, and operational escalation runbooks are implemented and verified.
 
 ## Scope
 
@@ -38,4 +38,5 @@ The workstream remains open until the W07-owned admin authentication/session con
 - The `moderation-retention` worker purges evidence only after the configurable `MODERATION_EVIDENCE_RETENTION_DAYS` window and only for closed or dismissed cases, with a system audit event.
 - Mobile discovery cards expose block/report controls and conversation messages expose report-with-evidence controls.
 - Safety guidance supports English and Swahili responses through the `locale` query, and data controls provide export requests plus seven-day account-deletion scheduling.
+- The `account-deletion` worker executes due requests by anonymizing identity fields, revoking sessions/devices, removing profile data, and recording completion without deleting the audit trail.
 - API integration contracts cover these flows in `apps/api/test/moderation.integration.test.ts`.
