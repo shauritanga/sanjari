@@ -1,12 +1,22 @@
 import { Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import { PrismaService } from '../common/database/prisma.service';
 
 @Injectable()
 export class RankingEvaluationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectQueue('ranking-evaluation') private readonly queue?: Queue,
+  ) {}
 
   async enqueue(rankingVersion: string) {
     const jobKey = `ranking-evaluation:${rankingVersion}`;
+    await this.queue?.add(
+      'evaluate',
+      { rankingVersion },
+      { jobId: jobKey, removeOnComplete: 100, removeOnFail: 100 },
+    );
     await this.prisma.backgroundJobRecord.upsert({
       where: { queue_jobKey: { queue: 'ranking-evaluation', jobKey } },
       create: { queue: 'ranking-evaluation', jobKey, status: 'queued' },

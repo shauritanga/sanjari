@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
@@ -17,9 +18,10 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['../../.env', '.env'],
-      validate: (env) => appConfigSchema.parse(env)
+      validate: (env) => appConfigSchema.parse(env),
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+    BullModule.forRoot({ connection: { url: process.env.REDIS_URL ?? 'redis://localhost:6379' } }),
     DatabaseModule,
     HealthModule,
     AuthModule,
@@ -28,7 +30,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     MatchesModule,
     ConversationsModule,
     ModerationModule,
-    SubscriptionsModule
-  ]
+    SubscriptionsModule,
+  ],
 })
 export class AppModule {}
