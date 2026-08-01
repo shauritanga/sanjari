@@ -1,5 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/database/prisma.service';
+import { DiscoveryEntitlementService } from './entitlement.service';
 
 const rankingVersion = 'w04-rules-v1';
 
@@ -16,7 +25,10 @@ function age(dateOfBirth: Date): number {
 
 @Injectable()
 export class DiscoveryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly entitlements: DiscoveryEntitlementService,
+  ) {}
 
   async discover(userId: string, cursor?: string) {
     const viewer = await this.prisma.user.findUnique({
@@ -26,6 +38,10 @@ export class DiscoveryService {
     if (!viewer?.profile)
       throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
     const preference = viewer.profile.discoveryPreference;
+    const distances = await this.prisma.$queryRaw<
+      Array<{ id: string; distanceKm: number }>
+    >`WITH latest AS (SELECT DISTINCT ON ("userId") "userId", "protectedPointWkt" FROM "UserLocation" ORDER BY "userId", "createdAt" DESC) SELECT candidate."userId" AS id, ST_Distance(ST_GeogFromText(viewer."protectedPointWkt"), ST_GeogFromText(candidate."protectedPointWkt")) / 1000 AS "distanceKm" FROM latest viewer JOIN latest candidate ON candidate."userId" <> viewer."userId" WHERE viewer."userId" = ${userId}::uuid`;
+    const distanceMap = new Map(distances.map((item) => [item.id, Number(item.distanceKm)]));
     const excluded = await this.prisma.$queryRaw<
       Array<{ id: string }>
     >`SELECT "blockedId" AS id FROM "Block" WHERE "blockerId" = ${userId}::uuid UNION SELECT "blockerId" AS id FROM "Block" WHERE "blockedId" = ${userId}::uuid UNION SELECT "receiverId" AS id FROM "Like" WHERE "senderId" = ${userId}::uuid UNION SELECT "receiverId" AS id FROM "Pass" WHERE "senderId" = ${userId}::uuid`;
@@ -58,8 +74,11 @@ export class DiscoveryService {
     });
     const filtered = candidates.filter((candidate) => {
       const candidateAge = age(candidate.dateOfBirth);
+      const distanceKm = distanceMap.get(candidate.id);
       return (
-        candidateAge >= (preference?.minAge ?? 18) && candidateAge <= (preference?.maxAge ?? 80)
+        candidateAge >= (preference?.minAge ?? 18) &&
+        candidateAge <= (preference?.maxAge ?? 80) &&
+        (distanceKm === undefined || distanceKm <= (preference?.maxDistanceKm ?? 50))
       );
     });
     const page = filtered.slice(
@@ -86,10 +105,7 @@ export class DiscoveryService {
         displayName: candidate.profile!.displayName,
         age: age(candidate.dateOfBirth),
         city: candidate.profile!.city,
-        distanceCategory:
-          candidate.profile!.city && candidate.profile!.city === viewer.profile!.city
-            ? 'same_area'
-            : 'not_shared',
+        distanceCategory: this.distanceCategory(distanceMap.get(candidate.id)),
         verificationStatus: candidate.profile!.verificationStatus,
         primaryPhoto: candidate.profile!.photos[0] ?? null,
         score,
@@ -147,6 +163,7 @@ export class DiscoveryService {
     if (!candidate || candidate.status !== 'active')
       throw new NotFoundException({ code: 'CANDIDATE_NOT_FOUND', message: 'Profile not found.' });
     return this.prisma.$transaction(async (tx) => {
+      await this.consumeDaily(tx, userId, 'like', 50);
       const like = await tx.like.upsert({
         where: { senderId_receiverId: { senderId: userId, receiverId: candidateId } },
         create: {
@@ -165,6 +182,14 @@ export class DiscoveryService {
         await tx.recommendation.updateMany({
           where: { userId, candidateUserId: candidateId, rankingVersion, userAction: null },
           data: { userAction: 'liked' },
+        });
+        await tx.discoveryAction.create({
+          data: {
+            userId,
+            targetUserId: candidateId,
+            action: 'like',
+            ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
+          },
         });
         return { liked: true, matched: false, likeId: like.id };
       }
@@ -188,23 +213,108 @@ export class DiscoveryService {
         code: 'SELF_ACTION_NOT_ALLOWED',
         message: 'You cannot interact with your own profile.',
       });
-    await this.prisma.pass.upsert({
-      where: { senderId_receiverId: { senderId: userId, receiverId: candidateId } },
-      create: {
-        senderId: userId,
-        receiverId: candidateId,
-        ...(idempotencyKey ? { idempotencyKey } : {}),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      },
-      update: {
-        ...(idempotencyKey ? { idempotencyKey } : {}),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      },
-    });
-    await this.prisma.recommendation.updateMany({
-      where: { userId, candidateUserId: candidateId, rankingVersion, userAction: null },
-      data: { userAction: 'passed' },
+    await this.prisma.$transaction(async (tx) => {
+      await this.consumeDaily(tx, userId, 'pass', 200);
+      await tx.pass.upsert({
+        where: { senderId_receiverId: { senderId: userId, receiverId: candidateId } },
+        create: {
+          senderId: userId,
+          receiverId: candidateId,
+          ...(idempotencyKey ? { idempotencyKey } : {}),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+        update: {
+          ...(idempotencyKey ? { idempotencyKey } : {}),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+      await tx.discoveryAction.create({
+        data: {
+          userId,
+          targetUserId: candidateId,
+          action: 'pass',
+          ...(idempotencyKey ? { idempotencyKey } : {}),
+        },
+      });
+      await tx.recommendation.updateMany({
+        where: { userId, candidateUserId: candidateId, rankingVersion, userAction: null },
+        data: { userAction: 'passed' },
+      });
     });
     return { passed: true, idempotencyKey: idempotencyKey ?? null };
+  }
+
+  async undo(userId: string, targetUserId?: string) {
+    if (!(await this.entitlements.canUndo(userId)))
+      throw new ForbiddenException({
+        code: 'UNDO_ENTITLEMENT_REQUIRED',
+        message: 'Undo is available with an eligible plan.',
+      });
+    const action = await this.prisma.discoveryAction.findFirst({
+      where: {
+        userId,
+        ...(targetUserId ? { targetUserId } : {}),
+        undoneAt: null,
+        createdAt: { gt: new Date(Date.now() - 15 * 60 * 1000) },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!action)
+      throw new NotFoundException({
+        code: 'UNDO_NOT_AVAILABLE',
+        message: 'There is no recent action to undo.',
+      });
+    await this.prisma.$transaction(async (tx) => {
+      if (action.action === 'pass')
+        await tx.pass.deleteMany({ where: { senderId: userId, receiverId: action.targetUserId } });
+      if (action.action === 'like') {
+        const reciprocal = await tx.like.findUnique({
+          where: { senderId_receiverId: { senderId: action.targetUserId, receiverId: userId } },
+        });
+        if (reciprocal)
+          throw new ForbiddenException({
+            code: 'UNDO_MATCHED_ACTION',
+            message: 'A matched action cannot be undone.',
+          });
+        await tx.like.deleteMany({ where: { senderId: userId, receiverId: action.targetUserId } });
+      }
+      await tx.discoveryAction.update({ where: { id: action.id }, data: { undoneAt: new Date() } });
+      await tx.recommendation.updateMany({
+        where: { userId, candidateUserId: action.targetUserId, rankingVersion },
+        data: { userAction: null, matchOutcome: null },
+      });
+    });
+    return { undone: true, targetUserId: action.targetUserId, action: action.action };
+  }
+
+  private distanceCategory(distanceKm?: number): string {
+    if (distanceKm === undefined) return 'not_shared';
+    if (distanceKm <= 5) return 'nearby';
+    if (distanceKm <= 25) return 'within_25km';
+    if (distanceKm <= 50) return 'within_50km';
+    return 'farther_away';
+  }
+
+  private async consumeDaily(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    action: string,
+    limit: number,
+  ) {
+    const day = new Date();
+    day.setUTCHours(0, 0, 0, 0);
+    const usage = await tx.discoveryDailyUsage.upsert({
+      where: { userId_action_day: { userId, action, day } },
+      create: { userId, action, day, count: 1 },
+      update: { count: { increment: 1 } },
+    });
+    if (usage.count > limit)
+      throw new HttpException(
+        {
+          code: 'DAILY_ACTION_LIMIT',
+          message: 'This action limit has been reached for today.',
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
   }
 }

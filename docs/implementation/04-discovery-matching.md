@@ -27,5 +27,8 @@ Deliver fast, explainable discovery and mutual matching without exposing exact l
 - Explainable `w04-rules-v1` scoring and persisted recommendation generation/outcome events.
 - Idempotent like/pass actions and canonical, transaction-safe mutual match creation.
 - Mobile discovery cards with empty, error, like, and pass states.
+- PostGIS-backed protected-location distance filtering with category-only responses.
+- Server-enforced daily like/pass limits, premium entitlement-gated undo, and persisted action history.
+- Queue-compatible ranking evaluation service with durable job status and action/match-rate metrics.
 
-Protected coordinate distance, daily action limits, undo entitlements, and worker-backed ranking evaluation remain subsequent hardening work.
+Production queue transport, entitlement purchase verification, and location anomaly detection remain operational hardening work.

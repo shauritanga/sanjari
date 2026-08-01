@@ -93,11 +93,12 @@ Profile routes require a valid access token. Photo uploads are presigned, limite
 
 Discovery routes require a valid access token. Responses contain broad distance categories only; exact coordinates are never returned.
 
-| Method | Route                            | Purpose                                                                |
-| ------ | -------------------------------- | ---------------------------------------------------------------------- |
-| `GET`  | `/api/v1/discovery`              | Return privacy-safe, explainable discovery candidates                  |
-| `POST` | `/api/v1/discovery/:userId/like` | Record an idempotent like and create a match on reciprocal eligibility |
-| `POST` | `/api/v1/discovery/:userId/pass` | Record an idempotent pass with a cooldown                              |
+| Method | Route                            | Purpose                                                                  |
+| ------ | -------------------------------- | ------------------------------------------------------------------------ |
+| `GET`  | `/api/v1/discovery`              | Return privacy-safe, explainable discovery candidates                    |
+| `POST` | `/api/v1/discovery/:userId/like` | Record an idempotent like and create a match on reciprocal eligibility   |
+| `POST` | `/api/v1/discovery/:userId/pass` | Record an idempotent pass with a cooldown                                |
+| `POST` | `/api/v1/discovery/undo`         | Undo the most recent eligible action using a server-verified entitlement |
 
 ## Communication
 

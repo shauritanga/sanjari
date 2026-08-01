@@ -34,3 +34,10 @@ export class PassDto {
   @MaxLength(128)
   idempotencyKey?: string;
 }
+
+export class UndoDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  targetUserId?: string;
+}

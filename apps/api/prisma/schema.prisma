@@ -319,6 +319,31 @@ model Pass {
   @@unique([senderId, idempotencyKey])
 }
 
+model DiscoveryAction {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  targetUserId   String   @db.Uuid
+  action         String
+  idempotencyKey String?
+  createdAt      DateTime @default(now())
+  undoneAt       DateTime?
+
+  @@index([userId, action, createdAt])
+  @@index([userId, createdAt])
+  @@unique([userId, idempotencyKey])
+}
+
+model DiscoveryDailyUsage {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  action    String
+  day       DateTime @db.Date
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, action, day])
+}
+
 model Match {
   id             String        @id @default(uuid()) @db.Uuid
   userAId        String        @db.Uuid
