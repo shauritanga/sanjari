@@ -98,3 +98,15 @@ Discovery routes require a valid access token. Responses contain broad distance 
 | `GET`  | `/api/v1/discovery`              | Return privacy-safe, explainable discovery candidates                  |
 | `POST` | `/api/v1/discovery/:userId/like` | Record an idempotent like and create a match on reciprocal eligibility |
 | `POST` | `/api/v1/discovery/:userId/pass` | Record an idempotent pass with a cooldown                              |
+
+## Communication
+
+Conversation routes require an active mutual match and re-check block state for every operation. Message previews in notifications are intentionally generic.
+
+| Method   | Route                                            | Purpose                                         |
+| -------- | ------------------------------------------------ | ----------------------------------------------- |
+| `GET`    | `/api/v1/conversations`                          | List active matched conversations               |
+| `GET`    | `/api/v1/conversations/:conversationId/messages` | Read paginated message history                  |
+| `POST`   | `/api/v1/conversations/:conversationId/messages` | Send a text message with link-risk review state |
+| `POST`   | `/api/v1/conversations/:conversationId/read`     | Record a read receipt                           |
+| `DELETE` | `/api/v1/conversations/messages/:messageId`      | Delete the caller's own message content         |

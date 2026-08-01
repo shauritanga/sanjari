@@ -19,3 +19,12 @@ Provide reliable, consent-based communication only between active matched users.
 - Attachment objects are private until scanned and use short-lived signed URLs.
 - Notification payloads do not disclose sensitive content by default.
 - The product does not claim end-to-end encryption unless a separate audited key-management design is approved.
+
+## Implemented In This Slice
+
+- Match-authorized conversation listing, lazy conversation creation, paginated REST history, text sends, read receipts, and sender deletion.
+- Block-state rechecks on every conversation operation.
+- Generic in-app new-message notifications and suspicious-link message review/audit state.
+- Mobile conversation list and message composer with empty, error, and review-warning states.
+
+Socket.IO reconnect recovery, attachment presigning/scanning, push delivery, reactions, typing, and presence remain subsequent communication hardening work.
