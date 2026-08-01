@@ -4,6 +4,12 @@
 
 Make user safety visible and operationally enforceable across profiles, discovery, messaging, payments, and support.
 
+## Delivery Status
+
+In progress. The first user-facing safety slice is implemented: authenticated block/unblock and block listing, report submission with bounded evidence references, moderation-case creation, high-risk report signals, appeal submission authorization, audit events, messaging block enforcement, and the mobile Safety Centre guidance screen.
+
+The workstream remains open until the human moderation queue, moderator RBAC/action workflow, retention/deletion automation, contextual report entry points across all clients, localized and legally approved safety content, and operational escalation runbooks are implemented and verified.
+
 ## Scope
 
 - Safety centre with scam signals, privacy guidance, public-meeting guidance, verification explanations, community guidelines, emergency instructions, appeals, and data controls.
@@ -20,3 +26,12 @@ Make user safety visible and operationally enforceable across profiles, discover
 - Reports preserve the minimum evidence needed for review and follow deletion/retention rules.
 - Users can block and report from profile, match, and conversation contexts.
 - Sensitive safety content is localized and legally reviewed before launch.
+
+## Verified Implementation Slice
+
+- `POST /api/v1/blocks/:userId`, `DELETE /api/v1/blocks/:userId`, and `GET /api/v1/blocks` are authenticated and audited.
+- `POST /api/v1/reports` creates a report, moderation case, bounded evidence references, and a risk signal for high-risk categories in one transaction.
+- `POST /api/v1/moderation/cases/:caseId/appeals` only accepts appeals from the reported user and records an audit event.
+- Conversation authorization checks blocks dynamically, so a new block immediately prevents message access in either direction.
+- `GET /api/v1/safety/guidance` powers the mobile Safety Centre and explicitly limits what verification proves.
+- API integration contracts cover these flows in `apps/api/test/moderation.integration.test.ts`.

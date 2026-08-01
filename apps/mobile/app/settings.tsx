@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Link } from 'expo-router';
 import { AppButton } from '../src/components/AppButton';
 import { api } from '../src/api';
 import { theme } from '../src/theme/theme';
@@ -22,6 +23,9 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.screen}>
       <View style={styles.content}>
         <Text style={styles.title}>Your devices</Text>
+        <Link href="/safety" style={styles.safetyLink}>
+          Safety Centre
+        </Link>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {sessions.map((session) => (
           <View key={session.id} style={styles.row}>
@@ -43,6 +47,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.warmWhite, padding: theme.spacing.lg },
   content: { gap: theme.spacing.md },
   title: { color: theme.colors.deepPlum, fontSize: 32, fontWeight: '700' },
+  safetyLink: { color: theme.colors.coral, fontSize: 16, fontWeight: '700' },
   row: {
     gap: theme.spacing.sm,
     padding: theme.spacing.md,
