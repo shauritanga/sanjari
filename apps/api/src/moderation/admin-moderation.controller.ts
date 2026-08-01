@@ -28,6 +28,11 @@ export class AdminModerationController {
     return { data: await this.moderation.queue(request.admin!.id, query.status) };
   }
 
+  @Get('appeals')
+  async appeals(@Req() request: AdminRequest) {
+    return { data: await this.moderation.appealsQueue(request.admin!.id) };
+  }
+
   @Patch('cases/:caseId')
   @UseGuards(AdminCsrfGuard)
   async updateCase(

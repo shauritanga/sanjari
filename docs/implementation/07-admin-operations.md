@@ -6,9 +6,9 @@ Give authorized staff a secure, auditable operational console without exposing u
 
 ## Delivery Status
 
-In progress. The first W07 slice is implemented: database-backed admin sessions, HTTP-only cookies, CSRF protection, production MFA fail-closed behavior, permission-gated moderation operations, redacted user search, reversible user suspension, audit-log access auditing, and permission-aware admin navigation.
+In progress. The first W07 slice is implemented: database-backed admin sessions, HTTP-only cookies, CSRF protection, production MFA fail-closed behavior, permission-gated moderation operations, redacted user search, reversible user suspension, role assignment, verification review, audited dashboard metrics, audit-log access auditing, and permission-aware admin navigation.
 
-Remaining W07 work includes MFA provider integration, role/permission administration, verification/finance/configuration queues, operational metrics, and full admin route coverage.
+Remaining W07 work includes MFA provider integration, finance/configuration/notification/support queues, operational incident analytics, and full admin route coverage.
 
 ## Roles And Permissions
 
@@ -34,3 +34,7 @@ Support agent, moderator, senior moderator, verification officer, finance office
 - `GET /api/v1/admin/operations/users` requires `users.read`, returns a redacted projection, and audits access.
 - `GET /api/v1/admin/operations/audit` requires `audit.read` and audits the audit-log access itself.
 - Moderation queue/action endpoints require `reports.resolve` and CSRF tokens on mutations.
+- `GET /api/v1/admin/operations/roles` and `PATCH /api/v1/admin/operations/admins/:adminUserId/roles` require `configuration.manage` and audit role changes.
+- Verification queue/review endpoints require `verification.review`; the admin UI confirms and records approve/reject decisions.
+- The operations dashboard requires `analytics.read` and returns aggregate counts only.
+- User, audit, report, appeal, and verification admin pages consume live APIs; suspension and verification mutations require browser confirmation.

@@ -54,4 +54,58 @@ describe('admin operations RBAC contracts', () => {
     expect(tx.userSession.updateMany).toHaveBeenCalled();
     expect(tx.auditLog.create).toHaveBeenCalled();
   });
+
+  it('assigns roles transactionally with configuration permission', async () => {
+    const tx = {
+      adminRole: { upsert: vi.fn().mockResolvedValue({}) },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    };
+    const prisma = {
+      adminUser: { findUnique: vi.fn().mockResolvedValue({ id: 'admin-2' }) },
+      role: { findUnique: vi.fn().mockResolvedValue({ id: 'role-1', name: 'moderator' }) },
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) =>
+        Promise.resolve(callback(tx)),
+      ),
+    };
+    const result = await new AdminOperationsService(prisma as never).assignRole(
+      admin(['configuration.manage']),
+      'admin-2',
+      { roleId: 'role-1' },
+    );
+    expect(result).toEqual({ adminUserId: 'admin-2', roleId: 'role-1', roleName: 'moderator' });
+    expect(tx.auditLog.create).toHaveBeenCalled();
+  });
+
+  it('reviews verification cases with reviewer identity and before/after audit metadata', async () => {
+    const tx = {
+      verificationCase: {
+        update: vi
+          .fn()
+          .mockResolvedValue({
+            id: 'case-1',
+            status: 'approved',
+            reviewedBy: 'admin-1',
+            reviewedAt: new Date(),
+          }),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    };
+    const prisma = {
+      verificationCase: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ id: 'case-1', userId: 'user-1', status: 'in_review' }),
+      },
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) =>
+        Promise.resolve(callback(tx)),
+      ),
+    };
+    const result = await new AdminOperationsService(prisma as never).reviewVerification(
+      admin(['verification.review']),
+      'case-1',
+      { status: 'approved', reason: 'Human review completed.' },
+    );
+    expect(result.status).toBe('approved');
+    expect(tx.auditLog.create).toHaveBeenCalled();
+  });
 });

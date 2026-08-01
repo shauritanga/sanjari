@@ -1,7 +1,13 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { AdminClaims } from '../admin-auth/admin-auth.types';
 import { PrismaService } from '../common/database/prisma.service';
-import { AuditQueryDto, UserSearchQueryDto, UserSuspensionDto } from './dto';
+import {
+  AuditQueryDto,
+  RoleAssignmentDto,
+  UserSearchQueryDto,
+  UserSuspensionDto,
+  VerificationReviewDto,
+} from './dto';
 
 function requirePermission(admin: AdminClaims, permission: string) {
   if (!admin.permissions.includes(permission)) {
@@ -177,5 +183,116 @@ export class AdminOperationsService {
       },
     });
     return result;
+  }
+
+  async roles(admin: AdminClaims) {
+    requirePermission(admin, 'configuration.manage');
+    return this.prisma.role.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        permissions: { select: { permission: { select: { key: true, description: true } } } },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async assignRole(admin: AdminClaims, adminUserId: string, dto: RoleAssignmentDto) {
+    requirePermission(admin, 'configuration.manage');
+    const [target, role] = await Promise.all([
+      this.prisma.adminUser.findUnique({ where: { id: adminUserId }, select: { id: true } }),
+      this.prisma.role.findUnique({ where: { id: dto.roleId }, select: { id: true, name: true } }),
+    ]);
+    if (!target || !role)
+      throw new NotFoundException({
+        code: 'ROLE_ASSIGNMENT_TARGET_NOT_FOUND',
+        message: 'Admin or role not found.',
+      });
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.adminRole.upsert({
+        where: { adminUserId_roleId: { adminUserId, roleId: dto.roleId } },
+        create: { adminUserId, roleId: dto.roleId },
+        update: {},
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.role_assigned',
+          metadata: { targetAdminUserId: adminUserId, roleId: dto.roleId, roleName: role.name },
+        },
+      });
+      return { adminUserId, roleId: role.id, roleName: role.name };
+    });
+    return result;
+  }
+
+  async verificationQueue(admin: AdminClaims) {
+    requirePermission(admin, 'verification.review');
+    const result = await this.prisma.verificationCase.findMany({
+      where: { status: { in: ['submitted', 'in_review'] } },
+      select: {
+        id: true,
+        userId: true,
+        type: true,
+        status: true,
+        provider: true,
+        confidence: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 100,
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.verification_queue_read',
+        metadata: { resultCount: result.length },
+      },
+    });
+    return result;
+  }
+
+  async reviewVerification(admin: AdminClaims, caseId: string, dto: VerificationReviewDto) {
+    requirePermission(admin, 'verification.review');
+    if (!['approved', 'rejected', 'needs_more_information'].includes(dto.status))
+      throw new ForbiddenException({
+        code: 'INVALID_VERIFICATION_STATUS',
+        message: 'Invalid verification status.',
+      });
+    const current = await this.prisma.verificationCase.findUnique({
+      where: { id: caseId },
+      select: { id: true, userId: true, status: true },
+    });
+    if (!current)
+      throw new NotFoundException({
+        code: 'VERIFICATION_CASE_NOT_FOUND',
+        message: 'Verification case not found.',
+      });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.verificationCase.update({
+        where: { id: caseId },
+        data: { status: dto.status, reviewedBy: admin.id, reviewedAt: new Date() },
+        select: { id: true, status: true, reviewedBy: true, reviewedAt: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.verification_reviewed',
+          metadata: {
+            caseId,
+            userId: current.userId,
+            before: { status: current.status },
+            after: { status: result.status },
+            reason: dto.reason,
+          },
+        },
+      });
+      return result;
+    });
+    return updated;
   }
 }

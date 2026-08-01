@@ -83,6 +83,24 @@ export class ModerationService {
     });
   }
 
+  async appealsQueue(adminUserId: string) {
+    await this.requireModerator(adminUserId);
+    return this.prisma.moderationCase.findMany({
+      where: { appeals: { some: { status: 'submitted' } } },
+      select: {
+        id: true,
+        status: true,
+        report: { select: { category: true, priority: true } },
+        appeals: {
+          where: { status: 'submitted' },
+          select: { id: true, userId: true, statement: true, createdAt: true },
+        },
+      },
+      orderBy: { updatedAt: 'asc' },
+      take: 100,
+    });
+  }
+
   async updateCase(adminUserId: string, caseId: string, dto: ModerationCaseUpdateDto) {
     await this.requireModerator(adminUserId);
     if (!caseStatuses.has(dto.status)) {

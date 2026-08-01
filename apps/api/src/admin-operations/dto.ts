@@ -20,3 +20,19 @@ export class AuditQueryDto {
   @MaxLength(120)
   action?: string;
 }
+
+export class RoleAssignmentDto {
+  @IsString()
+  roleId!: string;
+}
+
+export class VerificationReviewDto {
+  @IsString()
+  @MaxLength(40)
+  status!: string;
+
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1_000)
+  reason!: string;
+}

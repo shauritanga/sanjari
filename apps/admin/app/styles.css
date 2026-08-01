@@ -135,6 +135,26 @@ button:disabled {
   font-size: 13px;
   margin-top: 4px;
 }
+.case-item p {
+  margin-bottom: 0;
+}
+.search-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+.search-row input {
+  flex: 1;
+  border: 1px solid #d9cdd2;
+  border-radius: 6px;
+  min-height: 44px;
+  padding: 8px 10px;
+  font: inherit;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+}
 
 .metrics {
   display: grid;
