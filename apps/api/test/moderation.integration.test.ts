@@ -12,7 +12,11 @@ function prismaForModeration() {
       update: vi.fn().mockResolvedValue({}),
     },
     reportEvidence: { createMany: vi.fn().mockResolvedValue({}) },
-    moderationCase: { create: vi.fn().mockResolvedValue({ id: 'case-1' }) },
+    moderationCase: {
+      create: vi.fn().mockResolvedValue({ id: 'case-1' }),
+      update: vi.fn().mockResolvedValue({ id: 'case-1', status: 'investigating' }),
+    },
+    moderationAction: { create: vi.fn().mockResolvedValue({ id: 'action-1', action: 'warn' }) },
     riskSignal: { create: vi.fn().mockResolvedValue({}) },
     appeal: {
       create: vi.fn().mockResolvedValue({ id: 'appeal-1', caseId: 'case-1', status: 'submitted' }),
@@ -29,7 +33,16 @@ function prismaForModeration() {
       findUnique: vi.fn().mockResolvedValue({
         id: 'case-1',
         reportId: 'report-1',
-        report: { reportedUserId: 'user-2' },
+        status: 'triaged',
+        report: { reportedUserId: 'user-2', riskScore: 70 },
+      }),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    adminUser: {
+      findUnique: vi.fn().mockResolvedValue({
+        id: 'admin-1',
+        status: 'active',
+        roles: [{ role: { permissions: [{ permission: { key: 'reports.resolve' } }] } }],
       }),
     },
     $transaction: vi.fn((callback: (client: typeof tx) => unknown) =>
@@ -77,5 +90,18 @@ describe('safety and moderation integration contracts', () => {
         statement: 'I would like a human review of this moderation case.',
       }),
     ).rejects.toMatchObject({ response: { code: 'APPEAL_NOT_ALLOWED' } });
+  });
+
+  it('requires moderation permission and human review before a permanent ban', async () => {
+    const prisma = prismaForModeration();
+    const service = new ModerationService(prisma as never);
+    expect(await service.queue('admin-1')).toEqual([]);
+    await expect(
+      service.action('admin-1', 'case-1', {
+        action: 'ban',
+        reason: 'Permanent removal after review.',
+      }),
+    ).rejects.toMatchObject({ response: { code: 'REVIEW_REQUIRED' } });
+    expect(prisma.tx.moderationAction.create).not.toHaveBeenCalled();
   });
 });

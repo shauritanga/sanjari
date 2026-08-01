@@ -1,8 +1,24 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
-import { AppealDto, BlockDto, ReportDto } from './dto';
+import {
+  AppealDto,
+  BlockDto,
+  ModerationActionDto,
+  ModerationCaseUpdateDto,
+  ReportDto,
+} from './dto';
 
 const highRiskCategories = new Set(['scam', 'impersonation', 'underage_concern', 'unsafe_meeting']);
+const caseStatuses = new Set([
+  'submitted',
+  'triaged',
+  'assigned',
+  'investigating',
+  'actioned',
+  'dismissed',
+  'escalated',
+  'closed',
+]);
 
 function initialRisk(category: string, description?: string): { score: number; severity: string } {
   let score = highRiskCategories.has(category) ? 70 : 25;
@@ -18,6 +34,132 @@ function initialRisk(category: string, description?: string): { score: number; s
 @Injectable()
 export class ModerationService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private async requireModerator(adminUserId: string) {
+    const admin = await this.prisma.adminUser.findUnique({
+      where: { id: adminUserId },
+      select: {
+        id: true,
+        status: true,
+        roles: {
+          select: {
+            role: {
+              select: { permissions: { select: { permission: { select: { key: true } } } } },
+            },
+          },
+        },
+      },
+    });
+    const permissions = new Set(
+      admin?.roles.flatMap((role) => role.role.permissions.map((item) => item.permission.key)) ??
+        [],
+    );
+    if (!admin || admin.status !== 'active' || !permissions.has('reports.resolve')) {
+      throw new BadRequestException({
+        code: 'MODERATION_PERMISSION_REQUIRED',
+        message: 'Moderation permission is required.',
+      });
+    }
+    return admin.id;
+  }
+
+  async queue(adminUserId: string, status?: string) {
+    await this.requireModerator(adminUserId);
+    return this.prisma.moderationCase.findMany({
+      where: status
+        ? { status }
+        : { status: { in: ['submitted', 'triaged', 'assigned', 'investigating', 'escalated'] } },
+      include: {
+        report: { include: { evidence: true } },
+        appeals: true,
+        actions: true,
+      },
+      orderBy: [{ report: { priority: 'desc' } }, { createdAt: 'asc' }],
+    });
+  }
+
+  async updateCase(adminUserId: string, caseId: string, dto: ModerationCaseUpdateDto) {
+    await this.requireModerator(adminUserId);
+    if (!caseStatuses.has(dto.status)) {
+      throw new BadRequestException({
+        code: 'INVALID_CASE_STATUS',
+        message: 'Invalid moderation case status.',
+      });
+    }
+    const current = await this.prisma.moderationCase.findUnique({ where: { id: caseId } });
+    if (!current)
+      throw new NotFoundException({
+        code: 'CASE_NOT_FOUND',
+        message: 'Moderation case not found.',
+      });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.moderationCase.update({
+        where: { id: caseId },
+        data: { status: dto.status, notes: dto.reason },
+      });
+      await tx.report.update({ where: { id: current.reportId }, data: { status: dto.status } });
+      await tx.auditLog.create({
+        data: {
+          adminUserId,
+          actorType: 'admin',
+          action: 'moderation.case_updated',
+          metadata: { caseId, from: current.status, to: dto.status, reason: dto.reason },
+        },
+      });
+      return result;
+    });
+    return { id: updated.id, status: updated.status };
+  }
+
+  async action(adminUserId: string, caseId: string, dto: ModerationActionDto) {
+    await this.requireModerator(adminUserId);
+    const current = await this.prisma.moderationCase.findUnique({
+      where: { id: caseId },
+      include: { report: { select: { reportedUserId: true, riskScore: true } } },
+    });
+    if (!current)
+      throw new NotFoundException({
+        code: 'CASE_NOT_FOUND',
+        message: 'Moderation case not found.',
+      });
+    if (dto.action === 'ban' && !['investigating', 'escalated'].includes(current.status)) {
+      throw new BadRequestException({
+        code: 'REVIEW_REQUIRED',
+        message: 'A permanent ban requires human investigation or escalation.',
+      });
+    }
+    const action = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.moderationAction.create({
+        data: {
+          caseId,
+          actorId: adminUserId,
+          action: dto.action,
+          reason: dto.reason,
+          metadata: { riskScore: current.report.riskScore },
+        },
+      });
+      await tx.report.update({
+        where: { id: current.reportId },
+        data: { actionTaken: dto.action, status: 'actioned' },
+      });
+      await tx.moderationCase.update({ where: { id: caseId }, data: { status: 'actioned' } });
+      await tx.auditLog.create({
+        data: {
+          adminUserId,
+          actorType: 'admin',
+          action: 'moderation.action_created',
+          metadata: {
+            caseId,
+            action: dto.action,
+            targetUserId: current.report.reportedUserId,
+            reason: dto.reason,
+          },
+        },
+      });
+      return created;
+    });
+    return { id: action.id, caseId, action: action.action, status: 'actioned' };
+  }
 
   async block(blockerId: string, blockedId: string, dto: BlockDto) {
     if (blockerId === blockedId) {
