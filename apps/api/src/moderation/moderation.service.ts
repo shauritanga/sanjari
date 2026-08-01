@@ -193,6 +193,14 @@ export class ModerationService {
         create: { blockerId, blockedId, reason },
         update: { reason },
       });
+      await tx.riskSignal.create({
+        data: {
+          userId: blockedId,
+          type: 'block_received',
+          severity: 'low',
+          metadata: { blockerId },
+        },
+      });
       await tx.auditLog.create({
         data: {
           userId: blockerId,

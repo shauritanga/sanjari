@@ -44,4 +44,5 @@ The workstream remains open until the W07-owned admin authentication/session con
 - Human-reviewed `suspend` and `ban` actions now update the target account status in the same transaction as the moderation action and audit event.
 - Emergency, suspected-underage, scam, and provider-incident procedures are documented in `docs/safety-escalation-runbook.md`.
 - `GET /api/v1/safety/appeals` and the mobile Safety Centre provide a reported-user-only appeal list and statement submission flow.
+- Blocks and suspicious external links now create persisted risk signals in addition to audit events, so they are available to moderation triage.
 - API integration contracts cover these flows in `apps/api/test/moderation.integration.test.ts`.

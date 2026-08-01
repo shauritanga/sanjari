@@ -23,6 +23,8 @@ function prismaForMessage() {
     conversationMember: { findFirst: vi.fn().mockResolvedValue({ userId: 'user-2' }) },
     notification: { create: vi.fn().mockResolvedValue({}) },
     auditLog: { create: vi.fn().mockResolvedValue({}) },
+    riskSignal: { create: vi.fn().mockResolvedValue({}) },
+    $transaction: vi.fn().mockResolvedValue([]),
   };
 }
 
@@ -66,7 +68,10 @@ describe('communication integration contracts', () => {
     const prisma = prismaForMessage();
     prisma.conversation.findFirst.mockResolvedValue(null);
     await expect(
-      new ConversationsService(prisma as never, {} as never, {} as never).history('user-1', 'conversation-1'),
+      new ConversationsService(prisma as never, {} as never, {} as never).history(
+        'user-1',
+        'conversation-1',
+      ),
     ).rejects.toMatchObject({ response: { code: 'CONVERSATION_ACCESS_DENIED' } });
   });
 });

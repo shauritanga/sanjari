@@ -59,6 +59,7 @@ describe('safety and moderation integration contracts', () => {
     const result = await new ModerationService(prisma as never).block('user-1', 'user-2', {});
     expect(result).toEqual({ blockedUserId: 'user-2', blocked: true });
     expect(prisma.tx.block.upsert).toHaveBeenCalled();
+    expect(prisma.tx.riskSignal.create).toHaveBeenCalled();
     expect(prisma.tx.auditLog.create).toHaveBeenCalled();
   });
 

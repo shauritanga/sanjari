@@ -150,14 +150,24 @@ export class ConversationsService {
         },
       });
     if (hasSuspiciousLink(body))
-      await this.prisma.auditLog.create({
-        data: {
-          userId,
-          actorType: 'user',
-          action: 'message.suspicious_link',
-          metadata: { messageId: message.id },
-        },
-      });
+      await this.prisma.$transaction([
+        this.prisma.auditLog.create({
+          data: {
+            userId,
+            actorType: 'user',
+            action: 'message.suspicious_link',
+            metadata: { messageId: message.id },
+          },
+        }),
+        this.prisma.riskSignal.create({
+          data: {
+            userId,
+            type: 'external_link_in_message',
+            severity: 'medium',
+            metadata: { messageId: message.id },
+          },
+        }),
+      ]);
     return message;
   }
 
