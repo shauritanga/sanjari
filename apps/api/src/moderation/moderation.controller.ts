@@ -1,12 +1,16 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from '../auth/access-token.guard';
 import { AppealDto, BlockDto, DataDeletionDto, ReportDto } from './dto';
+import { DataExportService } from './data-export.service';
 import { ModerationService } from './moderation.service';
 
 @UseGuards(AccessTokenGuard)
 @Controller({ path: '', version: '1' })
 export class ModerationController {
-  constructor(private readonly moderation: ModerationService) {}
+  constructor(
+    private readonly moderation: ModerationService,
+    private readonly exportStorage: DataExportService,
+  ) {}
 
   @Get('safety/guidance')
   guidance(@Query('locale') locale?: string) {
@@ -21,6 +25,14 @@ export class ModerationController {
   @Post('safety/data-export')
   async dataExport(@Req() request: AuthenticatedRequest) {
     return { data: await this.moderation.requestDataExport(request.user!.sub) };
+  }
+
+  @Get('safety/data-export/:requestId')
+  async dataExportDownload(
+    @Req() request: AuthenticatedRequest,
+    @Param('requestId') requestId: string,
+  ) {
+    return { data: await this.exportStorage.downloadInfo(request.user!.sub, requestId) };
   }
 
   @Post('safety/account-deletion')

@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
+import { DataExportService } from './data-export.service';
 import {
   AppealDto,
   BlockDto,
@@ -34,7 +35,10 @@ function initialRisk(category: string, description?: string): { score: number; s
 
 @Injectable()
 export class ModerationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly dataExport?: DataExportService,
+  ) {}
 
   private async requireModerator(adminUserId: string) {
     const admin = await this.prisma.adminUser.findUnique({
@@ -440,6 +444,7 @@ export class ModerationService {
       });
       return created;
     });
+    await this.dataExport?.enqueue(request.id);
     return { id: request.id, status: request.status };
   }
 

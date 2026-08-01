@@ -24,4 +24,5 @@ export const appConfigSchema = z.object({
   PUSH_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
   ATTACHMENT_SCAN_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
   MODERATION_EVIDENCE_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
+  DATA_EXPORT_PROVIDER: z.enum(['disabled', 'local']).default('disabled'),
 });

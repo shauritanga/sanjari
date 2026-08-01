@@ -8,7 +8,7 @@ Make user safety visible and operationally enforceable across profiles, discover
 
 In progress. The first user-facing safety slice and moderation review engine are implemented: authenticated block/unblock and block listing, report submission with bounded evidence references, moderation-case creation, high-risk report signals, appeal submission authorization, permission-gated review queues, case transitions, reasoned moderator actions, audit events, messaging block enforcement, bounded evidence retention purge, contextual mobile report/block controls, localized Safety Centre guidance, audited data export/account deletion requests, and scheduled account-deletion execution.
 
-The workstream remains open until the W07-owned admin authentication/session console is connected to this engine, export artifact delivery, contextual report entry points across all clients, legal approval of safety content, and operational escalation runbooks are implemented and verified.
+The workstream remains open until the W07-owned admin authentication/session console is connected to this engine, production export storage credentials, contextual report entry points across all clients, legal approval of safety content, and operational escalation runbooks are implemented and verified.
 
 ## Scope
 
@@ -39,4 +39,6 @@ The workstream remains open until the W07-owned admin authentication/session con
 - Mobile discovery cards expose block/report controls and conversation messages expose report-with-evidence controls.
 - Safety guidance supports English and Swahili responses through the `locale` query, and data controls provide export requests plus seven-day account-deletion scheduling.
 - The `account-deletion` worker executes due requests by anonymizing identity fields, revoking sessions/devices, removing profile data, and recording completion without deleting the audit trail.
+- The `data-export` worker generates a bounded JSON artifact in local mode, records an expiring download descriptor, and fails closed when `DATA_EXPORT_PROVIDER=disabled`; production durable storage remains an owner input.
+- `GET /api/v1/safety/data-export/:requestId` returns download metadata only to the requesting user while the artifact is unexpired.
 - API integration contracts cover these flows in `apps/api/test/moderation.integration.test.ts`.
