@@ -295,4 +295,56 @@ export class AdminOperationsService {
     });
     return updated;
   }
+
+  async subscriptions(admin: AdminClaims) {
+    requirePermission(admin, 'subscriptions.read');
+    const result = await this.prisma.subscription.findMany({
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        provider: true,
+        startsAt: true,
+        endsAt: true,
+        plan: { select: { code: true, title: true, priceCents: true, currency: true } },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.subscriptions_read',
+        metadata: { resultCount: result.length },
+      },
+    });
+    return result;
+  }
+
+  async payments(admin: AdminClaims) {
+    requirePermission(admin, 'payments.read');
+    const result = await this.prisma.paymentEvent.findMany({
+      select: {
+        id: true,
+        provider: true,
+        externalEventId: true,
+        eventType: true,
+        signatureValid: true,
+        processedAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.payment_events_read',
+        metadata: { resultCount: result.length, payloadRedacted: true },
+      },
+    });
+    return result;
+  }
 }

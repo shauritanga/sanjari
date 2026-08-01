@@ -73,6 +73,18 @@ export class AdminOperationsController {
     return { data: await this.operations.reviewVerification(request.admin!, caseId, dto) };
   }
 
+  @Get('subscriptions')
+  @SetMetadata('adminPermission', 'subscriptions.read')
+  async subscriptions(@Req() request: AdminRequest) {
+    return { data: await this.operations.subscriptions(request.admin!) };
+  }
+
+  @Get('payments')
+  @SetMetadata('adminPermission', 'payments.read')
+  async payments(@Req() request: AdminRequest) {
+    return { data: await this.operations.payments(request.admin!) };
+  }
+
   @Patch('users/:userId/suspend')
   @SetMetadata('adminPermission', 'users.suspend')
   @UseGuards(AdminCsrfGuard)
