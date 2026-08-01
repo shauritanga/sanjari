@@ -104,10 +104,15 @@ Discovery routes require a valid access token. Responses contain broad distance 
 
 Conversation routes require an active mutual match and re-check block state for every operation. Message previews in notifications are intentionally generic.
 
-| Method   | Route                                            | Purpose                                         |
-| -------- | ------------------------------------------------ | ----------------------------------------------- |
-| `GET`    | `/api/v1/conversations`                          | List active matched conversations               |
-| `GET`    | `/api/v1/conversations/:conversationId/messages` | Read paginated message history                  |
-| `POST`   | `/api/v1/conversations/:conversationId/messages` | Send a text message with link-risk review state |
-| `POST`   | `/api/v1/conversations/:conversationId/read`     | Record a read receipt                           |
-| `DELETE` | `/api/v1/conversations/messages/:messageId`      | Delete the caller's own message content         |
+| Method   | Route                                                                            | Purpose                                         |
+| -------- | -------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `GET`    | `/api/v1/conversations`                                                          | List active matched conversations               |
+| `GET`    | `/api/v1/conversations/:conversationId/messages`                                 | Read paginated message history                  |
+| `POST`   | `/api/v1/conversations/:conversationId/messages`                                 | Send a text message with link-risk review state |
+| `POST`   | `/api/v1/conversations/:conversationId/read`                                     | Record a read receipt                           |
+| `DELETE` | `/api/v1/conversations/messages/:messageId`                                      | Delete the caller's own message content         |
+| `POST`   | `/api/v1/conversations/messages/:messageId/reactions`                            | Add an authorized message reaction              |
+| `POST`   | `/api/v1/conversations/:conversationId/messages/:messageId/attachments/presign`  | Create a private upload contract                |
+| `POST`   | `/api/v1/conversations/:conversationId/messages/:messageId/attachments/complete` | Register an attachment for scanning             |
+| `POST`   | `/api/v1/notifications/push-token`                                               | Register a hashed push token                    |
+| `POST`   | `/api/v1/notifications/preferences`                                              | Set category-level notification preferences     |

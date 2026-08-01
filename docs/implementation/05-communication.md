@@ -26,5 +26,8 @@ Provide reliable, consent-based communication only between active matched users.
 - Block-state rechecks on every conversation operation.
 - Generic in-app new-message notifications and suspicious-link message review/audit state.
 - Mobile conversation list and message composer with empty, error, and review-warning states.
+- Authenticated Socket.IO gateway events for message send, recovery, typing, presence, and JWT handshake validation.
+- Private attachment presign/complete contracts with MIME/size checks and pending-scan state.
+- Reactions and server-side push-token hashing/preferences APIs.
 
-Socket.IO reconnect recovery, attachment presigning/scanning, push delivery, reactions, typing, and presence remain subsequent communication hardening work.
+Provider-specific push delivery, offline queue persistence, and the media scanning worker remain infrastructure integrations; notification payloads remain generic by default.

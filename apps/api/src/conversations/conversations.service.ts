@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
+import { AttachmentStorageService } from './attachment-storage.service';
 
 function hasSuspiciousLink(body: string): boolean {
   return /(?:https?:\/\/|www\.)[^\s]+/i.test(body);
@@ -7,7 +8,10 @@ function hasSuspiciousLink(body: string): boolean {
 
 @Injectable()
 export class ConversationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly attachmentStorage: AttachmentStorageService,
+  ) {}
 
   private async authorize(userId: string, conversationId: string) {
     const conversation = await this.prisma.conversation.findFirst({
@@ -187,5 +191,85 @@ export class ConversationsService {
       data: { deletedForSenderAt: new Date(), body: null },
     });
     return { deleted: true };
+  }
+
+  async react(userId: string, messageId: string, reaction: string) {
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+      select: { conversationId: true },
+    });
+    if (!message)
+      throw new NotFoundException({ code: 'MESSAGE_NOT_FOUND', message: 'Message not found.' });
+    await this.authorize(userId, message.conversationId);
+    return this.prisma.messageReaction.upsert({
+      where: { messageId_userId_reaction: { messageId, userId, reaction } },
+      create: { messageId, userId, reaction },
+      update: {},
+    });
+  }
+
+  async presignAttachment(
+    userId: string,
+    conversationId: string,
+    messageId: string,
+    mimeType: string,
+    sizeBytes: number,
+  ) {
+    await this.authorize(userId, conversationId);
+    if (
+      !Number.isInteger(sizeBytes) ||
+      !['image/jpeg', 'image/png', 'image/webp', 'audio/m4a', 'audio/mpeg'].includes(mimeType) ||
+      sizeBytes < 1 ||
+      sizeBytes > 25 * 1024 * 1024
+    )
+      throw new ForbiddenException({
+        code: 'ATTACHMENT_NOT_ALLOWED',
+        message: 'This attachment type or size is not allowed.',
+      });
+    const message = await this.prisma.message.findFirst({
+      where: { id: messageId, conversationId, senderId: userId },
+      select: { id: true },
+    });
+    if (!message)
+      throw new ForbiddenException({
+        code: 'ATTACHMENT_NOT_ALLOWED',
+        message: 'Attachments can only be added to your own message.',
+      });
+    return this.attachmentStorage.presign(userId, mimeType);
+  }
+
+  async completeAttachment(
+    userId: string,
+    conversationId: string,
+    messageId: string,
+    storageKey: string,
+    mimeType: string,
+    sizeBytes: number,
+  ) {
+    await this.authorize(userId, conversationId);
+    if (
+      !storageKey.startsWith(`messages/${userId}/`) ||
+      !Number.isInteger(sizeBytes) ||
+      !['image/jpeg', 'image/png', 'image/webp', 'audio/m4a', 'audio/mpeg'].includes(mimeType) ||
+      sizeBytes < 1 ||
+      sizeBytes > 25 * 1024 * 1024
+    )
+      throw new ForbiddenException({
+        code: 'ATTACHMENT_NOT_ALLOWED',
+        message: 'The attachment is invalid.',
+      });
+    const message = await this.prisma.message.findFirst({
+      where: { id: messageId, conversationId, senderId: userId },
+      select: { id: true },
+    });
+    if (!message)
+      throw new ForbiddenException({
+        code: 'ATTACHMENT_NOT_ALLOWED',
+        message: 'Attachments can only be added to your own message.',
+      });
+    return this.prisma.messageAttachment.create({
+      data: { messageId, storageKey, mimeType, sizeBytes, status: 'pending_scan' },
+      select: { id: true, status: true, mimeType: true, sizeBytes: true },
+    });
   }
 }

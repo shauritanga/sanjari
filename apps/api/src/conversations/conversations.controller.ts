@@ -1,7 +1,14 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from '../auth/access-token.guard';
 import { ConversationsService } from './conversations.service';
-import { MessageHistoryQueryDto, ReadReceiptDto, SendMessageDto } from './dto';
+import {
+  AttachmentCompleteDto,
+  AttachmentPresignDto,
+  MessageHistoryQueryDto,
+  ReactionDto,
+  ReadReceiptDto,
+  SendMessageDto,
+} from './dto';
 
 @UseGuards(AccessTokenGuard)
 @Controller({ path: 'conversations', version: '1' })
@@ -45,5 +52,51 @@ export class ConversationsController {
   @Delete('messages/:messageId')
   async delete(@Req() request: AuthenticatedRequest, @Param('messageId') messageId: string) {
     return { data: await this.conversations.deleteOwnMessage(request.user!.sub, messageId) };
+  }
+
+  @Post('messages/:messageId/reactions')
+  async react(
+    @Req() request: AuthenticatedRequest,
+    @Param('messageId') messageId: string,
+    @Body() dto: ReactionDto,
+  ) {
+    return { data: await this.conversations.react(request.user!.sub, messageId, dto.reaction) };
+  }
+
+  @Post(':conversationId/messages/:messageId/attachments/presign')
+  async presignAttachment(
+    @Req() request: AuthenticatedRequest,
+    @Param('conversationId') conversationId: string,
+    @Param('messageId') messageId: string,
+    @Body() dto: AttachmentPresignDto,
+  ) {
+    return {
+      data: await this.conversations.presignAttachment(
+        request.user!.sub,
+        conversationId,
+        messageId,
+        dto.mimeType,
+        Number(dto.sizeBytes),
+      ),
+    };
+  }
+
+  @Post(':conversationId/messages/:messageId/attachments/complete')
+  async completeAttachment(
+    @Req() request: AuthenticatedRequest,
+    @Param('conversationId') conversationId: string,
+    @Param('messageId') messageId: string,
+    @Body() dto: AttachmentCompleteDto,
+  ) {
+    return {
+      data: await this.conversations.completeAttachment(
+        request.user!.sub,
+        conversationId,
+        messageId,
+        dto.storageKey,
+        dto.mimeType,
+        Number(dto.sizeBytes),
+      ),
+    };
   }
 }
