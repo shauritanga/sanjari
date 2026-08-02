@@ -11,6 +11,7 @@ describe('profiles and verification integration contracts', () => {
     const service = new StorageService({
       getOrThrow: (key: string) => ({
         S3_BUCKET: 'sanjari',
+        S3_ENDPOINT: 'http://minio:9000',
         S3_PUBLIC_ENDPOINT: 'http://localhost:9000',
         S3_REGION: 'us-east-1',
         S3_ACCESS_KEY_ID: 'access',
