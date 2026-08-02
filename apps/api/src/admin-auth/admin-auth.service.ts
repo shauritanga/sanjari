@@ -34,15 +34,6 @@ export class AdminAuthService {
         message: 'Admin credentials are invalid.',
       });
     }
-    if (
-      this.config.get<string>('NODE_ENV', 'development') === 'production' &&
-      this.config.get<string>('ADMIN_MFA_PROVIDER', 'disabled') === 'disabled'
-    ) {
-      throw new UnauthorizedException({
-        code: 'ADMIN_MFA_PROVIDER_UNAVAILABLE',
-        message: 'Production admin MFA provider is not configured.',
-      });
-    }
     if (admin.mfaEnabled) {
       const provider = this.config.get<string>('ADMIN_MFA_PROVIDER', 'disabled');
       if (provider === 'disabled' || !dto.mfaCode) {
