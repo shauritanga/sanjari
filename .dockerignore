@@ -1,0 +1,12 @@
+.git
+.github
+.next
+.turbo
+node_modules
+apps/mobile/android
+apps/mobile/ios
+**/*.log
+**/coverage
+**/dist
+**/.env
+**/.env.*
