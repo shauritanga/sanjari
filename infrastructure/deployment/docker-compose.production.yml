@@ -55,7 +55,6 @@ services:
       mailpit:
         condition: service_started
     ports:
-      - "9000:9000"
       - "3400:4000"
     command: ["sh", "-c", "pnpm --filter @sanjari/api exec prisma migrate deploy && node packages/tsconfig/dist/src/main.js"]
 
