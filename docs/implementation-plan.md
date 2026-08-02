@@ -41,7 +41,7 @@ Brand anchors:
 | W06 | Safety and moderation               | Reports, blocks, risk signals, appeals, safety centre          | In progress |
 | W07 | Admin operations                    | RBAC dashboard, queues, analytics, audit views                 | Implemented |
 | W08 | Monetisation                        | Entitlements, store verification, webhooks, refunds            | In progress |
-| W09 | Platform operations                 | Workers, observability, deployment, backups, incident response | Planned     |
+| W09 | Platform operations                 | Workers, observability, deployment, backups, incident response | Implemented |
 | W10 | Quality and release                 | Test strategy, accessibility, load, store readiness            | Planned     |
 | W11 | Brand and localization              | Design tokens, voice, English/Swahili, content governance      | In progress |
 
