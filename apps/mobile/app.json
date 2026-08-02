@@ -2,6 +2,7 @@
   "expo": {
     "name": "Sanjari",
     "slug": "sanjari",
+    "icon": "./assets/icon.png",
     "scheme": "sanjari",
     "version": "0.1.0",
     "orientation": "portrait",
