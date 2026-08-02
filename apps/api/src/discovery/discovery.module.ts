@@ -10,7 +10,18 @@ import { RankingEvaluationWorker } from './ranking-evaluation.worker';
 const workerProviders = process.env.RUN_WORKERS === 'true' ? [RankingEvaluationWorker] : [];
 
 @Module({
-  imports: [AuthModule, BullModule.registerQueue({ name: 'ranking-evaluation' })],
+  imports: [
+    AuthModule,
+    BullModule.registerQueue({
+      name: 'ranking-evaluation',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: 100,
+        removeOnFail: 1000,
+      },
+    }),
+  ],
   controllers: [DiscoveryController],
   providers: [
     DiscoveryService,

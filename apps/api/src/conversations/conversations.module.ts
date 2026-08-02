@@ -12,7 +12,19 @@ import { ProfilesModule } from '../profiles/profiles.module';
 const workerProviders = process.env.RUN_WORKERS === 'true' ? [AttachmentScanWorker] : [];
 
 @Module({
-  imports: [AuthModule, ProfilesModule, BullModule.registerQueue({ name: 'attachment-scan' })],
+  imports: [
+    AuthModule,
+    ProfilesModule,
+    BullModule.registerQueue({
+      name: 'attachment-scan',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: 100,
+        removeOnFail: 1000,
+      },
+    }),
+  ],
   controllers: [ConversationsController],
   providers: [
     ConversationsService,

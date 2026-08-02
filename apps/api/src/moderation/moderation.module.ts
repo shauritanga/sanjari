@@ -21,9 +21,33 @@ const workerProviders =
   imports: [
     AuthModule,
     AdminAuthModule,
-    BullModule.registerQueue({ name: 'moderation-retention' }),
-    BullModule.registerQueue({ name: 'account-deletion' }),
-    BullModule.registerQueue({ name: 'data-export' }),
+    BullModule.registerQueue({
+      name: 'moderation-retention',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: 100,
+        removeOnFail: 1000,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'account-deletion',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: 100,
+        removeOnFail: 1000,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'data-export',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: 100,
+        removeOnFail: 1000,
+      },
+    }),
   ],
   controllers: [ModerationController, AdminModerationController],
   providers: [
