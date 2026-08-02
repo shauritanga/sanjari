@@ -3,9 +3,8 @@ import { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
+import { API_URL } from '../../src/config';
 import { theme } from '../../src/theme/theme';
-
-const API_URL = 'http://localhost:4000/api/v1';
 type ApiResponse = { message?: string; error?: { message?: string } };
 async function readApiResponse(response: Response): Promise<ApiResponse> {
   return (await response.json()) as ApiResponse;

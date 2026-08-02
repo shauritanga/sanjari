@@ -1,6 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-
-const API_URL = 'http://localhost:4000/api/v1';
+import { API_URL } from './config';
 type ApiBody<T> = { data?: T; message?: string; error?: { message?: string } };
 
 async function request<T = unknown>(path: string, options: RequestInit = {}): Promise<ApiBody<T>> {
