@@ -22,7 +22,7 @@
       "usesCleartextTraffic": true,
       "permissions": ["CAMERA", "ACCESS_COARSE_LOCATION", "RECORD_AUDIO", "POST_NOTIFICATIONS"]
     },
-    "plugins": ["expo-router", "expo-secure-store", "expo-localization", "expo-notifications"],
+    "plugins": ["expo-router", "expo-secure-store", "expo-localization", "expo-notifications", "./plugins/withCleartextTraffic"],
     "updates": {
       "fallbackToCacheTimeout": 0
     },
