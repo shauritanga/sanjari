@@ -22,6 +22,12 @@ type Profile = {
   };
 };
 type Onboarding = { completionScore: number; profile: Profile };
+type VerificationCase = {
+  id: string;
+  type: 'selfie_liveness' | 'identity_document';
+  status: string;
+  provider: string;
+};
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<Profile>({
@@ -37,6 +43,7 @@ export default function ProfileScreen() {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [verificationCases, setVerificationCases] = useState<VerificationCase[]>([]);
   useEffect(() => {
     void api
       .get<Onboarding>('/onboarding')
@@ -49,6 +56,12 @@ export default function ProfileScreen() {
       .catch((cause) =>
         setError(cause instanceof Error ? cause.message : 'Unable to load profile.'),
       );
+  }, []);
+  useEffect(() => {
+    void api
+      .get<VerificationCase[]>('/onboarding/verification')
+      .then((result) => setVerificationCases(result.data ?? []))
+      .catch(() => undefined);
   }, []);
   async function save() {
     setError('');
@@ -90,6 +103,15 @@ export default function ProfileScreen() {
       setPaused(result.data?.paused ?? !paused);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to update discovery.');
+    }
+  }
+  async function requestVerification(type: VerificationCase['type']) {
+    setError('');
+    try {
+      const result = await api.post<VerificationCase>(`/onboarding/verification/${type}/request`, {});
+      if (result.data) setVerificationCases((current) => [result.data!, ...current]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to request verification.');
     }
   }
   return (
@@ -186,6 +208,35 @@ export default function ProfileScreen() {
             }
           />
         </View>
+        <View style={styles.verificationSection}>
+          <Text style={styles.sectionTitle}>Verification</Text>
+          <Text style={styles.verificationNote}>
+            Verification badges describe the check performed. They do not guarantee someone&apos;s
+            character or safety.
+          </Text>
+          {verificationCases.map((item) => (
+            <View key={item.id} style={styles.verificationRow}>
+              <Text style={styles.visibilityLabel}>
+                {item.type === 'selfie_liveness' ? 'Selfie check' : 'Identity document'}
+              </Text>
+              <Text style={styles.verificationStatus}>{item.status}</Text>
+            </View>
+          ))}
+          <AppButton
+            label="Request selfie verification"
+            variant="secondary"
+            onPress={() => {
+              void requestVerification('selfie_liveness');
+            }}
+          />
+          <AppButton
+            label="Request identity review"
+            variant="secondary"
+            onPress={() => {
+              void requestVerification('identity_document');
+            }}
+          />
+        </View>
         <AppButton
           label="Save profile"
           onPress={() => {
@@ -199,12 +250,6 @@ export default function ProfileScreen() {
             void togglePause();
           }}
         />
-        <View style={styles.note}>
-          <Text style={styles.noteText}>
-            Verification badges describe the check performed. They do not guarantee someone&apos;s
-            character or safety.
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -261,10 +306,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   visibilityLabel: { color: theme.colors.charcoal, fontSize: 16 },
-  note: {
+  verificationSection: {
+    gap: theme.spacing.sm,
     padding: theme.spacing.md,
     backgroundColor: theme.colors.softRose,
     borderRadius: theme.radius.md,
   },
-  noteText: { color: theme.colors.deepPlum, lineHeight: 20 },
+  verificationNote: { color: theme.colors.deepPlum, lineHeight: 20 },
+  verificationRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  verificationStatus: { color: theme.colors.coral, fontWeight: '700' },
 });
