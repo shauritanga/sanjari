@@ -54,7 +54,7 @@ services:
         condition: service_started
     ports:
       - "127.0.0.1:3400:4000"
-    command: ["sh", "-c", "pnpm --filter @sanjari/api exec prisma migrate deploy && node apps/api/dist/src/main.js"]
+    command: ["sh", "-c", "pnpm --filter @sanjari/api exec prisma migrate deploy && node packages/tsconfig/dist/src/main.js"]
 
   admin:
     build:
