@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import { File } from 'expo-file-system';
 import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
@@ -147,7 +148,7 @@ export default function ProfileScreen() {
       const upload = await fetch(presign.data.uploadUrl, {
         method: 'PUT',
         headers: { 'Content-Type': mimeType },
-        body: await (await fetch(asset.uri)).blob(),
+        body: await new File(asset.uri).arrayBuffer(),
       });
       if (!upload.ok) throw new Error('Photo upload failed.');
       const completed = await api.post<{ id: string; moderationStatus: string }>(
