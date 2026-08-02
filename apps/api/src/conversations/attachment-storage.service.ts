@@ -1,15 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import { StorageService } from '../profiles/storage.service';
 
 @Injectable()
 export class AttachmentStorageService {
+  constructor(private readonly storage: StorageService) {}
+
   presign(userId: string, mimeType: string) {
-    const extension = mimeType.split('/')[1] ?? 'bin';
-    const storageKey = `messages/${userId}/${randomUUID()}.${extension}`;
-    return {
-      storageKey,
-      uploadUrl: `https://storage.invalid/upload/${encodeURIComponent(storageKey)}`,
-      expiresIn: 300,
-    };
+    return this.storage.presign(userId, 'messages', mimeType);
   }
 }

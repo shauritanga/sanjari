@@ -7,9 +7,10 @@ import { AttachmentStorageService } from './attachment-storage.service';
 import { ConversationsGateway } from './conversations.gateway';
 import { AttachmentScanService } from './attachment-scan.service';
 import { AttachmentScanWorker } from './attachment-scan.worker';
+import { ProfilesModule } from '../profiles/profiles.module';
 
 @Module({
-  imports: [AuthModule, BullModule.registerQueue({ name: 'attachment-scan' })],
+  imports: [AuthModule, ProfilesModule, BullModule.registerQueue({ name: 'attachment-scan' })],
   controllers: [ConversationsController],
   providers: [
     ConversationsService,

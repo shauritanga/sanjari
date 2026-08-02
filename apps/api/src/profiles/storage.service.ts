@@ -47,11 +47,11 @@ export class StorageService {
     }
   }
 
-  async presignProfilePhoto(userId: string, mimeType: string): Promise<PresignedUpload> {
+  async presign(userId: string, prefix: 'profiles' | 'messages', mimeType: string): Promise<PresignedUpload> {
     this.ensureBucketPromise ??= this.ensureBucket();
     await this.ensureBucketPromise;
     const extension = mimeType.split('/')[1] ?? 'bin';
-    const storageKey = `profiles/${userId}/${randomUUID()}.${extension}`;
+    const storageKey = `${prefix}/${userId}/${randomUUID()}.${extension}`;
     const uploadUrl = await getSignedUrl(
       this.presignClient,
       new PutObjectCommand({ Bucket: this.bucket, Key: storageKey, ContentType: mimeType }),
@@ -62,5 +62,9 @@ export class StorageService {
       uploadUrl,
       expiresIn: 300,
     };
+  }
+
+  async presignProfilePhoto(userId: string, mimeType: string): Promise<PresignedUpload> {
+    return this.presign(userId, 'profiles', mimeType);
   }
 }

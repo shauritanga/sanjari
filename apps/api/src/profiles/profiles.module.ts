@@ -9,5 +9,6 @@ import { VerificationService } from './verification.service';
   imports: [AuthModule],
   controllers: [ProfilesController],
   providers: [ProfilesService, StorageService, VerificationService],
+  exports: [StorageService],
 })
 export class ProfilesModule {}
