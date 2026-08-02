@@ -7,11 +7,14 @@ import { theme } from '../../src/theme/theme';
 
 type Profile = {
   displayName: string | null;
+  pronouns?: string | null;
   city: string | null;
   biography: string | null;
   gender: string | null;
   interestedIn: string[];
   relationshipIntentions: string[];
+  occupationCategory?: string | null;
+  educationLevel?: string | null;
   visibilitySettings?: {
     hideAge?: boolean;
     hideOnlineStatus?: boolean;
@@ -54,10 +57,19 @@ export default function ProfileScreen() {
       const result = await api.put<{ completionScore: number }>('/onboarding', {
         step: 4,
         ...(profile.displayName !== null ? { displayName: profile.displayName } : {}),
+        ...(profile.pronouns !== null && profile.pronouns !== undefined
+          ? { pronouns: profile.pronouns }
+          : {}),
         ...(profile.gender !== null ? { gender: profile.gender } : {}),
         interestedIn: profile.interestedIn,
         relationshipIntentions: profile.relationshipIntentions,
         ...(profile.biography !== null ? { biography: profile.biography } : {}),
+        ...(profile.occupationCategory !== null && profile.occupationCategory !== undefined
+          ? { occupationCategory: profile.occupationCategory }
+          : {}),
+        ...(profile.educationLevel !== null && profile.educationLevel !== undefined
+          ? { educationLevel: profile.educationLevel }
+          : {}),
         ...(profile.city !== null ? { city: profile.city } : {}),
         hideAge: profile.visibilitySettings?.hideAge ?? false,
         hideOnlineStatus: profile.visibilitySettings?.hideOnlineStatus ?? false,
@@ -101,6 +113,11 @@ export default function ProfileScreen() {
           onChangeText={(value) => setProfile((current) => ({ ...current, gender: value }))}
         />
         <AppTextInput
+          label="Pronouns"
+          value={profile.pronouns ?? ''}
+          onChangeText={(value) => setProfile((current) => ({ ...current, pronouns: value }))}
+        />
+        <AppTextInput
           label="City or broad area"
           value={profile.city ?? ''}
           onChangeText={(value) => setProfile((current) => ({ ...current, city: value }))}
@@ -109,6 +126,32 @@ export default function ProfileScreen() {
           label="Biography"
           value={profile.biography ?? ''}
           onChangeText={(value) => setProfile((current) => ({ ...current, biography: value }))}
+        />
+        <AppTextInput
+          label="Occupation"
+          value={profile.occupationCategory ?? ''}
+          onChangeText={(value) =>
+            setProfile((current) => ({ ...current, occupationCategory: value }))
+          }
+        />
+        <AppTextInput
+          label="Education"
+          value={profile.educationLevel ?? ''}
+          onChangeText={(value) => setProfile((current) => ({ ...current, educationLevel: value }))}
+        />
+        <AppTextInput
+          label="Interested in (comma separated)"
+          value={profile.interestedIn.join(', ')}
+          onChangeText={(value) =>
+            setProfile((current) => ({ ...current, interestedIn: splitList(value) }))
+          }
+        />
+        <AppTextInput
+          label="Relationship intentions (comma separated)"
+          value={profile.relationshipIntentions.join(', ')}
+          onChangeText={(value) =>
+            setProfile((current) => ({ ...current, relationshipIntentions: splitList(value) }))
+          }
         />
         <View style={styles.visibilitySection}>
           <Text style={styles.sectionTitle}>Visibility</Text>
@@ -165,6 +208,13 @@ export default function ProfileScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function splitList(value: string) {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function VisibilityRow({
