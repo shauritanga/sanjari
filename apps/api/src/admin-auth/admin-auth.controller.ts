@@ -1,4 +1,5 @@
 import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AdminAuthService, ADMIN_SESSION_COOKIE } from './admin-auth.service';
 import { AdminAuthGuard } from './admin-auth.guard';
 import { AdminLoginDto } from './dto';
@@ -11,14 +12,14 @@ type AdminResponse = {
 
 @Controller({ path: 'admin/auth', version: '1' })
 export class AdminAuthController {
-  constructor(private readonly auth: AdminAuthService) {}
+  constructor(private readonly auth: AdminAuthService, private readonly config: ConfigService) {}
 
   @Post('login')
   async login(@Body() dto: AdminLoginDto, @Res({ passthrough: true }) response: AdminResponse) {
     const result = await this.auth.login(dto);
     response.cookie(ADMIN_SESSION_COOKIE, result.sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.config.get<string>('ADMIN_COOKIE_SECURE', 'true') === 'true',
       sameSite: 'strict',
       maxAge: 8 * 60 * 60 * 1000,
       path: '/',

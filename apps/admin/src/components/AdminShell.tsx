@@ -101,7 +101,8 @@ export function AdminShell({ children }: Readonly<{ children: React.ReactNode }>
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [dark, setDark] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [headerProfileOpen, setHeaderProfileOpen] = useState(false);
+  const [sidebarProfileOpen, setSidebarProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [claims, setClaims] = useState<{ displayName?: string; email?: string; permissions?: string[] }>({});
   const permissions = claims.permissions ?? [];
@@ -162,10 +163,10 @@ export function AdminShell({ children }: Readonly<{ children: React.ReactNode }>
           <button className="sidebar-toggle" onClick={toggleCollapsed} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}<span className="nav-label">Collapse menu</span>
           </button>
-          <button className="sidebar-profile" onClick={() => setProfileOpen((value) => !value)} aria-expanded={profileOpen}>
+          <button className="sidebar-profile" onClick={() => setSidebarProfileOpen((value) => !value)} aria-expanded={sidebarProfileOpen}>
             <span className="avatar avatar-small">{initials(displayName)}</span><span className="profile-summary nav-label"><strong>{displayName}</strong><small>Administrator</small></span>
           </button>
-          {profileOpen ? <div className="profile-popover sidebar-popover"><strong>{displayName}</strong><span>{claims.email || 'Admin account'}</span><button onClick={() => void logout()}><LogOut size={15} /> Sign out</button></div> : null}
+          {sidebarProfileOpen ? <div className="profile-popover sidebar-popover"><strong>{displayName}</strong><span>{claims.email || 'Admin account'}</span><button onClick={() => void logout()}><LogOut size={15} /> Sign out</button></div> : null}
         </div>
       </aside>
       <div className="workspace">
@@ -174,7 +175,7 @@ export function AdminShell({ children }: Readonly<{ children: React.ReactNode }>
           <div className="header-actions">
             <button className="icon-button" onClick={() => setDark((value) => !value)} title={dark ? 'Use light theme' : 'Use dark theme'} aria-label={dark ? 'Use light theme' : 'Use dark theme'}>{dark ? <Sun size={19} /> : <Moon size={19} />}</button>
             <Link className="icon-button notification-button" href="/notifications" title="Notifications" aria-label="Notifications"><Bell size={19} /><span className="notification-dot" /></Link>
-            <div className="profile-anchor"><button className="header-profile" onClick={() => setProfileOpen((value) => !value)} aria-expanded={profileOpen}><span className="avatar">{initials(displayName)}</span><span className="header-profile-name">{displayName}</span><ChevronRight size={15} className={profileOpen ? 'rotate-90' : ''} /></button>{profileOpen ? <div className="profile-popover header-popover"><div className="popover-user"><span className="avatar">{initials(displayName)}</span><div><strong>{displayName}</strong><span>{claims.email || 'Admin account'}</span></div></div><Link href="/dashboard"><UserRound size={15} /> Workspace overview</Link><button onClick={() => void logout()}><LogOut size={15} /> Sign out</button></div> : null}</div>
+            <div className="profile-anchor"><button className="header-profile" onClick={() => setHeaderProfileOpen((value) => !value)} aria-label="Open account menu" aria-expanded={headerProfileOpen}><span className="avatar">{initials(displayName)}</span></button>{headerProfileOpen ? <div className="profile-popover header-popover"><div className="popover-user"><span className="avatar">{initials(displayName)}</span><div><strong>{displayName}</strong><span>{claims.email || 'Admin account'}</span></div></div><Link href="/dashboard"><UserRound size={15} /> Workspace overview</Link><button onClick={() => void logout()}><LogOut size={15} /> Sign out</button></div> : null}</div>
           </div>
         </header>
         <main className="main">{children}</main>
