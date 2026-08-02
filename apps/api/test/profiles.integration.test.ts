@@ -3,10 +3,25 @@ import { StorageService } from '../src/profiles/storage.service';
 import { VerificationService } from '../src/profiles/verification.service';
 
 describe('profiles and verification integration contracts', () => {
-  it('creates a scoped, expiring profile photo upload contract', () => {
-    const result = new StorageService().presignProfilePhoto('user-1', 'image/jpeg');
+  it('creates a scoped, expiring profile photo upload contract', async () => {
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+    const service = new StorageService({
+      getOrThrow: (key: string) => ({
+        S3_BUCKET: 'sanjari',
+        S3_PUBLIC_ENDPOINT: 'http://localhost:9000',
+        S3_REGION: 'us-east-1',
+        S3_ACCESS_KEY_ID: 'access',
+        S3_SECRET_ACCESS_KEY: 'secret',
+      })[key],
+    } as never);
+    (service as unknown as { client: { send: typeof send } }).client.send = send;
+    const result = await service.presignProfilePhoto('user-1', 'image/jpeg');
     expect(result.storageKey).toMatch(/^profiles\/user-1\/.*\.jpeg$/);
-    expect(result.uploadUrl).toContain(encodeURIComponent(result.storageKey));
+    expect(result.uploadUrl).toContain('profiles/user-1/');
+    expect(result.uploadUrl).not.toContain('storage.invalid');
     expect(result.expiresIn).toBe(300);
   });
 

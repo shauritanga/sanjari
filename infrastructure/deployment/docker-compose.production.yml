@@ -30,6 +30,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY}
+    ports:
+      - "9000:9000"
     volumes:
       - sanjari-minio:/data
 
@@ -53,6 +55,7 @@ services:
       mailpit:
         condition: service_started
     ports:
+      - "9000:9000"
       - "3400:4000"
     command: ["sh", "-c", "pnpm --filter @sanjari/api exec prisma migrate deploy && node packages/tsconfig/dist/src/main.js"]
 

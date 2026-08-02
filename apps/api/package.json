@@ -13,6 +13,8 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1101.0",
+    "@aws-sdk/s3-request-presigner": "^3.1101.0",
     "@nestjs/bullmq": "11.0.3",
     "@nestjs/common": "11.1.28",
     "@nestjs/config": "4.0.2",
