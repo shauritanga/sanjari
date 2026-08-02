@@ -15,6 +15,8 @@ type Profile = {
   gender: string | null;
   interestedIn: string[];
   relationshipIntentions: string[];
+  interests: string[];
+  languages: string[];
   occupationCategory?: string | null;
   educationLevel?: string | null;
   visibilitySettings?: {
@@ -24,7 +26,7 @@ type Profile = {
   };
   photos?: { id: string; moderationStatus?: string }[];
 };
-type Onboarding = { completionScore: number; profile: Profile };
+type Onboarding = { completionScore: number; onboardingStatus: string; profile: Profile };
 type VerificationCase = {
   id: string;
   type: 'selfie_liveness' | 'identity_document';
@@ -40,6 +42,8 @@ export default function ProfileScreen() {
     gender: '',
     interestedIn: [],
     relationshipIntentions: [],
+    interests: [],
+    languages: [],
     visibilitySettings: {},
   });
   const [score, setScore] = useState(0);
@@ -48,6 +52,7 @@ export default function ProfileScreen() {
   const [paused, setPaused] = useState(false);
   const [verificationCases, setVerificationCases] = useState<VerificationCase[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [onboardingStatus, setOnboardingStatus] = useState('not_started');
   useEffect(() => {
     void api
       .get<Onboarding>('/onboarding')
@@ -55,6 +60,7 @@ export default function ProfileScreen() {
         if (result.data) {
           setProfile(result.data.profile);
           setScore(result.data.completionScore);
+          setOnboardingStatus(result.data.onboardingStatus);
         }
       })
       .catch((cause) =>
@@ -80,6 +86,8 @@ export default function ProfileScreen() {
         ...(profile.gender !== null ? { gender: profile.gender } : {}),
         interestedIn: profile.interestedIn,
         relationshipIntentions: profile.relationshipIntentions,
+        interests: profile.interests,
+        languages: profile.languages,
         ...(profile.biography !== null ? { biography: profile.biography } : {}),
         ...(profile.occupationCategory !== null && profile.occupationCategory !== undefined
           ? { occupationCategory: profile.occupationCategory }
@@ -93,9 +101,20 @@ export default function ProfileScreen() {
         hideReadReceipts: profile.visibilitySettings?.hideReadReceipts ?? false,
       });
       setScore(result.data?.completionScore ?? score);
+      setOnboardingStatus('in_progress');
       setSaved(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to save profile.');
+    }
+  }
+  async function publish() {
+    setError('');
+    try {
+      const result = await api.post<{ completionScore: number; onboardingStatus: string }>('/onboarding/publish', {});
+      setScore(result.data?.completionScore ?? score);
+      setOnboardingStatus(result.data?.onboardingStatus ?? 'published');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Complete the required fields before publishing.');
     }
   }
   async function togglePause() {
@@ -172,6 +191,7 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Your profile</Text>
         <Text style={styles.score}>{score}% complete</Text>
+        <Text style={styles.status}>Status: {onboardingStatus === 'published' ? 'Submitted for review' : 'Complete your profile to submit it'}</Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {saved ? <Text style={styles.saved}>Saved</Text> : null}
         <View style={styles.photoSection}>
@@ -240,6 +260,16 @@ export default function ProfileScreen() {
           onChangeText={(value) =>
             setProfile((current) => ({ ...current, relationshipIntentions: splitList(value) }))
           }
+        />
+        <AppTextInput
+          label="Interests (slugs: music, travel, faith, fitness)"
+          value={profile.interests.join(', ')}
+          onChangeText={(value) => setProfile((current) => ({ ...current, interests: splitList(value) }))}
+        />
+        <AppTextInput
+          label="Languages (codes: en, sw)"
+          value={profile.languages.join(', ')}
+          onChangeText={(value) => setProfile((current) => ({ ...current, languages: splitList(value) }))}
         />
         <View style={styles.visibilitySection}>
           <Text style={styles.sectionTitle}>Visibility</Text>
@@ -310,6 +340,11 @@ export default function ProfileScreen() {
           }}
         />
         <AppButton
+          label="Submit profile for review"
+          variant="secondary"
+          onPress={() => { void publish(); }}
+        />
+        <AppButton
           label={paused ? 'Resume discovery' : 'Pause discovery'}
           variant="secondary"
           onPress={() => {
@@ -356,6 +391,7 @@ const styles = StyleSheet.create({
   content: { gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
   title: { color: theme.colors.deepPlum, fontSize: 32, fontWeight: '700' },
   score: { color: theme.colors.coral, fontWeight: '700' },
+  status: { color: theme.colors.secondaryText, fontSize: 14 },
   saved: { color: theme.colors.success },
   error: { color: theme.colors.error },
   visibilitySection: {

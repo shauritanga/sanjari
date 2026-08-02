@@ -35,7 +35,11 @@ export default function LoginScreen() {
         throw new Error('Login response was incomplete.');
       await SecureStore.setItemAsync('sanjari.accessToken', body.data.accessToken);
       await SecureStore.setItemAsync('sanjari.refreshToken', body.data.refreshToken);
-      router.replace('/(tabs)/discover');
+      const onboarding = await fetch(`${API_URL}/onboarding`, {
+        headers: { Authorization: `Bearer ${body.data.accessToken}` },
+      });
+      const onboardingBody = (await onboarding.json()) as { data?: { onboardingStatus?: string } };
+      router.replace(onboardingBody.data?.onboardingStatus === 'published' ? '/(tabs)/discover' : '/(tabs)/profile');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to log in.');
     } finally {

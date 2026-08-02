@@ -32,7 +32,8 @@ export default function PhoneAuthScreen() {
         await setItemAsync('sanjari.accessToken', tokens.accessToken);
         await setItemAsync('sanjari.refreshToken', tokens.refreshToken);
       });
-      router.replace('/(tabs)/discover');
+      const onboarding = await api.get<{ onboardingStatus?: string }>('/onboarding');
+      router.replace(onboarding.data?.onboardingStatus === 'published' ? '/(tabs)/discover' : '/(tabs)/profile');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to verify code.');
     }

@@ -14,7 +14,6 @@ const profileFields = [
   'interests',
   'languages',
   'photos',
-  'verification',
 ] as const;
 
 type ProfileSnapshot = {
@@ -49,7 +48,6 @@ function completionScore(profile: ProfileSnapshot): number {
     profile.interests.length > 0,
     profile.languages.length > 0,
     profile.photos.length > 0,
-    profile.verificationStatus === 'verified',
   ].filter(Boolean).length;
   return Math.round((complete / profileFields.length) * 100);
 }
@@ -66,7 +64,11 @@ export class ProfilesService {
       where: { id: userId },
       include: {
         profile: {
-          include: { interests: true, languages: true, photos: true },
+          include: {
+            interests: { include: { interest: true } },
+            languages: { include: { language: true } },
+            photos: true,
+          },
         },
       },
     });
@@ -75,14 +77,18 @@ export class ProfilesService {
     }
 
     const profile = user.profile;
+    const currentScore = completionScore(profile);
+    if (profile.completionScore !== currentScore) {
+      await this.prisma.profile.update({ where: { userId }, data: { completionScore: currentScore } });
+    }
     return {
       userId: user.id,
       onboardingStatus: profile.onboardingStatus,
       onboardingStep: profile.onboardingStep,
-      completionScore: profile.completionScore,
+      completionScore: currentScore,
       age: calculateAge(user.dateOfBirth),
-      profile: {
-        displayName: profile.displayName,
+        profile: {
+          displayName: profile.displayName,
         pronouns: profile.pronouns,
         gender: profile.gender,
         interestedIn: profile.interestedIn,
@@ -97,8 +103,16 @@ export class ProfilesService {
         exercisePreference: profile.exercisePreference,
         childrenPreference: profile.childrenPreference,
         culturalPreference: profile.culturalPreference,
-        visibilitySettings: profile.visibilitySettings,
-      },
+          visibilitySettings: profile.visibilitySettings,
+          interests: profile.interests.map((item) => item.interest.slug),
+          languages: profile.languages.map((item) => item.language.code),
+          photos: profile.photos.map((photo) => ({
+            id: photo.id,
+            position: photo.position,
+            isPrimary: photo.isPrimary,
+            moderationStatus: photo.moderationStatus,
+          })),
+        },
     };
   }
 
@@ -167,12 +181,35 @@ export class ProfilesService {
       include: { interests: true, languages: true, photos: true },
     });
 
-    const score = completionScore({
-      ...profile,
-      interests: current.interests,
-      languages: current.languages,
-      photos: current.photos,
+    if (input.interests !== undefined || input.languages !== undefined) {
+      const [interests, languages] = await Promise.all([
+        input.interests === undefined
+          ? Promise.resolve(null)
+          : this.prisma.interest.findMany({ where: { slug: { in: input.interests } }, select: { id: true, slug: true } }),
+        input.languages === undefined
+          ? Promise.resolve(null)
+          : this.prisma.language.findMany({ where: { code: { in: input.languages } }, select: { id: true, code: true } }),
+      ]);
+      if (interests && interests.length !== new Set(input.interests).size)
+        throw new BadRequestException({ code: 'INVALID_INTEREST', message: 'One or more interests are invalid.' });
+      if (languages && languages.length !== new Set(input.languages).size)
+        throw new BadRequestException({ code: 'INVALID_LANGUAGE', message: 'One or more languages are invalid.' });
+      if (interests) {
+        await this.prisma.profileInterest.deleteMany({ where: { profileId: profile.id } });
+        await this.prisma.profileInterest.createMany({ data: interests.map((item) => ({ profileId: profile.id, interestId: item.id })) });
+      }
+      if (languages) {
+        await this.prisma.profileLanguage.deleteMany({ where: { profileId: profile.id } });
+        await this.prisma.profileLanguage.createMany({ data: languages.map((item) => ({ profileId: profile.id, languageId: item.id })) });
+      }
+    }
+
+    const refreshed = await this.prisma.profile.findUniqueOrThrow({
+      where: { userId },
+      include: { interests: true, languages: true, photos: true },
     });
+
+    const score = completionScore(refreshed);
     const updated = await this.prisma.profile.update({
       where: { userId },
       data: { completionScore: score },
@@ -199,7 +236,7 @@ export class ProfilesService {
     if (score < 100) {
       throw new BadRequestException({
         code: 'PROFILE_INCOMPLETE',
-        message: 'Complete your profile before publishing it.',
+        message: 'Complete the required profile fields and add a photo before publishing it.',
         completionScore: score,
       });
     }
@@ -253,6 +290,7 @@ export class ProfilesService {
       },
       select: { id: true, position: true, isPrimary: true, moderationStatus: true },
     });
+    await this.refreshCompletionScore(userId);
     await this.prisma.auditLog.create({
       data: {
         userId,
@@ -303,10 +341,19 @@ export class ProfilesService {
     if (!photo)
       throw new NotFoundException({ code: 'PHOTO_NOT_FOUND', message: 'Photo not found.' });
     await this.prisma.profilePhoto.delete({ where: { id: photo.id } });
+    await this.refreshCompletionScore(userId);
     await this.prisma.auditLog.create({
       data: { userId, actorType: 'user', action: 'profile.photo_deleted', metadata: { photoId } },
     });
     return { deleted: true };
+  }
+
+  private async refreshCompletionScore(userId: string): Promise<void> {
+    const profile = await this.prisma.profile.findUniqueOrThrow({
+      where: { userId },
+      include: { interests: true, languages: true, photos: true },
+    });
+    await this.prisma.profile.update({ where: { userId }, data: { completionScore: completionScore(profile) } });
   }
 
   async setDiscoveryPaused(userId: string, paused: boolean) {

@@ -43,6 +43,20 @@ export class OnboardingUpdateDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  interests?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @MaxLength(10, { each: true })
+  languages?: string[];
+
+  @IsOptional()
+  @IsArray()
   @ArrayMaxSize(5)
   @IsString({ each: true })
   @MaxLength(40, { each: true })
