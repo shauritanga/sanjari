@@ -23,4 +23,4 @@ COPY --from=build /workspace/node_modules ./node_modules
 COPY --from=build /workspace/apps/admin/node_modules ./apps/admin/node_modules
 COPY --from=build /workspace/packages ./packages
 EXPOSE 3001
-CMD ["node", "node_modules/next/dist/bin/next", "start", "apps/admin", "-p", "3001"]
+CMD ["node", "apps/admin/node_modules/next/dist/bin/next", "start", "apps/admin", "-p", "3001"]
