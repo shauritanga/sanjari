@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
-import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { api } from '../../src/api';
@@ -11,6 +11,9 @@ type Profile = {
   displayName: string | null;
   pronouns?: string | null;
   city: string | null;
+  countryCode?: string | null;
+  cityId?: string | null;
+  cityName?: string | null;
   biography: string | null;
   gender: string | null;
   interestedIn: string[];
@@ -27,6 +30,7 @@ type Profile = {
   photos?: { id: string; moderationStatus?: string }[];
 };
 type Onboarding = { completionScore: number; onboardingStatus: string; profile: Profile };
+type LocationCatalog = { code: string; name: string; cities: Array<{ id: string; name: string }> };
 type VerificationCase = {
   id: string;
   type: 'selfie_liveness' | 'identity_document';
@@ -53,6 +57,7 @@ export default function ProfileScreen() {
   const [verificationCases, setVerificationCases] = useState<VerificationCase[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [onboardingStatus, setOnboardingStatus] = useState('not_started');
+  const [locations, setLocations] = useState<LocationCatalog[]>([]);
   useEffect(() => {
     void api
       .get<Onboarding>('/onboarding')
@@ -66,6 +71,11 @@ export default function ProfileScreen() {
       .catch((cause) =>
         setError(cause instanceof Error ? cause.message : 'Unable to load profile.'),
       );
+  }, []);
+  useEffect(() => {
+    void api.get<LocationCatalog[]>('/catalog/locations')
+      .then((result) => setLocations(result.data ?? []))
+      .catch(() => setError('Unable to load the location list.'));
   }, []);
   useEffect(() => {
     void api
@@ -96,6 +106,8 @@ export default function ProfileScreen() {
           ? { educationLevel: profile.educationLevel }
           : {}),
         ...(profile.city !== null ? { city: profile.city } : {}),
+        ...(profile.countryCode ? { countryCode: profile.countryCode } : {}),
+        ...(profile.cityId ? { cityId: profile.cityId } : {}),
         hideAge: profile.visibilitySettings?.hideAge ?? false,
         hideOnlineStatus: profile.visibilitySettings?.hideOnlineStatus ?? false,
         hideReadReceipts: profile.visibilitySettings?.hideReadReceipts ?? false,
@@ -225,10 +237,14 @@ export default function ProfileScreen() {
           value={profile.pronouns ?? ''}
           onChangeText={(value) => setProfile((current) => ({ ...current, pronouns: value }))}
         />
-        <AppTextInput
-          label="City or broad area"
-          value={profile.city ?? ''}
-          onChangeText={(value) => setProfile((current) => ({ ...current, city: value }))}
+        <LocationPicker
+          locations={locations}
+          countryCode={profile.countryCode ?? null}
+          cityId={profile.cityId ?? null}
+          selectedCity={profile.cityName ?? profile.city ?? null}
+          onSelect={(countryCode, cityId, cityName) =>
+            setProfile((current) => ({ ...current, countryCode, cityId, cityName, city: cityName }))
+          }
         />
         <AppTextInput
           label="Biography"
@@ -363,6 +379,42 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
+function LocationPicker({
+  locations,
+  countryCode,
+  cityId,
+  selectedCity,
+  onSelect,
+}: {
+  locations: LocationCatalog[];
+  countryCode: string | null;
+  cityId: string | null;
+  selectedCity: string | null;
+  onSelect: (countryCode: string, cityId: string, cityName: string) => void;
+}) {
+  const country = locations.find((item) => item.code === countryCode);
+  return (
+    <View style={styles.locationSection}>
+      <Text style={styles.sectionTitle}>Country and city</Text>
+      <Text style={styles.locationHint}>{selectedCity ?? 'Choose a country, then a major city'}</Text>
+      <View style={styles.choiceGrid}>
+        {locations.map((item) => (
+          <Pressable key={item.code} style={[styles.choice, item.code === countryCode && styles.choiceSelected]} onPress={() => onSelect(item.code, '', '')}>
+            <Text style={[styles.choiceText, item.code === countryCode && styles.choiceTextSelected]}>{item.name}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {country ? <View style={styles.choiceGrid}>
+        {country.cities.map((city) => (
+          <Pressable key={city.id} style={[styles.choice, city.id === cityId && styles.choiceSelected]} onPress={() => onSelect(country.code, city.id, city.name)}>
+            <Text style={[styles.choiceText, city.id === cityId && styles.choiceTextSelected]}>{city.name}</Text>
+          </Pressable>
+        ))}
+      </View> : null}
+    </View>
+  );
+}
+
 function VisibilityRow({
   label,
   value,
@@ -394,6 +446,13 @@ const styles = StyleSheet.create({
   status: { color: theme.colors.secondaryText, fontSize: 14 },
   saved: { color: theme.colors.success },
   error: { color: theme.colors.error },
+  locationSection: { gap: theme.spacing.sm },
+  locationHint: { color: theme.colors.secondaryText },
+  choiceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
+  choice: { borderWidth: 1, borderColor: '#E9DADD', borderRadius: theme.radius.sm, paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, backgroundColor: '#FFFFFF' },
+  choiceSelected: { borderColor: theme.colors.coral, backgroundColor: theme.colors.softRose },
+  choiceText: { color: theme.colors.charcoal },
+  choiceTextSelected: { color: theme.colors.deepPlum, fontWeight: '700' },
   visibilitySection: {
     gap: theme.spacing.sm,
     padding: theme.spacing.md,

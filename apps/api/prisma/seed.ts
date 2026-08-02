@@ -26,6 +26,22 @@ async function main(): Promise<void> {
     skipDuplicates: true
   });
 
+  const locationCatalog = [
+    { code: 'TZ', name: 'Tanzania', cities: ['Dar es Salaam', 'Arusha', 'Mwanza', 'Dodoma', 'Mbeya', 'Zanzibar City'] },
+    { code: 'KE', name: 'Kenya', cities: ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru'] },
+    { code: 'UG', name: 'Uganda', cities: ['Kampala', 'Entebbe', 'Jinja', 'Mbarara'] },
+    { code: 'RW', name: 'Rwanda', cities: ['Kigali', 'Musanze', 'Rubavu'] },
+    { code: 'ZA', name: 'South Africa', cities: ['Johannesburg', 'Cape Town', 'Durban', 'Pretoria'] },
+    { code: 'NG', name: 'Nigeria', cities: ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan'] },
+    { code: 'GH', name: 'Ghana', cities: ['Accra', 'Kumasi', 'Takoradi'] },
+    { code: 'GB', name: 'United Kingdom', cities: ['London', 'Manchester', 'Birmingham', 'Leeds'] },
+    { code: 'US', name: 'United States', cities: ['New York', 'Los Angeles', 'Chicago', 'Houston'] },
+  ];
+  for (const country of locationCatalog) {
+    await prisma.country.upsert({ where: { code: country.code }, update: { name: country.name, active: true }, create: { code: country.code, name: country.name } });
+    await prisma.city.createMany({ data: country.cities.map((name) => ({ countryCode: country.code, name })), skipDuplicates: true });
+  }
+
   const adminPassword = process.env.SANJARI_ADMIN_SEED_PASSWORD;
   if (!adminPassword) {
     console.log('Skipping admin seed: SANJARI_ADMIN_SEED_PASSWORD is not configured.');

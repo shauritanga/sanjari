@@ -83,6 +83,16 @@ export class OnboardingUpdateDto {
   city?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(2)
+  countryCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  cityId?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(100)
   @Max(250)

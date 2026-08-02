@@ -63,11 +63,12 @@ export class ProfilesService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        profile: {
+          profile: {
           include: {
             interests: { include: { interest: true } },
             languages: { include: { language: true } },
             photos: true,
+            cityRef: true,
           },
         },
       },
@@ -96,7 +97,10 @@ export class ProfilesService {
         biography: profile.biography,
         occupationCategory: profile.occupationCategory,
         educationLevel: profile.educationLevel,
-        city: profile.city,
+          city: profile.city,
+          countryCode: profile.countryCode,
+          cityId: profile.cityId,
+          cityName: profile.cityRef?.name ?? profile.city,
         heightCm: profile.heightCm,
         drinkingPreference: profile.drinkingPreference,
         smokingPreference: profile.smokingPreference,
@@ -125,6 +129,15 @@ export class ProfilesService {
       throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
     }
 
+    let selectedCity: { id: string; countryCode: string; name: string } | null = null;
+    if (input.cityId !== undefined) {
+      selectedCity = await this.prisma.city.findFirst({
+        where: { id: input.cityId, active: true, ...(input.countryCode ? { countryCode: input.countryCode.toUpperCase() } : {}) },
+        select: { id: true, countryCode: true, name: true },
+      });
+      if (!selectedCity) throw new BadRequestException({ code: 'INVALID_CITY', message: 'Select a valid city from the location list.' });
+    }
+
     const profile = await this.prisma.profile.update({
       where: { userId },
       data: {
@@ -141,6 +154,8 @@ export class ProfilesService {
         }),
         ...(input.educationLevel !== undefined && { educationLevel: input.educationLevel }),
         ...(input.city !== undefined && { city: input.city }),
+        ...(selectedCity && { city: selectedCity.name, cityId: selectedCity.id, countryCode: selectedCity.countryCode }),
+        ...(input.countryCode !== undefined && !selectedCity && { countryCode: input.countryCode.toUpperCase(), cityId: null }),
         ...(input.heightCm !== undefined && { heightCm: input.heightCm }),
         ...(input.drinkingPreference !== undefined && {
           drinkingPreference: input.drinkingPreference,

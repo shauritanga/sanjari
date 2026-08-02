@@ -137,6 +137,8 @@ model Profile {
   occupationCategory     String?
   educationLevel         String?
   city                   String?
+  countryCode            String?
+  cityId                 String?              @db.Uuid
   heightCm               Int?
   drinkingPreference     String?
   smokingPreference      String?
@@ -160,6 +162,8 @@ model Profile {
   interests              ProfileInterest[]
   languages              ProfileLanguage[]
   discoveryPreference    DiscoveryPreference?
+  country                Country?              @relation(fields: [countryCode], references: [code])
+  cityRef                City?                @relation(fields: [cityId], references: [id])
 
   @@index([moderationStatus, verificationStatus])
   @@index([city])
@@ -264,6 +268,26 @@ model UserLocation {
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+model Country {
+  code      String   @id
+  name      String
+  active    Boolean  @default(true)
+  cities    City[]
+  profiles  Profile[]
+}
+
+model City {
+  id          String   @id @default(uuid()) @db.Uuid
+  countryCode String
+  name        String
+  active      Boolean  @default(true)
+  country     Country  @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+  profiles    Profile[]
+
+  @@unique([countryCode, name])
+  @@index([countryCode, active])
 }
 
 model VerificationCase {

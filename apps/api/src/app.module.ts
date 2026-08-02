@@ -8,6 +8,7 @@ import { AdminOperationsModule } from './admin-operations/admin-operations.modul
 import { appConfigSchema } from './common/config/app-config.schema';
 import { DatabaseModule } from './common/database/database.module';
 import { ConversationsModule } from './conversations/conversations.module';
+import { CatalogModule } from './catalog/catalog.module';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { HealthModule } from './health/health.module';
 import { MatchesModule } from './matches/matches.module';
@@ -27,6 +28,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     BullModule.forRoot({ connection: { url: process.env.REDIS_URL ?? 'redis://localhost:6379' } }),
     DatabaseModule,
+    CatalogModule,
     HealthModule,
     AuthModule,
     AdminAuthModule,
