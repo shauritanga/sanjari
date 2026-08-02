@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { api } from '../../src/api';
@@ -12,6 +12,11 @@ type Profile = {
   gender: string | null;
   interestedIn: string[];
   relationshipIntentions: string[];
+  visibilitySettings?: {
+    hideAge?: boolean;
+    hideOnlineStatus?: boolean;
+    hideReadReceipts?: boolean;
+  };
 };
 type Onboarding = { completionScore: number; profile: Profile };
 
@@ -23,6 +28,7 @@ export default function ProfileScreen() {
     gender: '',
     interestedIn: [],
     relationshipIntentions: [],
+    visibilitySettings: {},
   });
   const [score, setScore] = useState(0);
   const [error, setError] = useState('');
@@ -53,6 +59,9 @@ export default function ProfileScreen() {
         relationshipIntentions: profile.relationshipIntentions,
         ...(profile.biography !== null ? { biography: profile.biography } : {}),
         ...(profile.city !== null ? { city: profile.city } : {}),
+        hideAge: profile.visibilitySettings?.hideAge ?? false,
+        hideOnlineStatus: profile.visibilitySettings?.hideOnlineStatus ?? false,
+        hideReadReceipts: profile.visibilitySettings?.hideReadReceipts ?? false,
       });
       setScore(result.data?.completionScore ?? score);
       setSaved(true);
@@ -101,6 +110,39 @@ export default function ProfileScreen() {
           value={profile.biography ?? ''}
           onChangeText={(value) => setProfile((current) => ({ ...current, biography: value }))}
         />
+        <View style={styles.visibilitySection}>
+          <Text style={styles.sectionTitle}>Visibility</Text>
+          <VisibilityRow
+            label="Hide my age"
+            value={profile.visibilitySettings?.hideAge ?? false}
+            onValueChange={(value) =>
+              setProfile((current) => ({
+                ...current,
+                visibilitySettings: { ...current.visibilitySettings, hideAge: value },
+              }))
+            }
+          />
+          <VisibilityRow
+            label="Hide online status"
+            value={profile.visibilitySettings?.hideOnlineStatus ?? false}
+            onValueChange={(value) =>
+              setProfile((current) => ({
+                ...current,
+                visibilitySettings: { ...current.visibilitySettings, hideOnlineStatus: value },
+              }))
+            }
+          />
+          <VisibilityRow
+            label="Hide read receipts"
+            value={profile.visibilitySettings?.hideReadReceipts ?? false}
+            onValueChange={(value) =>
+              setProfile((current) => ({
+                ...current,
+                visibilitySettings: { ...current.visibilitySettings, hideReadReceipts: value },
+              }))
+            }
+          />
+        </View>
         <AppButton
           label="Save profile"
           onPress={() => {
@@ -124,6 +166,30 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
+
+function VisibilityRow({
+  label,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+}) {
+  return (
+    <View style={styles.visibilityRow}>
+      <Text style={styles.visibilityLabel}>{label}</Text>
+      <Switch
+        accessibilityLabel={label}
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: '#E9DADD', true: theme.colors.coral }}
+        thumbColor="#FFFFFF"
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.warmWhite, padding: theme.spacing.lg },
   content: { gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
@@ -131,6 +197,20 @@ const styles = StyleSheet.create({
   score: { color: theme.colors.coral, fontWeight: '700' },
   saved: { color: theme.colors.success },
   error: { color: theme.colors.error },
+  visibilitySection: {
+    gap: theme.spacing.sm,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.softRose,
+    borderRadius: theme.radius.md,
+  },
+  sectionTitle: { color: theme.colors.deepPlum, fontSize: 18, fontWeight: '700' },
+  visibilityRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  visibilityLabel: { color: theme.colors.charcoal, fontSize: 16 },
   note: {
     padding: theme.spacing.md,
     backgroundColor: theme.colors.softRose,
