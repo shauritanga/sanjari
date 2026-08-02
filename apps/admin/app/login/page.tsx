@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeOff, LockKeyhole } from 'lucide-react';
 import { adminRequest } from '../../src/lib/admin-api';
 
 export default function LoginPage() {
@@ -9,9 +10,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mfaCode, setMfaCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError('');
+    setSubmitting(true);
     try {
       const result = await adminRequest<{ csrfToken: string; admin: { permissions: string[] } }>(
         '/admin/auth/login',
@@ -26,13 +31,16 @@ export default function LoginPage() {
       router.replace('/moderation');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to sign in.');
+    } finally {
+      setSubmitting(false);
     }
   }
   return (
     <main className="main auth-main">
       <form className="auth-form" onSubmit={(event) => void submit(event)}>
-        <h1>Admin login</h1>
-        <p>Privileged administrators require MFA when enabled on the account.</p>
+        <div className="auth-brand"><span className="brand-mark">S</span><span>Sanjari operations</span></div>
+        <p className="eyebrow">Secure workspace</p><h1>Welcome back</h1>
+        <p>Sign in to manage trust, safety, and platform operations.</p>
         <label>
           Email
           <input
@@ -52,15 +60,10 @@ export default function LoginPage() {
         </label>
         <label>
           Password
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+          <span className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} required /><button type="button" className="password-toggle" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></span>
         </label>
         {error ? <p className="error-text">{error}</p> : null}
-        <button type="submit">Sign in</button>
+        <button type="submit" disabled={submitting}><LockKeyhole size={16} />{submitting ? 'Signing in...' : 'Sign in'}</button>
       </form>
     </main>
   );
