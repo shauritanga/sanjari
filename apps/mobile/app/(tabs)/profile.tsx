@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
@@ -20,6 +21,7 @@ type Profile = {
     hideOnlineStatus?: boolean;
     hideReadReceipts?: boolean;
   };
+  photos?: { id: string; moderationStatus?: string }[];
 };
 type Onboarding = { completionScore: number; profile: Profile };
 type VerificationCase = {
@@ -44,6 +46,7 @@ export default function ProfileScreen() {
   const [saved, setSaved] = useState(false);
   const [paused, setPaused] = useState(false);
   const [verificationCases, setVerificationCases] = useState<VerificationCase[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   useEffect(() => {
     void api
       .get<Onboarding>('/onboarding')
@@ -114,6 +117,55 @@ export default function ProfileScreen() {
       setError(cause instanceof Error ? cause.message : 'Unable to request verification.');
     }
   }
+  async function addPhoto() {
+    setError('');
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setError('Photo library access is required to add a profile photo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType ?? 'image/jpeg';
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+      setError('Choose a JPEG, PNG, or WebP image.');
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const presign = await api.post<{ storageKey: string; uploadUrl: string }>(
+        '/onboarding/photos/presign',
+        { mimeType, sizeBytes: asset.fileSize ?? 1 },
+      );
+      if (!presign.data) throw new Error('Unable to prepare photo upload.');
+      const upload = await fetch(presign.data.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': mimeType },
+        body: await (await fetch(asset.uri)).blob(),
+      });
+      if (!upload.ok) throw new Error('Photo upload failed.');
+      const completed = await api.post<{ id: string; moderationStatus: string }>(
+        '/onboarding/photos/complete',
+        { storageKey: presign.data.storageKey },
+      );
+      if (completed.data) {
+        setProfile((current) => ({
+          ...current,
+          photos: [...(current.photos ?? []), completed.data!],
+        }));
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to upload photo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -121,6 +173,19 @@ export default function ProfileScreen() {
         <Text style={styles.score}>{score}% complete</Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {saved ? <Text style={styles.saved}>Saved</Text> : null}
+        <View style={styles.photoSection}>
+          <Text style={styles.sectionTitle}>Profile photos</Text>
+          <Text style={styles.photoStatus}>
+            {profile.photos?.length ?? 0} of 6 added. New photos are reviewed before publishing.
+          </Text>
+          <AppButton
+            label={uploadingPhoto ? 'Uploading photo...' : 'Add profile photo'}
+            variant="secondary"
+            onPress={() => {
+              void addPhoto();
+            }}
+          />
+        </View>
         <AppTextInput
           label="Display name"
           value={profile.displayName ?? ''}
@@ -320,4 +385,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   verificationStatus: { color: theme.colors.coral, fontWeight: '700' },
+  photoSection: {
+    gap: theme.spacing.sm,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.softRose,
+    borderRadius: theme.radius.md,
+  },
+  photoStatus: { color: theme.colors.deepPlum, lineHeight: 20 },
 });
