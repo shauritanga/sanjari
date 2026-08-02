@@ -9,6 +9,8 @@ import { AttachmentScanService } from './attachment-scan.service';
 import { AttachmentScanWorker } from './attachment-scan.worker';
 import { ProfilesModule } from '../profiles/profiles.module';
 
+const workerProviders = process.env.RUN_WORKERS === 'true' ? [AttachmentScanWorker] : [];
+
 @Module({
   imports: [AuthModule, ProfilesModule, BullModule.registerQueue({ name: 'attachment-scan' })],
   controllers: [ConversationsController],
@@ -17,7 +19,7 @@ import { ProfilesModule } from '../profiles/profiles.module';
     AttachmentStorageService,
     ConversationsGateway,
     AttachmentScanService,
-    AttachmentScanWorker,
+    ...workerProviders,
   ],
 })
 export class ConversationsModule {}

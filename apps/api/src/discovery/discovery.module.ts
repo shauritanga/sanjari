@@ -7,6 +7,8 @@ import { DiscoveryEntitlementService } from './entitlement.service';
 import { RankingEvaluationService } from './ranking-evaluation.service';
 import { RankingEvaluationWorker } from './ranking-evaluation.worker';
 
+const workerProviders = process.env.RUN_WORKERS === 'true' ? [RankingEvaluationWorker] : [];
+
 @Module({
   imports: [AuthModule, BullModule.registerQueue({ name: 'ranking-evaluation' })],
   controllers: [DiscoveryController],
@@ -14,7 +16,7 @@ import { RankingEvaluationWorker } from './ranking-evaluation.worker';
     DiscoveryService,
     DiscoveryEntitlementService,
     RankingEvaluationService,
-    RankingEvaluationWorker,
+    ...workerProviders,
   ],
 })
 export class DiscoveryModule {}

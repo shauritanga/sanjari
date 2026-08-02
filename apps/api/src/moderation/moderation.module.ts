@@ -12,6 +12,11 @@ import { ModerationRetentionService } from './moderation-retention.service';
 import { ModerationRetentionWorker } from './moderation-retention.worker';
 import { ModerationService } from './moderation.service';
 
+const workerProviders =
+  process.env.RUN_WORKERS === 'true'
+    ? [ModerationRetentionWorker, AccountDeletionWorker, DataExportWorker]
+    : [];
+
 @Module({
   imports: [
     AuthModule,
@@ -24,11 +29,9 @@ import { ModerationService } from './moderation.service';
   providers: [
     ModerationService,
     ModerationRetentionService,
-    ModerationRetentionWorker,
+    ...workerProviders,
     AccountDeletionService,
-    AccountDeletionWorker,
     DataExportService,
-    DataExportWorker,
   ],
   exports: [
     ModerationService,
