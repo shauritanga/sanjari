@@ -65,6 +65,12 @@ export class AdminOperationsController {
     return { data: await this.operations.verificationQueue(request.admin!) };
   }
 
+  @Get('verification-codes')
+  @SetMetadata('adminPermission', 'verification.review')
+  async verificationCodes(@Req() request: AdminRequest) {
+    return { data: await this.operations.verificationCodes(request.admin!) };
+  }
+
   @Patch('verification/:caseId')
   @SetMetadata('adminPermission', 'verification.review')
   @UseGuards(AdminCsrfGuard)

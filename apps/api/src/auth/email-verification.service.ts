@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { hash, verify } from 'argon2';
 import { randomInt } from 'node:crypto';
 import { PrismaService } from '../common/database/prisma.service';
@@ -19,11 +20,13 @@ export class EmailVerificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly email: EmailService,
+    @Optional() private readonly config?: ConfigService,
   ) {}
 
   async issue(userId: string, email: string): Promise<void> {
     const code = randomInt(100000, 1000000).toString();
     const codeHash = await hash(code);
+    const testCode = this.config?.get<boolean>('AUTH_TEST_CODE_VISIBILITY', false) ? code : null;
     const expiresAt = new Date(Date.now() + verificationLifetimeMs);
 
     await this.prisma.$transaction(async (tx) => {
@@ -32,7 +35,7 @@ export class EmailVerificationService {
         data: { expiresAt },
       });
       await tx.emailVerification.create({
-        data: { userId, email, codeHash, expiresAt },
+        data: { userId, email, codeHash, testCode, expiresAt },
       });
     });
 
@@ -72,7 +75,7 @@ export class EmailVerificationService {
     await this.prisma.$transaction(async (tx) => {
       await tx.emailVerification.update({
         where: { id: verification.id },
-        data: { verifiedAt: new Date() },
+        data: { verifiedAt: new Date(), testCode: null },
       });
       await tx.userCredential.updateMany({
         where: { userId: verification.userId, type: 'password' },

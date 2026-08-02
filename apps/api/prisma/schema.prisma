@@ -95,6 +95,7 @@ model EmailVerification {
   userId     String    @db.Uuid
   email      String    @db.Citext
   codeHash   String
+  testCode   String?
   attempts   Int       @default(0)
   verifiedAt DateTime?
   expiresAt  DateTime
@@ -106,6 +107,7 @@ model PhoneVerification {
   userId      String    @db.Uuid
   phoneNumber String
   codeHash    String
+  testCode    String?
   attempts    Int       @default(0)
   verifiedAt  DateTime?
   expiresAt   DateTime

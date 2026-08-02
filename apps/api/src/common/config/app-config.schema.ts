@@ -29,4 +29,5 @@ export const appConfigSchema = z.object({
   ADMIN_MFA_PROVIDER: z.enum(['disabled', 'owner']).default('disabled'),
   PURCHASE_VERIFICATION_PROVIDER: z.enum(['disabled', 'local', 'owner']).default('disabled'),
   PURCHASE_WEBHOOK_SECRET: z.string().default(''),
+  AUTH_TEST_CODE_VISIBILITY: z.coerce.boolean().default(false),
 });

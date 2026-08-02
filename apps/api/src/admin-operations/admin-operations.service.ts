@@ -1,4 +1,5 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { AdminClaims } from '../admin-auth/admin-auth.types';
 import { PrismaService } from '../common/database/prisma.service';
 import {
@@ -23,7 +24,40 @@ function requirePermission(admin: AdminClaims, permission: string) {
 
 @Injectable()
 export class AdminOperationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly config?: ConfigService,
+  ) {}
+
+  async verificationCodes(admin: AdminClaims) {
+    requirePermission(admin, 'verification.review');
+    const enabled = this.config?.get<boolean>('AUTH_TEST_CODE_VISIBILITY', false) ?? false;
+    if (!enabled) return { enabled: false, email: [], phone: [] };
+    const now = new Date();
+    const [email, phone] = await Promise.all([
+      this.prisma.emailVerification.findMany({
+        where: { verifiedAt: null, expiresAt: { gt: now }, testCode: { not: null } },
+        select: { id: true, userId: true, email: true, testCode: true, expiresAt: true, createdAt: true, attempts: true },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      this.prisma.phoneVerification.findMany({
+        where: { verifiedAt: null, expiresAt: { gt: now }, testCode: { not: null } },
+        select: { id: true, userId: true, phoneNumber: true, testCode: true, expiresAt: true, createdAt: true, attempts: true },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+    ]);
+    await this.prisma.auditLog.create({
+      data: {
+        adminUserId: admin.id,
+        actorType: 'admin',
+        action: 'admin.verification_codes_read',
+        metadata: { emailCount: email.length, phoneCount: phone.length },
+      },
+    });
+    return { enabled: true, email, phone };
+  }
 
   async searchUsers(admin: AdminClaims, query: UserSearchQueryDto) {
     requirePermission(admin, 'users.read');

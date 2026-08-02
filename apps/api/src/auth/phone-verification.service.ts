@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { hash, verify } from 'argon2';
 import { randomInt } from 'node:crypto';
 import { PrismaService } from '../common/database/prisma.service';
@@ -19,18 +20,20 @@ export class PhoneVerificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sms: SmsService,
+    @Optional() private readonly config?: ConfigService,
   ) {}
 
   async issue(userId: string, phoneNumber: string): Promise<void> {
     const code = randomInt(100000, 1000000).toString();
     const codeHash = await hash(code);
+    const testCode = this.config?.get<boolean>('AUTH_TEST_CODE_VISIBILITY', false) ? code : null;
     const expiresAt = new Date(Date.now() + phoneCodeLifetimeMs);
     await this.prisma.$transaction(async (tx) => {
       await tx.phoneVerification.updateMany({
         where: { userId, phoneNumber, verifiedAt: null },
         data: { expiresAt },
       });
-      await tx.phoneVerification.create({ data: { userId, phoneNumber, codeHash, expiresAt } });
+      await tx.phoneVerification.create({ data: { userId, phoneNumber, codeHash, testCode, expiresAt } });
     });
     await this.sms.sendOtp(phoneNumber, code);
   }
@@ -92,7 +95,7 @@ export class PhoneVerificationService {
     phoneNumber: string,
   ): Promise<{ userId: string }> {
     await this.prisma.$transaction(async (tx) => {
-      await tx.phoneVerification.update({ where: { id }, data: { verifiedAt: new Date() } });
+      await tx.phoneVerification.update({ where: { id }, data: { verifiedAt: new Date(), testCode: null } });
       await tx.user.update({ where: { id: userId }, data: { phoneNumber } });
       await tx.userCredential.upsert({
         where: { type_identifier: { type: 'phone', identifier: phoneNumber } },
