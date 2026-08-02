@@ -5,10 +5,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { randomUUID } from 'node:crypto';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { MetricsService } from './metrics/metrics.service';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
+  const metrics = app.get(MetricsService);
 
   app.use(
     (
@@ -35,9 +37,10 @@ async function bootstrap(): Promise<void> {
             method: request.method,
             path: request.path,
             statusCode: response.statusCode,
-            durationMs: Date.now() - startedAt,
-          }),
-        );
+          durationMs: Date.now() - startedAt,
+        }),
+      );
+      metrics.recordRequest(request.method, request.path, response.statusCode, Date.now() - startedAt);
       });
       next();
     },

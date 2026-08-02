@@ -11,6 +11,7 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { HealthModule } from './health/health.module';
 import { MatchesModule } from './matches/matches.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { ProfilesModule } from './profiles/profiles.module';
@@ -33,6 +34,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     ProfilesModule,
     DiscoveryModule,
     MatchesModule,
+    MetricsModule,
     NotificationsModule,
     ConversationsModule,
     ModerationModule,
