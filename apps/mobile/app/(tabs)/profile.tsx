@@ -42,10 +42,17 @@ export default function ProfileScreen() {
       );
   }, []);
   async function save() {
+    setError('');
+    setSaved(false);
     try {
       const result = await api.put<{ completionScore: number }>('/onboarding', {
         step: 4,
-        ...profile,
+        ...(profile.displayName !== null ? { displayName: profile.displayName } : {}),
+        ...(profile.gender !== null ? { gender: profile.gender } : {}),
+        interestedIn: profile.interestedIn,
+        relationshipIntentions: profile.relationshipIntentions,
+        ...(profile.biography !== null ? { biography: profile.biography } : {}),
+        ...(profile.city !== null ? { city: profile.city } : {}),
       });
       setScore(result.data?.completionScore ?? score);
       setSaved(true);
