@@ -201,13 +201,26 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Your profile</Text>
-        <Text style={styles.score}>{score}% complete</Text>
-        <Text style={styles.status}>Status: {onboardingStatus === 'published' ? 'Submitted for review' : 'Complete your profile to submit it'}</Text>
+        <View style={styles.header}>
+          <View style={styles.headerCopy}>
+            <Text style={styles.eyebrow}>Profile</Text>
+            <Text style={styles.title}>Your profile</Text>
+            <Text style={styles.status}>
+              {onboardingStatus === 'published' ? 'Submitted for review' : 'Complete your profile to submit it'}
+            </Text>
+          </View>
+          <View style={styles.completionBadge}>
+            <Text style={styles.completionValue}>{score}%</Text>
+            <Text style={styles.completionLabel}>complete</Text>
+          </View>
+        </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {saved ? <Text style={styles.saved}>Saved</Text> : null}
-        <View style={styles.photoSection}>
-          <Text style={styles.sectionTitle}>Profile photos</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>Profile photos</Text>
+            <Text style={styles.sectionHint}>Lead with a clear photo that feels like you.</Text>
+          </View>
           <Text style={styles.photoStatus}>
             {profile.photos?.length ?? 0} of 6 added. New photos are reviewed before publishing.
           </Text>
@@ -219,76 +232,110 @@ export default function ProfileScreen() {
             }}
           />
         </View>
-        <AppTextInput
-          label="Display name"
-          value={profile.displayName ?? ''}
-          onChangeText={(value) => {
-            setSaved(false);
-            setProfile((current) => ({ ...current, displayName: value }));
-          }}
-        />
-        <AppTextInput
-          label="Gender"
-          value={profile.gender ?? ''}
-          onChangeText={(value) => setProfile((current) => ({ ...current, gender: value }))}
-        />
-        <AppTextInput
-          label="Pronouns"
-          value={profile.pronouns ?? ''}
-          onChangeText={(value) => setProfile((current) => ({ ...current, pronouns: value }))}
-        />
-        <LocationPicker
-          locations={locations}
-          countryCode={profile.countryCode ?? null}
-          cityId={profile.cityId ?? null}
-          selectedCity={profile.cityName ?? profile.city ?? null}
-          onSelect={(countryCode, cityId, cityName) =>
-            setProfile((current) => ({ ...current, countryCode, cityId, cityName, city: cityName }))
-          }
-        />
-        <AppTextInput
-          label="Biography"
-          value={profile.biography ?? ''}
-          onChangeText={(value) => setProfile((current) => ({ ...current, biography: value }))}
-        />
-        <AppTextInput
-          label="Occupation"
-          value={profile.occupationCategory ?? ''}
-          onChangeText={(value) =>
-            setProfile((current) => ({ ...current, occupationCategory: value }))
-          }
-        />
-        <AppTextInput
-          label="Education"
-          value={profile.educationLevel ?? ''}
-          onChangeText={(value) => setProfile((current) => ({ ...current, educationLevel: value }))}
-        />
-        <AppTextInput
-          label="Interested in (comma separated)"
-          value={profile.interestedIn.join(', ')}
-          onChangeText={(value) =>
-            setProfile((current) => ({ ...current, interestedIn: splitList(value) }))
-          }
-        />
-        <AppTextInput
-          label="Relationship intentions (comma separated)"
-          value={profile.relationshipIntentions.join(', ')}
-          onChangeText={(value) =>
-            setProfile((current) => ({ ...current, relationshipIntentions: splitList(value) }))
-          }
-        />
-        <AppTextInput
-          label="Interests (slugs: music, travel, faith, fitness)"
-          value={profile.interests.join(', ')}
-          onChangeText={(value) => setProfile((current) => ({ ...current, interests: splitList(value) }))}
-        />
-        <AppTextInput
-          label="Languages (codes: en, sw)"
-          value={profile.languages.join(', ')}
-          onChangeText={(value) => setProfile((current) => ({ ...current, languages: splitList(value) }))}
-        />
-        <View style={styles.visibilitySection}>
-          <Text style={styles.sectionTitle}>Visibility</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>About you</Text>
+            <Text style={styles.sectionHint}>Share the details people need to get to know you.</Text>
+          </View>
+          <AppTextInput
+            label="Display name"
+            value={profile.displayName ?? ''}
+            onChangeText={(value) => {
+              setSaved(false);
+              setProfile((current) => ({ ...current, displayName: value }));
+            }}
+          />
+          <View style={styles.fieldRow}>
+            <View style={styles.fieldHalf}>
+              <AppTextInput
+                label="Gender"
+                value={profile.gender ?? ''}
+                onChangeText={(value) => setProfile((current) => ({ ...current, gender: value }))}
+              />
+            </View>
+            <View style={styles.fieldHalf}>
+              <AppTextInput
+                label="Pronouns"
+                value={profile.pronouns ?? ''}
+                onChangeText={(value) => setProfile((current) => ({ ...current, pronouns: value }))}
+              />
+            </View>
+          </View>
+          <AppTextInput
+            label="Biography"
+            value={profile.biography ?? ''}
+            multiline
+            onChangeText={(value) => setProfile((current) => ({ ...current, biography: value }))}
+          />
+        </View>
+        <View style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>Location</Text>
+            <Text style={styles.sectionHint}>Choose a broad area. Your exact address is never required.</Text>
+          </View>
+          <LocationPicker
+            locations={locations}
+            countryCode={profile.countryCode ?? null}
+            cityId={profile.cityId ?? null}
+            selectedCity={profile.cityName ?? profile.city ?? null}
+            onSelect={(countryCode, cityId, cityName) =>
+              setProfile((current) => ({ ...current, countryCode, cityId, cityName, city: cityName }))
+            }
+          />
+        </View>
+        <View style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>Background</Text>
+            <Text style={styles.sectionHint}>These optional details add context to your profile.</Text>
+          </View>
+          <View style={styles.fieldRow}>
+            <View style={styles.fieldHalf}>
+              <AppTextInput
+                label="Occupation"
+                value={profile.occupationCategory ?? ''}
+                onChangeText={(value) => setProfile((current) => ({ ...current, occupationCategory: value }))}
+              />
+            </View>
+            <View style={styles.fieldHalf}>
+              <AppTextInput
+                label="Education"
+                value={profile.educationLevel ?? ''}
+                onChangeText={(value) => setProfile((current) => ({ ...current, educationLevel: value }))}
+              />
+            </View>
+          </View>
+        </View>
+        <View style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>What you&apos;re looking for</Text>
+            <Text style={styles.sectionHint}>Use commas to separate multiple choices.</Text>
+          </View>
+          <AppTextInput
+            label="Interested in"
+            value={profile.interestedIn.join(', ')}
+            onChangeText={(value) => setProfile((current) => ({ ...current, interestedIn: splitList(value) }))}
+          />
+          <AppTextInput
+            label="Relationship intentions"
+            value={profile.relationshipIntentions.join(', ')}
+            onChangeText={(value) => setProfile((current) => ({ ...current, relationshipIntentions: splitList(value) }))}
+          />
+          <AppTextInput
+            label="Interests"
+            value={profile.interests.join(', ')}
+            onChangeText={(value) => setProfile((current) => ({ ...current, interests: splitList(value) }))}
+          />
+          <AppTextInput
+            label="Languages"
+            value={profile.languages.join(', ')}
+            onChangeText={(value) => setProfile((current) => ({ ...current, languages: splitList(value) }))}
+          />
+        </View>
+        <View style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>Privacy</Text>
+            <Text style={styles.sectionHint}>Choose what other people can see.</Text>
+          </View>
           <VisibilityRow
             label="Hide my age"
             value={profile.visibilitySettings?.hideAge ?? false}
@@ -320,11 +367,13 @@ export default function ProfileScreen() {
             }
           />
         </View>
-        <View style={styles.verificationSection}>
-          <Text style={styles.sectionTitle}>Verification</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>Verification</Text>
+            <Text style={styles.sectionHint}>Verification badges describe the check performed.</Text>
+          </View>
           <Text style={styles.verificationNote}>
-            Verification badges describe the check performed. They do not guarantee someone&apos;s
-            character or safety.
+            They do not guarantee someone&apos;s character or safety.
           </Text>
           {verificationCases.map((item) => (
             <View key={item.id} style={styles.verificationRow}>
@@ -349,24 +398,13 @@ export default function ProfileScreen() {
             }}
           />
         </View>
-        <AppButton
-          label="Save profile"
-          onPress={() => {
-            void save();
-          }}
-        />
-        <AppButton
-          label="Submit profile for review"
-          variant="secondary"
-          onPress={() => { void publish(); }}
-        />
-        <AppButton
-          label={paused ? 'Resume discovery' : 'Pause discovery'}
-          variant="secondary"
-          onPress={() => {
-            void togglePause();
-          }}
-        />
+        <View style={styles.actions}>
+          <AppButton label="Save profile" onPress={() => { void save(); }} />
+          <AppButton label="Submit profile for review" variant="secondary" onPress={() => { void publish(); }} />
+          <Pressable style={styles.pauseAction} onPress={() => { void togglePause(); }}>
+            <Text style={styles.pauseActionText}>{paused ? 'Resume discovery' : 'Pause discovery'}</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -395,7 +433,6 @@ function LocationPicker({
   const country = locations.find((item) => item.code === countryCode);
   return (
     <View style={styles.locationSection}>
-      <Text style={styles.sectionTitle}>Country and city</Text>
       <Text style={styles.locationHint}>{selectedCity ?? 'Choose a country, then a major city'}</Text>
       <View style={styles.choiceGrid}>
         {locations.map((item) => (
@@ -441,11 +478,44 @@ function VisibilityRow({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.warmWhite, padding: theme.spacing.lg },
   content: { gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
-  title: { color: theme.colors.deepPlum, fontSize: 32, fontWeight: '700' },
-  score: { color: theme.colors.coral, fontWeight: '700' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
+    paddingBottom: theme.spacing.xs,
+  },
+  headerCopy: { flex: 1, gap: theme.spacing.xs },
+  eyebrow: { color: theme.colors.coral, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  title: { color: theme.colors.deepPlum, fontSize: 30, fontWeight: '700' },
+  completionBadge: {
+    minWidth: 76,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xs,
+    alignItems: 'center',
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.softRose,
+  },
+  completionValue: { color: theme.colors.coral, fontSize: 22, fontWeight: '700' },
+  completionLabel: { color: theme.colors.deepPlum, fontSize: 12, fontWeight: '600' },
   status: { color: theme.colors.secondaryText, fontSize: 14 },
   saved: { color: theme.colors.success },
   error: { color: theme.colors.error },
+  section: {
+    gap: theme.spacing.md,
+    padding: theme.spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F0E5E6',
+    borderRadius: theme.radius.md,
+  },
+  sectionHeading: { gap: theme.spacing.xs },
+  sectionHint: { color: theme.colors.secondaryText, lineHeight: 19 },
+  fieldRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  fieldHalf: { flex: 1, minWidth: 0 },
+  actions: { gap: theme.spacing.sm, paddingTop: theme.spacing.xs },
+  pauseAction: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: theme.radius.md, backgroundColor: '#F5ECEE' },
+  pauseActionText: { color: theme.colors.deepPlum, fontWeight: '700', fontSize: 16 },
   locationSection: { gap: theme.spacing.sm },
   locationHint: { color: theme.colors.secondaryText },
   choiceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
@@ -453,12 +523,6 @@ const styles = StyleSheet.create({
   choiceSelected: { borderColor: theme.colors.coral, backgroundColor: theme.colors.softRose },
   choiceText: { color: theme.colors.charcoal },
   choiceTextSelected: { color: theme.colors.deepPlum, fontWeight: '700' },
-  visibilitySection: {
-    gap: theme.spacing.sm,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.softRose,
-    borderRadius: theme.radius.md,
-  },
   sectionTitle: { color: theme.colors.deepPlum, fontSize: 18, fontWeight: '700' },
   visibilityRow: {
     minHeight: 44,
@@ -467,12 +531,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   visibilityLabel: { color: theme.colors.charcoal, fontSize: 16 },
-  verificationSection: {
-    gap: theme.spacing.sm,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.softRose,
-    borderRadius: theme.radius.md,
-  },
   verificationNote: { color: theme.colors.deepPlum, lineHeight: 20 },
   verificationRow: {
     minHeight: 44,
@@ -481,11 +539,5 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   verificationStatus: { color: theme.colors.coral, fontWeight: '700' },
-  photoSection: {
-    gap: theme.spacing.sm,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.softRose,
-    borderRadius: theme.radius.md,
-  },
   photoStatus: { color: theme.colors.deepPlum, lineHeight: 20 },
 });

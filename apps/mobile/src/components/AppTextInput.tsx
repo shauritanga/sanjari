@@ -6,6 +6,7 @@ interface AppTextInputProps {
   value: string;
   onChangeText: (value: string) => void;
   secureTextEntry?: boolean;
+  multiline?: boolean;
   error?: string;
 }
 
@@ -17,7 +18,8 @@ export function AppTextInput(props: AppTextInputProps) {
         value={props.value}
         onChangeText={props.onChangeText}
         secureTextEntry={props.secureTextEntry}
-        style={[styles.input, props.error ? styles.inputError : undefined]}
+        multiline={props.multiline}
+        style={[styles.input, props.multiline ? styles.multiline : undefined, props.error ? styles.inputError : undefined]}
         placeholderTextColor={theme.colors.secondaryText}
       />
       {props.error ? <Text style={styles.error}>{props.error}</Text> : null}
@@ -37,6 +39,7 @@ const styles = StyleSheet.create({
     color: theme.colors.charcoal,
     backgroundColor: '#FFFFFF'
   },
+  multiline: { minHeight: 112, textAlignVertical: 'top', paddingTop: theme.spacing.md },
   inputError: { borderColor: theme.colors.error },
   error: { color: theme.colors.error }
 });
