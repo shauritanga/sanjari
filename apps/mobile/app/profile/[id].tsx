@@ -305,17 +305,16 @@ export default function ProfileDetailScreen() {
 
           <View style={styles.heroNamePlate}>
             <View style={styles.nameRow}>
-              <Text style={styles.heroName}>{profile.displayName ?? 'Sanjari member'}</Text>
-              <Text style={styles.heroAge}>{profile.age}</Text>
+              <Text style={styles.heroName}>
+                {profile.displayName ?? 'Sanjari member'}, {profile.age}
+              </Text>
               {profile.verificationStatus === 'verified' ? (
                 <AppIcon icon={CheckmarkBadge01Icon} color="#FFFFFF" size={20} />
               ) : null}
             </View>
-            <View style={styles.metaRow}>
-              <Text style={styles.heroMeta}>{profile.city ?? 'Location private'}</Text>
-              <View style={styles.metaDivider} />
-              <Text style={styles.heroMeta}>{DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private'}</Text>
-            </View>
+            <Text style={styles.heroMeta}>
+              {[profile.city, DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private'].filter(Boolean).join(' · ')}
+            </Text>
           </View>
         </View>
 
@@ -388,27 +387,29 @@ export default function ProfileDetailScreen() {
             void respond('pass');
           }}
         />
-        <ProfileActionButton
-          icon={StarIcon}
-          label="Super Like"
-          color={colors.accentAlt}
-          background={colors.surfaceAlt}
-          disabled={actionBusy}
-          onPress={() => {
-            void respond('like', true);
-          }}
-        />
-        <ProfileActionButton
-          icon={FavouriteIcon}
-          label="Like"
-          color={colors.onAccent}
-          background={colors.accent}
-          loading={actionBusy}
-          disabled={actionBusy}
-          onPress={() => {
-            void respond('like', false);
-          }}
-        />
+        <View style={styles.likeActions}>
+          <ProfileActionButton
+            icon={StarIcon}
+            label="Super Like"
+            color={colors.accentAlt}
+            background={colors.surfaceAlt}
+            disabled={actionBusy}
+            onPress={() => {
+              void respond('like', true);
+            }}
+          />
+          <ProfileActionButton
+            icon={FavouriteIcon}
+            label="Like"
+            color={colors.onAccent}
+            background={colors.accent}
+            loading={actionBusy}
+            disabled={actionBusy}
+            onPress={() => {
+              void respond('like', false);
+            }}
+          />
+        </View>
       </View>
     </View>
   );
@@ -476,7 +477,7 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       left: 0,
       right: 0,
       bottom: 0,
-      height: heroHeight * 0.25,
+      height: heroHeight * 0.4,
       // Flat translucent scrim (no gradient dependency in this project) — dark enough
       // that the white name/meta text stays legible over any photo.
       backgroundColor: 'rgba(0,0,0,0.38)'
@@ -499,15 +500,12 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       gap: 6
     },
     dot: { width: 6, height: 6, borderRadius: 3 },
-    heroNamePlate: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg, gap: spacing.sm },
-    nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+    heroNamePlate: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg, gap: 2 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     heroName: { fontSize: typography.display.fontSize, fontWeight: '800', color: '#FFFFFF' },
-    heroAge: { fontSize: typography.h3.fontSize, fontWeight: '700', color: 'rgba(255,255,255,0.94)' },
-    metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    metaDivider: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.72)' },
     heroMeta: { fontSize: typography.bodyLarge.fontSize, color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
     panel: {
-      marginTop: -radius.xl,
+      marginTop: spacing.md,
       backgroundColor: colors.background,
       borderTopLeftRadius: radius.xl,
       borderTopRightRadius: radius.xl,
@@ -536,12 +534,13 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
     footer: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'space-between',
       gap: spacing.md,
       padding: spacing.lg,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
       backgroundColor: colors.background
     },
+    likeActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   });
 }

@@ -431,16 +431,11 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
       } else {
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
+        if (Math.abs(event.translationX) < 12 && Math.abs(event.translationY) < 12) {
+          runOnJS(handleTap)();
+        }
       }
     });
-
-  const tapGesture = Gesture.Tap().onEnd(() => {
-    runOnJS(handleTap)();
-  });
-
-  // A stationary touch should open the profile; only a competing drag should
-  // be handled by the swipe recognizer.
-  const composedGesture = Gesture.Exclusive(tapGesture, panGesture);
 
   const cardStyle = useAnimatedStyle(() => {
     const rotate = interpolate(translateX.value, [-width, 0, width], [-12, 0, 12], Extrapolation.CLAMP);
@@ -464,7 +459,7 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
   const initial = (candidate.displayName ?? 'S').trim().charAt(0).toUpperCase() || 'S';
 
   return (
-    <GestureDetector gesture={composedGesture}>
+    <GestureDetector gesture={panGesture}>
       <Animated.View
         style={[
           styles.card,
