@@ -8,12 +8,14 @@ import {
   useAudioRecorder,
   useAudioRecorderState
 } from 'expo-audio';
+import { File } from 'expo-file-system';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { OnboardingScreen } from '../../src/components/OnboardingScreen';
 import { AppIcon } from '../../src/components/AppIcon';
 import { api } from '../../src/api';
+import { uploadBinaryFile } from '../../src/upload';
 import { useAppTheme } from '../../src/theme/useAppTheme';
 import { useOnboardingStore } from '../../src/store/onboarding';
 import { stepNumber } from '../../src/onboarding/steps';
@@ -83,15 +85,13 @@ export default function VoiceIntroScreen() {
     setUploading(true);
     setError(null);
     try {
-      const fileResponse = await fetch(uri);
-      const blob = await fileResponse.blob();
       const mimeType = 'audio/m4a';
       const presign = await api.post<{ storageKey: string; uploadUrl: string }>('/onboarding/voice-intro/presign', {
         mimeType,
-        sizeBytes: blob.size
+        sizeBytes: new File(uri).size
       });
       if (!presign.data) throw new Error('Unable to prepare upload.');
-      await fetch(presign.data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': mimeType }, body: blob });
+      await uploadBinaryFile(uri, presign.data.uploadUrl, mimeType);
       await api.post('/onboarding/voice-intro/complete', { storageKey: presign.data.storageKey });
       setVoiceIntroKey(presign.data.storageKey);
       setUploaded(true);

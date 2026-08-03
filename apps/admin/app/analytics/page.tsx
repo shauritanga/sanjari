@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { AdminShell } from '../../src/components/AdminShell';
+import { PageHeader } from '../../src/components/PageHeader';
+import { ErrorState } from '../../src/components/ErrorState';
+import { MetricGrid, MetricItem } from '../../src/components/MetricGrid';
 import { adminRequest } from '../../src/lib/admin-api';
 
 type Metrics = { unreadNotifications: number; openSupportTickets: number; failedExports: number; failedJobs: number; recentAuditEvents: number };
@@ -21,14 +24,18 @@ export default function AnalyticsPage() {
       .then((data) => setMetrics(data ?? null))
       .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to load analytics.'));
   }, []);
+
+  const metricItems: MetricItem[] = labels.map(([label, key]) => ({
+    id: key,
+    label,
+    value: metrics?.[key] ?? '...',
+  }));
+
   return (
     <AdminShell>
-      <h1>Operational analytics</h1>
-      <p>Aggregate queue, rights-processing, job, and audit signals.</p>
-      {error ? <p className="error-text">{error}</p> : null}
-      <section className="metrics" aria-label="Operational analytics">
-        {labels.map(([label, key]) => <div className="metric" key={key}><span>{label}</span><strong>{metrics?.[key] ?? '...'}</strong></div>)}
-      </section>
+      <PageHeader title="Operational analytics" description="Aggregate queue, rights-processing, job, and audit signals." />
+      {error ? <ErrorState message={error} /> : null}
+      <MetricGrid items={metricItems} label="Operational analytics" />
     </AdminShell>
   );
 }

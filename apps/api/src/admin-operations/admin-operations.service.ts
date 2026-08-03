@@ -1,10 +1,17 @@
 import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { Prisma } from '@prisma/client';
 import type { AdminClaims } from '../admin-auth/admin-auth.types';
 import { PrismaService } from '../common/database/prisma.service';
 import {
+  AppVersionUpdateDto,
   AuditQueryDto,
+  ContentPromptCreateDto,
+  ContentPromptUpdateDto,
+  DeletionRequestActionDto,
   FeatureFlagUpdateDto,
+  LegalDocumentCreateDto,
+  MatchingConfigUpdateDto,
   NotificationUpdateDto,
   RoleAssignmentDto,
   SupportTicketUpdateDto,
@@ -582,5 +589,264 @@ export class AdminOperationsService {
       },
     });
     return result;
+  }
+
+  async contentPrompts(admin: AdminClaims) {
+    requirePermission(admin, 'configuration.manage');
+    return this.prisma.profilePrompt.findMany({
+      select: { id: true, locale: true, prompt: true, active: true, createdAt: true },
+      orderBy: [{ locale: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async createContentPrompt(admin: AdminClaims, dto: ContentPromptCreateDto) {
+    requirePermission(admin, 'configuration.manage');
+    return this.prisma.$transaction(async (tx) => {
+      const prompt = await tx.profilePrompt.create({
+        data: { locale: dto.locale, prompt: dto.prompt },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.content_prompt_created',
+          metadata: { promptId: prompt.id, locale: prompt.locale },
+        },
+      });
+      return prompt;
+    });
+  }
+
+  async updateContentPrompt(admin: AdminClaims, promptId: string, dto: ContentPromptUpdateDto) {
+    requirePermission(admin, 'configuration.manage');
+    const current = await this.prisma.profilePrompt.findUnique({ where: { id: promptId } });
+    if (!current)
+      throw new NotFoundException({ code: 'PROMPT_NOT_FOUND', message: 'Prompt not found.' });
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.profilePrompt.update({
+        where: { id: promptId },
+        data: {
+          ...(dto.prompt !== undefined && { prompt: dto.prompt }),
+          ...(dto.active !== undefined && { active: dto.active }),
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.content_prompt_updated',
+          metadata: {
+            promptId,
+            before: { prompt: current.prompt, active: current.active },
+            after: { prompt: result.prompt, active: result.active },
+          },
+        },
+      });
+      return result;
+    });
+  }
+
+  private defaultMatchingWeights() {
+    return {
+      sharedInterestWeight: 15,
+      sharedInterestCap: 45,
+      completenessWeight: 0.35,
+      verificationBonus: 20,
+    };
+  }
+
+  async matchingConfig(admin: AdminClaims) {
+    requirePermission(admin, 'configuration.manage');
+    const row = await this.prisma.applicationConfiguration.findUnique({
+      where: { key: 'matching.weights' },
+    });
+    return row
+      ? { ...(row.value as Record<string, number>), updatedAt: row.updatedAt }
+      : { ...this.defaultMatchingWeights(), updatedAt: null };
+  }
+
+  async updateMatchingConfig(admin: AdminClaims, dto: MatchingConfigUpdateDto) {
+    requirePermission(admin, 'configuration.manage');
+    const before = await this.prisma.applicationConfiguration.findUnique({
+      where: { key: 'matching.weights' },
+    });
+    const value = {
+      sharedInterestWeight: dto.sharedInterestWeight,
+      sharedInterestCap: dto.sharedInterestCap,
+      completenessWeight: dto.completenessWeight,
+      verificationBonus: dto.verificationBonus,
+    };
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.applicationConfiguration.upsert({
+        where: { key: 'matching.weights' },
+        create: { key: 'matching.weights', value },
+        update: { value },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.matching_config_updated',
+          metadata: { before: before?.value ?? this.defaultMatchingWeights(), after: value },
+        },
+      });
+      return result;
+    });
+    return { ...(updated.value as Record<string, number>), updatedAt: updated.updatedAt };
+  }
+
+  async legalDocuments(admin: AdminClaims) {
+    requirePermission(admin, 'legal.read');
+    return this.prisma.legalDocument.findMany({
+      orderBy: [{ type: 'asc' }, { publishedAt: 'desc' }],
+    });
+  }
+
+  async createLegalDocument(admin: AdminClaims, dto: LegalDocumentCreateDto) {
+    requirePermission(admin, 'configuration.manage');
+    const existing = await this.prisma.legalDocument.findUnique({
+      where: { type_version_locale: { type: dto.type, version: dto.version, locale: dto.locale } },
+    });
+    if (existing)
+      throw new ForbiddenException({
+        code: 'LEGAL_DOCUMENT_VERSION_EXISTS',
+        message: 'This document type, version, and locale has already been published.',
+      });
+    return this.prisma.$transaction(async (tx) => {
+      const document = await tx.legalDocument.create({
+        data: {
+          type: dto.type,
+          version: dto.version,
+          locale: dto.locale,
+          contentHash: dto.contentHash,
+          publishedAt: new Date(),
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.legal_document_published',
+          metadata: {
+            documentId: document.id,
+            type: document.type,
+            version: document.version,
+            locale: document.locale,
+          },
+        },
+      });
+      return document;
+    });
+  }
+
+  async deletionRequests(admin: AdminClaims) {
+    requirePermission(admin, 'users.read');
+    const requests = await this.prisma.accountDeletionRequest.findMany({
+      orderBy: { executeAfter: 'asc' },
+      take: 100,
+    });
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: requests.map((request) => request.userId) } },
+      select: { id: true, email: true, profile: { select: { displayName: true } } },
+    });
+    const userMap = new Map(users.map((user) => [user.id, user]));
+    return requests.map((request) => ({
+      ...request,
+      user: userMap.get(request.userId) ?? null,
+    }));
+  }
+
+  async updateDeletionRequest(
+    admin: AdminClaims,
+    requestId: string,
+    dto: DeletionRequestActionDto,
+  ) {
+    requirePermission(admin, 'users.suspend');
+    const current = await this.prisma.accountDeletionRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!current)
+      throw new NotFoundException({
+        code: 'DELETION_REQUEST_NOT_FOUND',
+        message: 'Deletion request not found.',
+      });
+    if (!['requested', 'scheduled'].includes(current.status))
+      throw new ForbiddenException({
+        code: 'DELETION_REQUEST_NOT_ACTIONABLE',
+        message: 'This request has already been processed.',
+      });
+    const data = dto.action === 'cancel' ? { status: 'cancelled' } : { executeAfter: new Date() };
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.accountDeletionRequest.update({ where: { id: requestId }, data });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          userId: current.userId,
+          actorType: 'admin',
+          action: `admin.deletion_request_${dto.action}`,
+          metadata: { requestId, reason: dto.reason ?? null },
+        },
+      });
+      return result;
+    });
+  }
+
+  private defaultAppVersions() {
+    const platform = {
+      minSupportedVersion: '1.0.0',
+      latestVersion: '1.0.0',
+      forceUpdate: false,
+      rolloutPercentage: 100,
+      releaseNotes: null as string | null,
+      updatedAt: null as string | null,
+    };
+    return { ios: platform, android: { ...platform } };
+  }
+
+  async appVersions(admin: AdminClaims) {
+    requirePermission(admin, 'versions.read');
+    const row = await this.prisma.applicationConfiguration.findUnique({
+      where: { key: 'app_versions' },
+    });
+    return row ? row.value : this.defaultAppVersions();
+  }
+
+  async updateAppVersion(admin: AdminClaims, dto: AppVersionUpdateDto) {
+    requirePermission(admin, 'configuration.manage');
+    const row = await this.prisma.applicationConfiguration.findUnique({
+      where: { key: 'app_versions' },
+    });
+    const current = (row?.value as Record<string, unknown>) ?? this.defaultAppVersions();
+    const before = current[dto.platform];
+    const platformValue = {
+      minSupportedVersion: dto.minSupportedVersion,
+      latestVersion: dto.latestVersion,
+      forceUpdate: dto.forceUpdate,
+      rolloutPercentage: dto.rolloutPercentage,
+      releaseNotes: dto.releaseNotes ?? null,
+      updatedAt: new Date().toISOString(),
+    };
+    const value = { ...current, [dto.platform]: platformValue } as Prisma.InputJsonObject;
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.applicationConfiguration.upsert({
+        where: { key: 'app_versions' },
+        create: { key: 'app_versions', value },
+        update: { value },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.app_version_updated',
+          metadata: {
+            platform: dto.platform,
+            before: before as Prisma.InputJsonValue,
+            after: platformValue,
+          },
+        },
+      });
+      return result;
+    });
+    return updated.value;
   }
 }

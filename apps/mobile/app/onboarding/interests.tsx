@@ -29,7 +29,8 @@ const INTEREST_OPTIONS = [
   { value: 'tech', label: 'Tech' },
   { value: 'comedy', label: 'Comedy' },
   { value: 'nature', label: 'Nature' },
-  { value: 'nightlife', label: 'Nightlife' }
+  { value: 'nightlife', label: 'Nightlife' },
+  { value: 'faith', label: 'Faith' }
 ];
 
 export default function InterestsScreen() {

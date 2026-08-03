@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   Req,
   SetMetadata,
@@ -15,8 +16,14 @@ import { AdminPermissionGuard } from '../admin-auth/admin-permission.guard';
 import type { AdminRequest } from '../admin-auth/admin-auth.types';
 import { AdminOperationsService } from './admin-operations.service';
 import {
+  AppVersionUpdateDto,
   AuditQueryDto,
+  ContentPromptCreateDto,
+  ContentPromptUpdateDto,
+  DeletionRequestActionDto,
   FeatureFlagUpdateDto,
+  LegalDocumentCreateDto,
+  MatchingConfigUpdateDto,
   NotificationUpdateDto,
   RoleAssignmentDto,
   SupportTicketUpdateDto,
@@ -172,5 +179,85 @@ export class AdminOperationsController {
   @SetMetadata('adminPermission', 'audit.read')
   async audit(@Req() request: AdminRequest, @Query() query: AuditQueryDto) {
     return { data: await this.operations.audit(request.admin!, query) };
+  }
+
+  @Get('content/prompts')
+  @SetMetadata('adminPermission', 'configuration.manage')
+  async contentPrompts(@Req() request: AdminRequest) {
+    return { data: await this.operations.contentPrompts(request.admin!) };
+  }
+
+  @Post('content/prompts')
+  @SetMetadata('adminPermission', 'configuration.manage')
+  @UseGuards(AdminCsrfGuard)
+  async createContentPrompt(@Req() request: AdminRequest, @Body() dto: ContentPromptCreateDto) {
+    return { data: await this.operations.createContentPrompt(request.admin!, dto) };
+  }
+
+  @Patch('content/prompts/:promptId')
+  @SetMetadata('adminPermission', 'configuration.manage')
+  @UseGuards(AdminCsrfGuard)
+  async updateContentPrompt(
+    @Req() request: AdminRequest,
+    @Param('promptId') promptId: string,
+    @Body() dto: ContentPromptUpdateDto,
+  ) {
+    return { data: await this.operations.updateContentPrompt(request.admin!, promptId, dto) };
+  }
+
+  @Get('matching-config')
+  @SetMetadata('adminPermission', 'configuration.manage')
+  async matchingConfig(@Req() request: AdminRequest) {
+    return { data: await this.operations.matchingConfig(request.admin!) };
+  }
+
+  @Patch('matching-config')
+  @SetMetadata('adminPermission', 'configuration.manage')
+  @UseGuards(AdminCsrfGuard)
+  async updateMatchingConfig(@Req() request: AdminRequest, @Body() dto: MatchingConfigUpdateDto) {
+    return { data: await this.operations.updateMatchingConfig(request.admin!, dto) };
+  }
+
+  @Get('legal-documents')
+  @SetMetadata('adminPermission', 'legal.read')
+  async legalDocuments(@Req() request: AdminRequest) {
+    return { data: await this.operations.legalDocuments(request.admin!) };
+  }
+
+  @Post('legal-documents')
+  @SetMetadata('adminPermission', 'configuration.manage')
+  @UseGuards(AdminCsrfGuard)
+  async createLegalDocument(@Req() request: AdminRequest, @Body() dto: LegalDocumentCreateDto) {
+    return { data: await this.operations.createLegalDocument(request.admin!, dto) };
+  }
+
+  @Get('deletion-requests')
+  @SetMetadata('adminPermission', 'users.read')
+  async deletionRequests(@Req() request: AdminRequest) {
+    return { data: await this.operations.deletionRequests(request.admin!) };
+  }
+
+  @Patch('deletion-requests/:requestId')
+  @SetMetadata('adminPermission', 'users.suspend')
+  @UseGuards(AdminCsrfGuard)
+  async updateDeletionRequest(
+    @Req() request: AdminRequest,
+    @Param('requestId') requestId: string,
+    @Body() dto: DeletionRequestActionDto,
+  ) {
+    return { data: await this.operations.updateDeletionRequest(request.admin!, requestId, dto) };
+  }
+
+  @Get('app-versions')
+  @SetMetadata('adminPermission', 'versions.read')
+  async appVersions(@Req() request: AdminRequest) {
+    return { data: await this.operations.appVersions(request.admin!) };
+  }
+
+  @Patch('app-versions')
+  @SetMetadata('adminPermission', 'configuration.manage')
+  @UseGuards(AdminCsrfGuard)
+  async updateAppVersion(@Req() request: AdminRequest, @Body() dto: AppVersionUpdateDto) {
+    return { data: await this.operations.updateAppVersion(request.admin!, dto) };
   }
 }

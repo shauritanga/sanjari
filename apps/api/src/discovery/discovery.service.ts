@@ -31,6 +31,26 @@ export class DiscoveryService {
     private readonly entitlements: DiscoveryEntitlementService,
   ) {}
 
+  private async getMatchingWeights() {
+    const row = await this.prisma.applicationConfiguration.findUnique({
+      where: { key: 'matching.weights' },
+    });
+    const value = row?.value as
+      | {
+          sharedInterestWeight?: number;
+          sharedInterestCap?: number;
+          completenessWeight?: number;
+          verificationBonus?: number;
+        }
+      | undefined;
+    return {
+      sharedInterestWeight: value?.sharedInterestWeight ?? 15,
+      sharedInterestCap: value?.sharedInterestCap ?? 45,
+      completenessWeight: value?.completenessWeight ?? 0.35,
+      verificationBonus: value?.verificationBonus ?? 20,
+    };
+  }
+
   async discover(userId: string, cursor?: string) {
     const viewer = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -86,19 +106,24 @@ export class DiscoveryService {
       cursor ? Number(cursor) || 0 : 0,
       (cursor ? Number(cursor) || 0 : 0) + 20,
     );
+    const weights = await this.getMatchingWeights();
     const data = page.map((candidate) => {
       const sharedInterests = viewer.profile!.interestedIn.filter((value) =>
         candidate.profile!.interestedIn.includes(value),
       );
       const components = {
-        sharedInterests: Math.min(sharedInterests.length * 15, 45),
+        sharedInterests: Math.min(
+          sharedInterests.length * weights.sharedInterestWeight,
+          weights.sharedInterestCap,
+        ),
         profileCompleteness: candidate.profile!.completionScore,
-        verification: candidate.profile!.verificationStatus === 'verified' ? 20 : 0,
+        verification:
+          candidate.profile!.verificationStatus === 'verified' ? weights.verificationBonus : 0,
       };
       const score = Math.min(
         100,
         components.sharedInterests +
-          Math.round(components.profileCompleteness * 0.35) +
+          Math.round(components.profileCompleteness * weights.completenessWeight) +
           components.verification,
       );
       return {

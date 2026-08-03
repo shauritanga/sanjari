@@ -111,10 +111,17 @@ export function AdminShell({ children }: Readonly<{ children: React.ReactNode }>
     setCollapsed(window.localStorage.getItem('sanjari.admin.sidebarCollapsed') === 'true');
     setDark(window.localStorage.getItem('sanjari.admin.theme') === 'dark');
     const raw = window.sessionStorage.getItem('sanjari.admin.claims');
-    if (raw) {
-      try { setClaims(JSON.parse(raw) as typeof claims); } catch { window.sessionStorage.removeItem('sanjari.admin.claims'); }
+    if (!raw) {
+      router.replace('/login');
+      return;
     }
-  }, []);
+    try {
+      setClaims(JSON.parse(raw) as typeof claims);
+    } catch {
+      window.sessionStorage.removeItem('sanjari.admin.claims');
+      router.replace('/login');
+    }
+  }, [router]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';

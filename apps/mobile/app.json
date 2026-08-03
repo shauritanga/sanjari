@@ -28,6 +28,8 @@
       "expo-localization",
       "expo-notifications",
       ["expo-audio", { "microphonePermission": "Sanjari uses the microphone for optional voice introductions." }],
+      ["expo-image-picker", { "photosPermission": "Sanjari uses your photo library to add profile photos." }],
+      ["expo-location", { "locationWhenInUsePermission": "Sanjari uses approximate location to recommend nearby compatible adults." }],
       "./plugins/withCleartextTraffic"
     ],
     "updates": {

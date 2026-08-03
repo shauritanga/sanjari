@@ -3,6 +3,7 @@ import { PrismaService } from '../common/database/prisma.service';
 import { DataExportService } from './data-export.service';
 import {
   AppealDto,
+  AppealResolutionDto,
   BlockDto,
   DataDeletionDto,
   ModerationActionDto,
@@ -359,6 +360,55 @@ export class ModerationService {
       return created;
     });
     return { id: appeal.id, caseId: appeal.caseId, status: appeal.status };
+  }
+
+  async resolveAppeal(adminUserId: string, appealId: string, dto: AppealResolutionDto) {
+    await this.requireModerator(adminUserId);
+    const appeal = await this.prisma.appeal.findUnique({
+      where: { id: appealId },
+      include: { case: { include: { report: true } } },
+    });
+    if (!appeal)
+      throw new NotFoundException({ code: 'APPEAL_NOT_FOUND', message: 'Appeal not found.' });
+    if (appeal.status !== 'submitted')
+      throw new BadRequestException({
+        code: 'APPEAL_ALREADY_RESOLVED',
+        message: 'This appeal has already been resolved.',
+      });
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.appeal.update({
+        where: { id: appealId },
+        data: { status: dto.status },
+      });
+      await tx.report.update({
+        where: { id: appeal.case.reportId },
+        data: { appealStatus: dto.status },
+      });
+      if (dto.status === 'overturned') {
+        await tx.moderationCase.update({
+          where: { id: appeal.caseId },
+          data: { status: 'dismissed' },
+        });
+        await tx.user.update({
+          where: { id: appeal.case.report.reportedUserId },
+          data: { status: 'active' },
+        });
+      }
+      await tx.auditLog.create({
+        data: {
+          adminUserId,
+          actorType: 'admin',
+          action: 'moderation.appeal_resolved',
+          metadata: {
+            appealId,
+            caseId: appeal.caseId,
+            status: dto.status,
+            reason: dto.reason,
+          },
+        },
+      });
+      return { id: result.id, status: result.status };
+    });
   }
 
   async appealableCases(userId: string) {

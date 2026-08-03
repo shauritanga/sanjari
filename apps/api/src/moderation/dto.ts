@@ -97,6 +97,16 @@ export class ModerationActionDto {
   reason!: string;
 }
 
+export class AppealResolutionDto {
+  @IsIn(['upheld', 'overturned'])
+  status!: string;
+
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1_000)
+  reason!: string;
+}
+
 export class DataDeletionDto {
   @IsOptional()
   @IsString()

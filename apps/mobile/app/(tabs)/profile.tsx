@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { File } from 'expo-file-system';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { api } from '../../src/api';
+import { uploadBinaryFile } from '../../src/upload';
 import { theme } from '../../src/theme/theme';
 
 type Profile = {
@@ -176,12 +176,7 @@ export default function ProfileScreen() {
         { mimeType, sizeBytes: asset.fileSize ?? 1 },
       );
       if (!presign.data) throw new Error('Unable to prepare photo upload.');
-      const upload = await fetch(presign.data.uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': mimeType },
-        body: await new File(asset.uri).arrayBuffer(),
-      });
-      if (!upload.ok) throw new Error('Photo upload failed.');
+      await uploadBinaryFile(asset.uri, presign.data.uploadUrl, mimeType);
       const completed = await api.post<{ id: string; moderationStatus: string }>(
         '/onboarding/photos/complete',
         { storageKey: presign.data.storageKey },

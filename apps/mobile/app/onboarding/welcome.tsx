@@ -49,12 +49,6 @@ export default function OnboardingWelcomeScreen() {
         </View>
       </View>
 
-      <View style={[styles.blockRow, { paddingHorizontal: spacing.lg, gap: spacing.sm }]}>
-        <View style={[styles.block, { backgroundColor: colors.surfaceAlt, borderRadius: radius.lg }]} />
-        <View style={[styles.block, { backgroundColor: colors.accent, borderRadius: radius.lg, opacity: 0.85 }]} />
-        <View style={[styles.block, { backgroundColor: colors.surfaceAlt, borderRadius: radius.lg }]} />
-      </View>
-
       <View style={[styles.actions, { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, gap: spacing.sm }]}>
         <AppButton label="Get started" onPress={() => router.push('/onboarding/age')} />
         <AppButton
@@ -73,7 +67,5 @@ const styles = StyleSheet.create({
   mark: { alignItems: 'center', justifyContent: 'center' },
   brand: { letterSpacing: 0.5 },
   tagline: { maxWidth: 320 },
-  blockRow: { flexDirection: 'row', height: 96 },
-  block: { flex: 1 },
   actions: {}
 });

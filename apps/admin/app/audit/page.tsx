@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { AdminShell } from '../../src/components/AdminShell';
+import { PageHeader } from '../../src/components/PageHeader';
+import { EmptyState } from '../../src/components/EmptyState';
+import { ErrorState } from '../../src/components/ErrorState';
+import { LoadingState } from '../../src/components/LoadingState';
+import { DataTable, DataTableColumn } from '../../src/components/DataTable';
+import { ResponsiveDataList } from '../../src/components/ResponsiveDataList';
 import { adminRequest } from '../../src/lib/admin-api';
 
 type Audit = {
@@ -13,7 +19,7 @@ type Audit = {
 };
 
 export default function AuditPage() {
-  const [items, setItems] = useState<Audit[]>([]);
+  const [items, setItems] = useState<Audit[] | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     void adminRequest<Audit[]>('/admin/operations/audit')
@@ -22,23 +28,25 @@ export default function AuditPage() {
         setError(cause instanceof Error ? cause.message : 'Unable to load audit logs.'),
       );
   }, []);
+
+  const columns: DataTableColumn<Audit>[] = [
+    { key: 'action', header: 'Action', render: (item) => item.action },
+    { key: 'actorType', header: 'Actor', render: (item) => item.actorType },
+    { key: 'createdAt', header: 'Recorded', render: (item) => new Date(item.createdAt).toLocaleString() },
+  ];
+
   return (
     <AdminShell>
-      <h1>Audit logs</h1>
-      <p>Administrative and sensitive-data access logs are immutable.</p>
-      {error ? <p className="error-text">{error}</p> : null}
-      <div className="case-list">
-        {items.map((item) => (
-          <article className="case-item" key={item.id}>
-            <div>
-              <strong>{item.action}</strong>
-              <span>
-                {item.actorType} · {new Date(item.createdAt).toLocaleString()}
-              </span>
-            </div>
-          </article>
-        ))}
-      </div>
+      <PageHeader title="Audit logs" description="Administrative and sensitive-data access logs are immutable." />
+      {error ? <ErrorState message={error} /> : null}
+      {items === null && !error ? <LoadingState label="Loading audit logs" /> : null}
+      {items && items.length === 0 ? <EmptyState description="No audit events have been recorded yet." /> : null}
+      {items && items.length > 0 ? (
+        <>
+          <DataTable columns={columns} rows={items} rowKey={(item) => item.id} caption="Audit logs" />
+          <ResponsiveDataList columns={columns} rows={items} rowKey={(item) => item.id} />
+        </>
+      ) : null}
     </AdminShell>
   );
 }

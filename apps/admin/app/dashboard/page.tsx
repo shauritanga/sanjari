@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Activity, Flag, ShieldCheck } from 'lucide-react';
 import { AdminShell } from '../../src/components/AdminShell';
+import { PageHeader } from '../../src/components/PageHeader';
+import { ErrorState } from '../../src/components/ErrorState';
+import { MetricGrid, MetricItem } from '../../src/components/MetricGrid';
 import { adminRequest } from '../../src/lib/admin-api';
 
 const metricLabels = [
@@ -37,21 +40,23 @@ export default function DashboardPage() {
         setError(cause instanceof Error ? cause.message : 'Unable to load dashboard.'),
       );
   }, []);
+
+  const metricItems: MetricItem[] = metricLabels.map(([label, key]) => ({
+    id: key,
+    label,
+    value: dashboardMetrics ? dashboardMetrics[key] : '...',
+  }));
+
   return (
     <AdminShell>
-      <header className="page-header">
-        <div><p className="eyebrow">Sanjari operations</p><h1>Good morning, admin</h1><p>Monitor trust, safety, growth, and platform health from one place.</p></div>
-        <span className="status-chip"><span className="status-dot" /> Live data</span>
-      </header>
-      {error ? <p className="error-text">{error}</p> : null}
-      <section className="metrics" aria-label="Platform metrics">
-        {metricLabels.map(([label, key]) => (
-          <div className="metric" key={label}>
-            <span>{label}</span>
-            <strong>{dashboardMetrics ? dashboardMetrics[key] : '...'}</strong>
-          </div>
-        ))}
-      </section>
+      <PageHeader
+        eyebrow="Sanjari operations"
+        title="Good morning, admin"
+        description="Monitor trust, safety, growth, and platform health from one place."
+        status={<span className="status-chip"><span className="status-dot" /> Live data</span>}
+      />
+      {error ? <ErrorState message={error} /> : null}
+      <MetricGrid items={metricItems} label="Platform metrics" />
       <section className="dashboard-section dashboard-grid" aria-label="Operations shortcuts">
         <div className="panel">
           <p className="eyebrow">Priority queues</p><h2>Keep the platform moving</h2>

@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { AdminShell } from '../../src/components/AdminShell';
+import { PageHeader } from '../../src/components/PageHeader';
+import { EmptyState } from '../../src/components/EmptyState';
+import { ErrorState } from '../../src/components/ErrorState';
+import { LoadingState } from '../../src/components/LoadingState';
+import { StatusBadge } from '../../src/components/StatusBadge';
+import { ConfirmDialog } from '../../src/components/ConfirmDialog';
+import { Toast } from '../../src/components/Toast';
 import { adminRequest } from '../../src/lib/admin-api';
 
 type VerificationCase = {
@@ -20,9 +27,13 @@ type VerificationCodes = {
 };
 
 export default function VerificationPage() {
-  const [items, setItems] = useState<VerificationCase[]>([]);
+  const [items, setItems] = useState<VerificationCase[] | null>(null);
   const [codes, setCodes] = useState<VerificationCodes | null>(null);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
+  const [busyId, setBusyId] = useState('');
+  const [pending, setPending] = useState<{ item: VerificationCase; status: 'approved' | 'rejected' } | null>(null);
+
   useEffect(() => {
     void adminRequest<VerificationCase[]>('/admin/operations/verification')
       .then((data) => setItems(data ?? []))
@@ -35,8 +46,11 @@ export default function VerificationPage() {
         setError(cause instanceof Error ? cause.message : 'Unable to load test verification codes.'),
       );
   }, []);
-  async function review(item: VerificationCase, status: 'approved' | 'rejected') {
-    if (!window.confirm(`Confirm ${status} for verification case ${item.id}?`)) return;
+
+  async function review() {
+    if (!pending) return;
+    const { item, status } = pending;
+    setBusyId(item.id);
     try {
       await adminRequest(`/admin/operations/verification/${item.id}`, {
         method: 'PATCH',
@@ -45,15 +59,19 @@ export default function VerificationPage() {
           reason: `Human reviewer ${status} this verification case.`,
         }),
       });
-      setItems((current) => current.filter((entry) => entry.id !== item.id));
+      setItems((current) => current?.filter((entry) => entry.id !== item.id) ?? null);
+      setToast(status === 'approved' ? 'Verification case approved.' : 'Verification case rejected.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to review case.');
+    } finally {
+      setBusyId('');
+      setPending(null);
     }
   }
+
   return (
     <AdminShell>
-      <h1>Verification queue</h1>
-      <p>Selfie and identity-document review access is audited.</p>
+      <PageHeader title="Verification queue" description="Selfie and identity-document review access is audited." />
       {codes?.enabled ? (
         <section className="case-list">
           <h2>Test verification codes</h2>
@@ -70,23 +88,47 @@ export default function VerificationPage() {
           {!codes.email.length && !codes.phone.length ? <p>No active codes.</p> : null}
         </section>
       ) : null}
-      {error ? <p className="error-text">{error}</p> : null}
+      {error ? <ErrorState message={error} /> : null}
+      {items === null && !error ? <LoadingState label="Loading verification queue" /> : null}
+      {items && items.length === 0 ? <EmptyState description="No verification cases are awaiting review." /> : null}
       <div className="case-list">
-        {items.map((item) => (
+        {items?.map((item) => (
           <article className="case-item" key={item.id}>
             <div>
               <strong>{item.type}</strong>
               <span>
-                {item.status} · {item.provider ?? 'manual review'} · user {item.userId}
+                <StatusBadge status={item.status} /> · {item.provider ?? 'manual review'} · user {item.userId}
               </span>
             </div>
             <div className="actions">
-              <button onClick={() => void review(item, 'approved')}>Approve</button>
-              <button onClick={() => void review(item, 'rejected')}>Reject</button>
+              <button
+                className="secondary-button"
+                disabled={busyId === item.id}
+                onClick={() => setPending({ item, status: 'approved' })}
+              >
+                Approve
+              </button>
+              <button
+                className="danger-button"
+                disabled={busyId === item.id}
+                onClick={() => setPending({ item, status: 'rejected' })}
+              >
+                Reject
+              </button>
             </div>
           </article>
         ))}
       </div>
+      <ConfirmDialog
+        open={pending !== null}
+        title={pending?.status === 'approved' ? 'Approve this verification case?' : 'Reject this verification case?'}
+        description={`Confirm ${pending?.status ?? ''} for verification case ${pending?.item.id ?? ''}.`}
+        confirmLabel={pending?.status === 'approved' ? 'Approve' : 'Reject'}
+        busy={busyId === pending?.item.id}
+        onConfirm={() => void review()}
+        onClose={() => setPending(null)}
+      />
+      {toast ? <Toast message={toast} tone="success" onDismiss={() => setToast('')} /> : null}
     </AdminShell>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 import { AppIcon } from './AppIcon';
 import { api } from '../api';
+import { uploadBinaryFile } from '../upload';
 import { useAppTheme } from '../theme/useAppTheme';
 
 export interface PhotoItem {
@@ -24,31 +25,29 @@ export function PhotoGrid({ photos, onChange, slots = 6 }: PhotoGridProps) {
   const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
 
   async function pickAndUpload(position: number) {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Photo access needed', 'Allow photo library access to add profile photos.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.85,
-      allowsEditing: true,
-      aspect: [3, 4]
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    const mimeType = asset.mimeType ?? 'image/jpeg';
-
-    setUploadingSlot(position);
     try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Photo access needed', 'Allow photo library access to add profile photos.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.85,
+        allowsEditing: true,
+        aspect: [3, 4]
+      });
+      if (result.canceled || !result.assets[0]) return;
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType ?? 'image/jpeg';
+
+      setUploadingSlot(position);
       const presign = await api.post<{ storageKey: string; uploadUrl: string }>('/onboarding/photos/presign', {
         mimeType,
         sizeBytes: asset.fileSize ?? 2_000_000
       });
       if (!presign.data) throw new Error('Unable to prepare upload.');
-      const fileResponse = await fetch(asset.uri);
-      const blob = await fileResponse.blob();
-      await fetch(presign.data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': mimeType }, body: blob });
+      await uploadBinaryFile(asset.uri, presign.data.uploadUrl, mimeType);
       const completed = await api.post<PhotoItem>('/onboarding/photos/complete', {
         storageKey: presign.data.storageKey
       });

@@ -14,7 +14,12 @@ import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 import { AdminCsrfGuard } from '../admin-auth/admin-csrf.guard';
 import { AdminPermissionGuard } from '../admin-auth/admin-permission.guard';
 import type { AdminRequest } from '../admin-auth/admin-auth.types';
-import { ModerationActionDto, ModerationCaseUpdateDto, ModerationQueueQueryDto } from './dto';
+import {
+  AppealResolutionDto,
+  ModerationActionDto,
+  ModerationCaseUpdateDto,
+  ModerationQueueQueryDto,
+} from './dto';
 import { ModerationService } from './moderation.service';
 
 @Controller({ path: 'admin/moderation', version: '1' })
@@ -31,6 +36,16 @@ export class AdminModerationController {
   @Get('appeals')
   async appeals(@Req() request: AdminRequest) {
     return { data: await this.moderation.appealsQueue(request.admin!.id) };
+  }
+
+  @Patch('appeals/:appealId')
+  @UseGuards(AdminCsrfGuard)
+  async resolveAppeal(
+    @Req() request: AdminRequest,
+    @Param('appealId') appealId: string,
+    @Body() dto: AppealResolutionDto,
+  ) {
+    return { data: await this.moderation.resolveAppeal(request.admin!.id, appealId, dto) };
   }
 
   @Patch('cases/:caseId')
