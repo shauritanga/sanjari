@@ -4,34 +4,7 @@ import { OnboardingScreen } from '../../src/components/OnboardingScreen';
 import { ChipGroup } from '../../src/components/ChipGroup';
 import { useOnboardingStore } from '../../src/store/onboarding';
 import { stepNumber } from '../../src/onboarding/steps';
-
-const INTEREST_OPTIONS = [
-  { value: 'travel', label: 'Travel' },
-  { value: 'music', label: 'Music' },
-  { value: 'fitness', label: 'Fitness' },
-  { value: 'cooking', label: 'Cooking' },
-  { value: 'movies', label: 'Movies' },
-  { value: 'reading', label: 'Reading' },
-  { value: 'art', label: 'Art' },
-  { value: 'photography', label: 'Photography' },
-  { value: 'gaming', label: 'Gaming' },
-  { value: 'hiking', label: 'Hiking' },
-  { value: 'yoga', label: 'Yoga' },
-  { value: 'dancing', label: 'Dancing' },
-  { value: 'coffee', label: 'Coffee' },
-  { value: 'wine', label: 'Wine' },
-  { value: 'foodie', label: 'Foodie' },
-  { value: 'pets', label: 'Pets' },
-  { value: 'fashion', label: 'Fashion' },
-  { value: 'sports', label: 'Sports' },
-  { value: 'spirituality', label: 'Spirituality' },
-  { value: 'volunteering', label: 'Volunteering' },
-  { value: 'tech', label: 'Tech' },
-  { value: 'comedy', label: 'Comedy' },
-  { value: 'nature', label: 'Nature' },
-  { value: 'nightlife', label: 'Nightlife' },
-  { value: 'faith', label: 'Faith' }
-];
+import { INTEREST_OPTIONS } from '../../src/onboarding/options';
 
 export default function InterestsScreen() {
   const storedInterests = useOnboardingStore((state) => state.interests);

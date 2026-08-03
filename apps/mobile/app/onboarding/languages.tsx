@@ -4,19 +4,7 @@ import { OnboardingScreen } from '../../src/components/OnboardingScreen';
 import { ChipGroup } from '../../src/components/ChipGroup';
 import { useOnboardingStore } from '../../src/store/onboarding';
 import { stepNumber } from '../../src/onboarding/steps';
-
-const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English' },
-  { value: 'sw', label: 'Swahili' },
-  { value: 'fr', label: 'French' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'ar', label: 'Arabic' },
-  { value: 'pt', label: 'Portuguese' },
-  { value: 'de', label: 'German' },
-  { value: 'zh', label: 'Chinese' },
-  { value: 'hi', label: 'Hindi' },
-  { value: 'ru', label: 'Russian' }
-];
+import { LANGUAGE_OPTIONS } from '../../src/onboarding/options';
 
 export default function LanguagesScreen() {
   const storedLanguages = useOnboardingStore((state) => state.languages);

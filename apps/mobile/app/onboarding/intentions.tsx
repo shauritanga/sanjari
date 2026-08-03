@@ -5,15 +5,8 @@ import { ChipGroup } from '../../src/components/ChipGroup';
 import { OnboardingScreen } from '../../src/components/OnboardingScreen';
 import { useAppTheme } from '../../src/theme/useAppTheme';
 import { stepNumber } from '../../src/onboarding/steps';
+import { INTENTION_OPTIONS as OPTIONS } from '../../src/onboarding/options';
 import { useOnboardingStore } from '../../src/store/onboarding';
-
-const OPTIONS = [
-  { value: 'long_term', label: 'Long-term relationship' },
-  { value: 'short_term', label: 'Short-term fun' },
-  { value: 'casual', label: 'Casual dating' },
-  { value: 'friendship', label: 'New friends' },
-  { value: 'not_sure', label: 'Still figuring it out' }
-];
 
 export default function IntentionsScreen() {
   const { spacing } = useAppTheme();

@@ -6,12 +6,8 @@ import { OnboardingScreen } from '../../src/components/OnboardingScreen';
 import { SelectableCard } from '../../src/components/SelectableCard';
 import { useAppTheme } from '../../src/theme/useAppTheme';
 import { stepNumber } from '../../src/onboarding/steps';
+import { GENDER_OPTIONS as OPTIONS } from '../../src/onboarding/options';
 import { useOnboardingStore } from '../../src/store/onboarding';
-
-const OPTIONS: { value: string; label: string }[] = [
-  { value: 'woman', label: 'Woman' },
-  { value: 'man', label: 'Man' }
-];
 
 export default function GenderScreen() {
   const { spacing } = useAppTheme();

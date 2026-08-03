@@ -5,13 +5,8 @@ import { ChipGroup } from '../../src/components/ChipGroup';
 import { OnboardingScreen } from '../../src/components/OnboardingScreen';
 import { useAppTheme } from '../../src/theme/useAppTheme';
 import { stepNumber } from '../../src/onboarding/steps';
+import { WHO_TO_MEET_OPTIONS as OPTIONS } from '../../src/onboarding/options';
 import { useOnboardingStore } from '../../src/store/onboarding';
-
-const OPTIONS = [
-  { value: 'woman', label: 'Women' },
-  { value: 'man', label: 'Men' },
-  { value: 'everyone', label: 'Everyone' }
-];
 
 export default function WhoToMeetScreen() {
   const { spacing } = useAppTheme();
