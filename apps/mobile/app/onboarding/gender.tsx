@@ -10,9 +10,7 @@ import { useOnboardingStore } from '../../src/store/onboarding';
 
 const OPTIONS: { value: string; label: string }[] = [
   { value: 'woman', label: 'Woman' },
-  { value: 'man', label: 'Man' },
-  { value: 'nonbinary', label: 'Non-binary' },
-  { value: 'other', label: 'Other' }
+  { value: 'man', label: 'Man' }
 ];
 
 export default function GenderScreen() {

@@ -2,27 +2,11 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { OnboardingScreen } from '../../src/components/OnboardingScreen';
-import { ChipGroup } from '../../src/components/ChipGroup';
 import { Stepper } from '../../src/components/Stepper';
 import { ToggleRow } from '../../src/components/ToggleRow';
 import { useAppTheme } from '../../src/theme/useAppTheme';
 import { useOnboardingStore } from '../../src/store/onboarding';
 import { stepNumber } from '../../src/onboarding/steps';
-
-const GENDER_OPTIONS = [
-  { value: 'woman', label: 'Woman' },
-  { value: 'man', label: 'Man' },
-  { value: 'nonbinary', label: 'Nonbinary' },
-  { value: 'everyone', label: 'Everyone' }
-];
-
-const INTENTION_OPTIONS = [
-  { value: 'long_term', label: 'Long-term relationship' },
-  { value: 'short_term', label: 'Short-term fun' },
-  { value: 'casual', label: 'Casual dating' },
-  { value: 'friendship', label: 'New friends' },
-  { value: 'not_sure', label: 'Still figuring it out' }
-];
 
 export default function DiscoveryPreferencesScreen() {
   const { spacing } = useAppTheme();
@@ -32,8 +16,6 @@ export default function DiscoveryPreferencesScreen() {
   const [minAge, setMinAge] = useState(preference.minAge);
   const [maxAge, setMaxAge] = useState(preference.maxAge);
   const [maxDistanceKm, setMaxDistanceKm] = useState(preference.maxDistanceKm);
-  const [genders, setGenders] = useState<string[]>(preference.genders);
-  const [intentions, setIntentions] = useState<string[]>(preference.intentions);
   const [showDistance, setShowDistance] = useState(preference.showDistance);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +34,7 @@ export default function DiscoveryPreferencesScreen() {
     setSaving(true);
     setError(null);
     try {
-      await setDiscoveryPreference({ minAge, maxAge, maxDistanceKm, genders, intentions, showDistance });
+      await setDiscoveryPreference({ minAge, maxAge, maxDistanceKm, showDistance });
       router.push('/onboarding/location');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to save your preferences.');
@@ -65,7 +47,7 @@ export default function DiscoveryPreferencesScreen() {
     <OnboardingScreen
       step={stepNumber('discovery-preferences')}
       title="Your match preferences"
-      subtitle="You can change these anytime in settings."
+      subtitle="Who you want to meet is already set — just fine-tune age range and distance."
       primaryLabel="Continue"
       primaryLoading={saving}
       onPrimaryPress={() => {
@@ -85,12 +67,6 @@ export default function DiscoveryPreferencesScreen() {
           suffix="km"
           onChange={setMaxDistanceKm}
         />
-      </View>
-      <View style={{ gap: spacing.sm }}>
-        <ChipGroup options={GENDER_OPTIONS} selected={genders} onChange={setGenders} />
-      </View>
-      <View style={{ gap: spacing.sm }}>
-        <ChipGroup options={INTENTION_OPTIONS} selected={intentions} onChange={setIntentions} max={5} />
       </View>
       <ToggleRow
         title="Show my distance to others"

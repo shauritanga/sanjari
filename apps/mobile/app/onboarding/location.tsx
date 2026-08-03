@@ -28,7 +28,7 @@ export default function LocationScreen() {
         return;
       }
       const position = await Location.getCurrentPositionAsync({});
-      const wkt = `POINT(${position.coords.longitude} ${position.coords.latitude})`;
+      const wkt = `SRID=4326;POINT(${position.coords.longitude} ${position.coords.latitude})`;
       await api.post('/discovery/location', {
         protectedPointWkt: wkt,
         accuracyMeters: Math.round(position.coords.accuracy ?? 1000),

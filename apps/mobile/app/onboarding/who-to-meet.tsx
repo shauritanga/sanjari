@@ -10,7 +10,6 @@ import { useOnboardingStore } from '../../src/store/onboarding';
 const OPTIONS = [
   { value: 'woman', label: 'Women' },
   { value: 'man', label: 'Men' },
-  { value: 'nonbinary', label: 'Non-binary people' },
   { value: 'everyone', label: 'Everyone' }
 ];
 
