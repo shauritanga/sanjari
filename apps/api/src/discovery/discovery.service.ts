@@ -94,7 +94,8 @@ export class DiscoveryService {
         profile: {
           include: {
             photos: {
-              where: { isPrimary: true, moderationStatus: 'approved' },
+              where: { moderationStatus: 'approved' },
+              orderBy: [{ isPrimary: 'desc' }, { position: 'asc' }],
               select: { id: true, storageKey: true },
             },
             interests: { select: { interest: { select: { slug: true } } } },
@@ -236,7 +237,8 @@ export class DiscoveryService {
           select: {
             displayName: true,
             photos: {
-              where: { isPrimary: true, moderationStatus: 'approved' },
+              where: { moderationStatus: 'approved' },
+              orderBy: [{ isPrimary: 'desc' }, { position: 'asc' }],
               select: { id: true, storageKey: true },
             },
           },
@@ -494,7 +496,8 @@ export class DiscoveryService {
                 city: true,
                 verificationStatus: true,
                 photos: {
-                  where: { isPrimary: true, moderationStatus: 'approved' },
+                  where: { moderationStatus: 'approved' },
+                  orderBy: [{ isPrimary: 'desc' }, { position: 'asc' }],
                   select: { id: true, storageKey: true },
                 },
               },

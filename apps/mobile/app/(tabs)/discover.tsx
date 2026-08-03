@@ -235,7 +235,7 @@ export default function DiscoverScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.sm }]}>
+      <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.sm }]}> 
         <View>
           <Text style={[styles.eyebrow, { color: colors.accent }]}>Discover</Text>
           <Text
