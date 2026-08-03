@@ -290,6 +290,7 @@ Never store authentication tokens in AsyncStorage.
 
 Create a multi-step onboarding process:
 
+0. Beautiful splash screen
 1. Welcome screen
 2. Confirm age eligibility
 3. Accept terms and privacy policy
@@ -301,17 +302,19 @@ Create a multi-step onboarding process:
 9. Choose relationship intentions
 10. Enter name
 11. Add photos
-12. Add biography
-13. Select interests
-14. Answer personality prompts
-15. Add languages
-16. Set discovery preferences
-17. Set approximate location
-18. Configure privacy
-19. Complete selfie verification
-20. Enable notifications
-21. Review profile
-22. Publish profile
+12. Select country
+13. Select city
+14. Add biography
+15. Select interests
+16. Answer personality prompts
+17. Add languages
+18. Set discovery preferences
+19. Set approximate location
+20. Configure privacy
+21. Complete selfie verification
+22. Enable notifications
+23. Review profile
+24. Publish profile
 
 Allow users to save progress and continue later.
 

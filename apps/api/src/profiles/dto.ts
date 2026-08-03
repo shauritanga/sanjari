@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
   ArrayMaxSize,
@@ -10,13 +11,15 @@ import {
   MinLength,
   IsBoolean,
   IsIn,
+  IsUUID,
+  ValidateNested,
 } from 'class-validator';
 
 export class OnboardingUpdateDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(22)
+  @Max(30)
   step?: number;
 
   @IsOptional()
@@ -163,4 +166,77 @@ export class PhotoReorderDto {
 export class DiscoveryPauseDto {
   @IsBoolean()
   paused!: boolean;
+}
+
+export class PromptAnswerDto {
+  @IsUUID()
+  promptId!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(300)
+  answer!: string;
+}
+
+export class PromptAnswersDto {
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => PromptAnswerDto)
+  answers!: PromptAnswerDto[];
+}
+
+export class DiscoveryPreferenceDto {
+  @IsOptional()
+  @IsInt()
+  @Min(18)
+  @Max(100)
+  minAge?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(18)
+  @Max(100)
+  maxAge?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(500)
+  maxDistanceKm?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  genders?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  intentions?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  showDistance?: boolean;
+}
+
+export class VoiceIntroPresignDto {
+  @IsString()
+  @IsIn(['audio/m4a', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/x-m4a'])
+  mimeType!: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(15 * 1024 * 1024)
+  sizeBytes!: number;
+}
+
+export class VoiceIntroCompleteDto {
+  @IsString()
+  @MinLength(8)
+  storageKey!: string;
 }

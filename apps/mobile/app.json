@@ -22,7 +22,14 @@
       "usesCleartextTraffic": true,
       "permissions": ["CAMERA", "ACCESS_COARSE_LOCATION", "RECORD_AUDIO", "POST_NOTIFICATIONS"]
     },
-    "plugins": ["expo-router", "expo-secure-store", "expo-localization", "expo-notifications", "./plugins/withCleartextTraffic"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-notifications",
+      ["expo-audio", { "microphonePermission": "Sanjari uses the microphone for optional voice introductions." }],
+      "./plugins/withCleartextTraffic"
+    ],
     "updates": {
       "fallbackToCacheTimeout": 0
     },

@@ -147,6 +147,7 @@ model Profile {
   exercisePreference     String?
   childrenPreference     String?
   culturalPreference     String?
+  voiceIntroKey          String?
   verificationStatus     String               @default("unverified")
   moderationStatus       String               @default("pending")
   onboardingStatus       String               @default("not_started")

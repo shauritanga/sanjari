@@ -42,6 +42,22 @@ async function main(): Promise<void> {
     await prisma.city.createMany({ data: country.cities.map((name) => ({ countryCode: country.code, name })), skipDuplicates: true });
   }
 
+  const prompts = [
+    { locale: 'en', prompt: "A perfect weekend looks like..." },
+    { locale: 'en', prompt: "I get way too competitive about..." },
+    { locale: 'en', prompt: "The way to my heart is..." },
+    { locale: 'en', prompt: "My friends would describe me as..." },
+    { locale: 'en', prompt: "I'm looking for someone who..." },
+    { locale: 'en', prompt: "A non-negotiable for me is..." },
+    { locale: 'sw', prompt: 'Wikendi kamili kwangu ni...' },
+    { locale: 'sw', prompt: 'Njia ya kufikia moyo wangu ni...' },
+    { locale: 'sw', prompt: 'Ninatafuta mtu ambaye...' },
+  ];
+  for (const item of prompts) {
+    const existing = await prisma.profilePrompt.findFirst({ where: { locale: item.locale, prompt: item.prompt } });
+    if (!existing) await prisma.profilePrompt.create({ data: item });
+  }
+
   const adminPassword = process.env.SANJARI_ADMIN_SEED_PASSWORD;
   if (!adminPassword) {
     console.log('Skipping admin seed: SANJARI_ADMIN_SEED_PASSWORD is not configured.');

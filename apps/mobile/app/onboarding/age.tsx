@@ -1,25 +1,32 @@
 import { router } from 'expo-router';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { AppButton } from '../../src/components/AppButton';
-import { theme } from '../../src/theme/theme';
+import { Text, View } from 'react-native';
+import { OnboardingScreen } from '../../src/components/OnboardingScreen';
+import { useAppTheme } from '../../src/theme/useAppTheme';
+import { pathForStep, stepNumber } from '../../src/onboarding/steps';
 
 export default function AgeScreen() {
+  const { colors, typography, spacing } = useAppTheme();
+
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Adults only</Text>
-        <Text style={styles.copy}>
-          Sanjari is only for people who are 18 or older. Your date of birth is verified on the server and your full birth date is never shown publicly.
+    <OnboardingScreen
+      step={stepNumber('age')}
+      hideBack
+      title="You must be 18+"
+      subtitle="Sanjari is an adults-only community. We verify your date of birth on the server, and it's never shown on your public profile — only your age."
+      primaryLabel="I'm 18 or older"
+      onPrimaryPress={() => router.push(pathForStep('terms'))}
+    >
+      <View style={{ gap: spacing.sm, paddingTop: spacing.md }}>
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: typography.body.fontSize,
+            lineHeight: typography.body.lineHeight
+          }}
+        >
+          You'll confirm your date of birth when you create your account. This keeps Sanjari safe for everyone.
         </Text>
       </View>
-      <AppButton label="I am 18 or older" onPress={() => router.push('/(auth)/signup')} />
-    </SafeAreaView>
+    </OnboardingScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.colors.warmWhite, padding: theme.spacing.lg },
-  content: { flex: 1, justifyContent: 'center', gap: theme.spacing.md },
-  title: { color: theme.colors.deepPlum, fontSize: 32, fontWeight: '700' },
-  copy: { color: theme.colors.secondaryText, fontSize: 17, lineHeight: 25 }
-});

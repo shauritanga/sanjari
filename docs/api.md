@@ -88,6 +88,13 @@ Profile routes require a valid access token. Photo uploads are presigned, limite
 | `PATCH`  | `/api/v1/onboarding/discovery-pause`            | Pause or resume discovery visibility                     |
 | `GET`    | `/api/v1/onboarding/verification`               | Read verification case status without exposing artifacts |
 | `POST`   | `/api/v1/onboarding/verification/:type/request` | Request selfie/liveness or identity-document review      |
+| `GET`    | `/api/v1/onboarding/prompts`                    | List active personality prompts for a locale              |
+| `PUT`    | `/api/v1/onboarding/prompts`                    | Replace the caller's personality prompt answers           |
+| `GET`    | `/api/v1/onboarding/discovery-preferences`      | Read discovery preferences (age range, distance, etc.)     |
+| `PUT`    | `/api/v1/onboarding/discovery-preferences`      | Upsert discovery preferences                               |
+| `POST`   | `/api/v1/onboarding/voice-intro/presign`        | Create a short-lived direct-upload contract for a voice intro |
+| `POST`   | `/api/v1/onboarding/voice-intro/complete`       | Register an uploaded voice introduction                    |
+| `DELETE` | `/api/v1/onboarding/voice-intro`                | Remove the caller's voice introduction                     |
 
 ## Discovery And Matching
 

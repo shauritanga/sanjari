@@ -7,16 +7,21 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from '../auth/access-token.guard';
 import {
   DiscoveryPauseDto,
+  DiscoveryPreferenceDto,
   OnboardingUpdateDto,
   PhotoCompleteDto,
   PhotoPresignDto,
   PhotoReorderDto,
+  PromptAnswersDto,
+  VoiceIntroCompleteDto,
+  VoiceIntroPresignDto,
 } from './dto';
 import { ProfilesService } from './profiles.service';
 import { VerificationService, VerificationProvider } from './verification.service';
@@ -85,5 +90,43 @@ export class ProfilesController {
   @Post('publish')
   async publish(@Req() request: AuthenticatedRequest) {
     return { data: await this.profiles.publish(request.user!.sub) };
+  }
+
+  @Get('prompts')
+  async prompts(@Query('locale') locale = 'en') {
+    return { data: await this.profiles.listPrompts(locale) };
+  }
+
+  @Put('prompts')
+  async savePrompts(@Req() request: AuthenticatedRequest, @Body() dto: PromptAnswersDto) {
+    return { data: await this.profiles.savePromptAnswers(request.user!.sub, dto.answers) };
+  }
+
+  @Get('discovery-preferences')
+  async discoveryPreference(@Req() request: AuthenticatedRequest) {
+    return { data: await this.profiles.getDiscoveryPreference(request.user!.sub) };
+  }
+
+  @Put('discovery-preferences')
+  async updateDiscoveryPreference(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: DiscoveryPreferenceDto,
+  ) {
+    return { data: await this.profiles.updateDiscoveryPreference(request.user!.sub, dto) };
+  }
+
+  @Post('voice-intro/presign')
+  async presignVoiceIntro(@Req() request: AuthenticatedRequest, @Body() dto: VoiceIntroPresignDto) {
+    return { data: await this.profiles.presignVoiceIntro(request.user!.sub, dto) };
+  }
+
+  @Post('voice-intro/complete')
+  async completeVoiceIntro(@Req() request: AuthenticatedRequest, @Body() dto: VoiceIntroCompleteDto) {
+    return { data: await this.profiles.completeVoiceIntro(request.user!.sub, dto.storageKey) };
+  }
+
+  @Delete('voice-intro')
+  async deleteVoiceIntro(@Req() request: AuthenticatedRequest) {
+    return { data: await this.profiles.deleteVoiceIntro(request.user!.sub) };
   }
 }

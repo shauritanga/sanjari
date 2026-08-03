@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
-import { OnboardingUpdateDto } from './dto';
+import { DiscoveryPreferenceDto, OnboardingUpdateDto, PromptAnswerDto } from './dto';
 import { PhotoPresignDto } from './dto';
 import { StorageService } from './storage.service';
 
@@ -107,6 +107,7 @@ export class ProfilesService {
         exercisePreference: profile.exercisePreference,
         childrenPreference: profile.childrenPreference,
         culturalPreference: profile.culturalPreference,
+          voiceIntroKey: profile.voiceIntroKey,
           visibilitySettings: profile.visibilitySettings,
           interests: profile.interests.map((item) => item.interest.slug),
           languages: profile.languages.map((item) => item.language.code),
@@ -378,5 +379,113 @@ export class ProfilesService {
       select: { discoveryPausedAt: true },
     });
     return { paused: profile.discoveryPausedAt !== null };
+  }
+
+  async listPrompts(locale: string) {
+    return this.prisma.profilePrompt.findMany({
+      where: { locale, active: true },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, prompt: true, locale: true },
+    });
+  }
+
+  async savePromptAnswers(userId: string, answers: PromptAnswerDto[]) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId }, select: { id: true } });
+    if (!profile) throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+
+    const promptIds = answers.map((item) => item.promptId);
+    const prompts = await this.prisma.profilePrompt.findMany({
+      where: { id: { in: promptIds }, active: true },
+      select: { id: true },
+    });
+    if (prompts.length !== new Set(promptIds).size)
+      throw new BadRequestException({ code: 'INVALID_PROMPT', message: 'One or more prompts are invalid.' });
+
+    await this.prisma.$transaction([
+      this.prisma.promptAnswer.deleteMany({ where: { profileId: profile.id } }),
+      this.prisma.promptAnswer.createMany({
+        data: answers.map((item) => ({ profileId: profile.id, promptId: item.promptId, answer: item.answer })),
+      }),
+    ]);
+    return this.prisma.promptAnswer.findMany({
+      where: { profileId: profile.id },
+      include: { prompt: { select: { prompt: true } } },
+    });
+  }
+
+  async getDiscoveryPreference(userId: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { discoveryPreference: true },
+    });
+    if (!profile) throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+    return (
+      profile.discoveryPreference ?? {
+        minAge: 18,
+        maxAge: 80,
+        maxDistanceKm: 50,
+        genders: [],
+        intentions: [],
+        showDistance: true,
+      }
+    );
+  }
+
+  async updateDiscoveryPreference(userId: string, input: DiscoveryPreferenceDto) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId }, select: { id: true } });
+    if (!profile) throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+
+    if (
+      input.minAge !== undefined &&
+      input.maxAge !== undefined &&
+      input.minAge > input.maxAge
+    ) {
+      throw new BadRequestException({
+        code: 'INVALID_AGE_RANGE',
+        message: 'Minimum age must not be greater than maximum age.',
+      });
+    }
+
+    return this.prisma.discoveryPreference.upsert({
+      where: { profileId: profile.id },
+      create: {
+        profileId: profile.id,
+        minAge: input.minAge ?? 18,
+        maxAge: input.maxAge ?? 80,
+        maxDistanceKm: input.maxDistanceKm ?? 50,
+        genders: input.genders ?? [],
+        intentions: input.intentions ?? [],
+        showDistance: input.showDistance ?? true,
+      },
+      update: {
+        ...(input.minAge !== undefined && { minAge: input.minAge }),
+        ...(input.maxAge !== undefined && { maxAge: input.maxAge }),
+        ...(input.maxDistanceKm !== undefined && { maxDistanceKm: input.maxDistanceKm }),
+        ...(input.genders !== undefined && { genders: input.genders }),
+        ...(input.intentions !== undefined && { intentions: input.intentions }),
+        ...(input.showDistance !== undefined && { showDistance: input.showDistance }),
+      },
+    });
+  }
+
+  async presignVoiceIntro(userId: string, input: { mimeType: string; sizeBytes: number }) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId }, select: { id: true } });
+    if (!profile) throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+    return this.storage.presignVoiceIntro(userId, input.mimeType);
+  }
+
+  async completeVoiceIntro(userId: string, storageKey: string) {
+    if (!storageKey.startsWith(`voice-intros/${userId}/`))
+      throw new BadRequestException({
+        code: 'INVALID_STORAGE_KEY',
+        message: 'The uploaded voice introduction is invalid.',
+      });
+    await this.prisma.profile.update({ where: { userId }, data: { voiceIntroKey: storageKey } });
+    return { voiceIntroKey: storageKey };
+  }
+
+  async deleteVoiceIntro(userId: string) {
+    await this.prisma.profile.update({ where: { userId }, data: { voiceIntroKey: null } });
+    return { deleted: true };
   }
 }

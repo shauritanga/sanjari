@@ -47,7 +47,7 @@ export class StorageService {
     }
   }
 
-  async presign(userId: string, prefix: 'profiles' | 'messages', mimeType: string): Promise<PresignedUpload> {
+  async presign(userId: string, prefix: 'profiles' | 'messages' | 'voice-intros', mimeType: string): Promise<PresignedUpload> {
     this.ensureBucketPromise ??= this.ensureBucket();
     await this.ensureBucketPromise;
     const extension = mimeType.split('/')[1] ?? 'bin';
@@ -66,5 +66,9 @@ export class StorageService {
 
   async presignProfilePhoto(userId: string, mimeType: string): Promise<PresignedUpload> {
     return this.presign(userId, 'profiles', mimeType);
+  }
+
+  async presignVoiceIntro(userId: string, mimeType: string): Promise<PresignedUpload> {
+    return this.presign(userId, 'voice-intros', mimeType);
   }
 }

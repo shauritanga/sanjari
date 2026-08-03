@@ -6,6 +6,7 @@ import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { API_URL } from '../../src/config';
 import { theme } from '../../src/theme/theme';
+import { resumeOnboardingPath } from '../../src/onboarding/steps';
 type ApiResponse = {
   data?: { accessToken?: string; refreshToken?: string };
   message?: string;
@@ -38,8 +39,14 @@ export default function LoginScreen() {
       const onboarding = await fetch(`${API_URL}/onboarding`, {
         headers: { Authorization: `Bearer ${body.data.accessToken}` },
       });
-      const onboardingBody = (await onboarding.json()) as { data?: { onboardingStatus?: string } };
-      router.replace(onboardingBody.data?.onboardingStatus === 'published' ? '/(tabs)/discover' : '/(tabs)/profile');
+      const onboardingBody = (await onboarding.json()) as {
+        data?: { onboardingStatus?: string; onboardingStep?: number };
+      };
+      if (onboardingBody.data?.onboardingStatus === 'published') {
+        router.replace('/(tabs)/discover');
+      } else {
+        router.replace(resumeOnboardingPath(onboardingBody.data?.onboardingStep ?? 1));
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to log in.');
     } finally {

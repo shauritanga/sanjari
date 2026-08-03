@@ -1,45 +1,62 @@
-import { Text, TextInput, View, StyleSheet } from 'react-native';
-import { theme } from '../theme/theme';
+import { Text, TextInput, View, StyleSheet, type KeyboardTypeOptions } from 'react-native';
+import { useAppTheme } from '../theme/useAppTheme';
 
 interface AppTextInputProps {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
   secureTextEntry?: boolean;
-  multiline?: boolean;
   error?: string;
+  placeholder?: string;
+  multiline?: boolean;
+  maxLength?: number;
+  keyboardType?: KeyboardTypeOptions;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }
 
 export function AppTextInput(props: AppTextInputProps) {
+  const { colors, radius, spacing, typography } = useAppTheme();
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.label}>{props.label}</Text>
+    <View style={{ gap: spacing.xs }}>
+      <Text style={[styles.label, { color: colors.textPrimary }]}>{props.label}</Text>
       <TextInput
         value={props.value}
         onChangeText={props.onChangeText}
         secureTextEntry={props.secureTextEntry}
+        placeholder={props.placeholder}
         multiline={props.multiline}
-        style={[styles.input, props.multiline ? styles.multiline : undefined, props.error ? styles.inputError : undefined]}
-        placeholderTextColor={theme.colors.secondaryText}
+        maxLength={props.maxLength}
+        keyboardType={props.keyboardType}
+        autoCapitalize={props.autoCapitalize}
+        style={[
+          styles.input,
+          {
+            borderRadius: radius.md,
+            borderColor: props.error ? colors.error : colors.border,
+            color: colors.textPrimary,
+            backgroundColor: colors.surface,
+            paddingHorizontal: spacing.md,
+            fontSize: typography.body.fontSize,
+            minHeight: props.multiline ? 110 : 52,
+            textAlignVertical: props.multiline ? 'top' : 'center',
+            paddingTop: props.multiline ? spacing.sm : 0
+          }
+        ]}
+        placeholderTextColor={colors.textSecondary}
       />
-      {props.error ? <Text style={styles.error}>{props.error}</Text> : null}
+      {props.maxLength ? (
+        <Text style={[styles.counter, { color: colors.textSecondary }]}>
+          {props.value.length}/{props.maxLength}
+        </Text>
+      ) : null}
+      {props.error ? <Text style={[styles.error, { color: colors.error }]}>{props.error}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: theme.spacing.xs },
-  label: { color: theme.colors.charcoal, fontWeight: '600' },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: theme.colors.softRose,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.spacing.md,
-    color: theme.colors.charcoal,
-    backgroundColor: '#FFFFFF'
-  },
-  multiline: { minHeight: 112, textAlignVertical: 'top', paddingTop: theme.spacing.md },
-  inputError: { borderColor: theme.colors.error },
-  error: { color: theme.colors.error }
+  label: { fontWeight: '600' },
+  input: { borderWidth: 1 },
+  counter: { fontSize: 12, textAlign: 'right' },
+  error: { fontSize: 13 }
 });

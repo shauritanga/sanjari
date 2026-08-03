@@ -5,6 +5,7 @@ import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { api } from '../../src/api';
 import { theme } from '../../src/theme/theme';
+import { resumeOnboardingPath } from '../../src/onboarding/steps';
 
 export default function PhoneAuthScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -32,8 +33,12 @@ export default function PhoneAuthScreen() {
         await setItemAsync('sanjari.accessToken', tokens.accessToken);
         await setItemAsync('sanjari.refreshToken', tokens.refreshToken);
       });
-      const onboarding = await api.get<{ onboardingStatus?: string }>('/onboarding');
-      router.replace(onboarding.data?.onboardingStatus === 'published' ? '/(tabs)/discover' : '/(tabs)/profile');
+      const onboarding = await api.get<{ onboardingStatus?: string; onboardingStep?: number }>('/onboarding');
+      if (onboarding.data?.onboardingStatus === 'published') {
+        router.replace('/(tabs)/discover');
+      } else {
+        router.replace(resumeOnboardingPath(onboarding.data?.onboardingStep ?? 1));
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to verify code.');
     }
