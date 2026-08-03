@@ -84,7 +84,7 @@ function publishLabel(status: string) {
   }
 }
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boolean }) {
   const theme = useAppTheme();
   const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -116,7 +116,7 @@ export default function ProfileScreen() {
   const [countryQuery, setCountryQuery] = useState('');
   const [cityQuery, setCityQuery] = useState('');
   const { edit } = useLocalSearchParams<{ edit?: string }>();
-  const editing = edit === '1';
+  const editing = forceEdit || edit === '1';
 
   useEffect(() => {
     void api
@@ -281,7 +281,7 @@ export default function ProfileScreen() {
         initial={initial}
         theme={theme}
         loggingOut={loggingOut}
-        onEdit={() => router.push({ pathname: '/(tabs)/profile', params: { edit: '1' } })}
+        onEdit={() => router.push('/profile/edit')}
         onLogout={confirmLogout}
       />
     );

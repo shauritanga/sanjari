@@ -11,6 +11,7 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="profile/[id]" />
+        <Stack.Screen name="profile/edit" />
         <Stack.Screen name="conversation/[id]" />
         <Stack.Screen name="match-celebration" options={{ presentation: 'modal' }} />
         <Stack.Screen name="safety" />
