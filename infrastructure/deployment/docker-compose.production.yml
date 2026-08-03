@@ -56,7 +56,7 @@ services:
         condition: service_started
     ports:
       - "3400:4000"
-    command: ["sh", "-c", "pnpm --filter @sanjari/api exec prisma migrate deploy && node apps/api/dist/src/main.js"]
+    command: ["sh", "-c", "pnpm --filter @sanjari/api exec prisma migrate deploy && node packages/tsconfig/dist/src/main.js"]
 
   worker:
     build:
@@ -75,7 +75,7 @@ services:
         condition: service_started
       mailpit:
         condition: service_started
-    command: ["node", "apps/api/dist/src/worker.js"]
+    command: ["node", "packages/tsconfig/dist/src/worker.js"]
 
   admin:
     build:
