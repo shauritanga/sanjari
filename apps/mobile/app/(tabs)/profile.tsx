@@ -7,7 +7,7 @@ import {
   UserIcon
 } from '@hugeicons/core-free-icons';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -108,7 +108,6 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [editing, setEditing] = useState(false);
   const [paused, setPaused] = useState(false);
   const [verificationCases, setVerificationCases] = useState<VerificationCase[]>([]);
   const [requesting, setRequesting] = useState<VerificationType | null>(null);
@@ -116,6 +115,8 @@ export default function ProfileScreen() {
   const [countries, setCountries] = useState<CountryOption[]>([]);
   const [countryQuery, setCountryQuery] = useState('');
   const [cityQuery, setCityQuery] = useState('');
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
+  const editing = edit === '1';
 
   useEffect(() => {
     void api
@@ -280,7 +281,7 @@ export default function ProfileScreen() {
         initial={initial}
         theme={theme}
         loggingOut={loggingOut}
-        onEdit={() => setEditing(true)}
+        onEdit={() => router.push({ pathname: '/(tabs)/profile', params: { edit: '1' } })}
         onLogout={confirmLogout}
       />
     );
@@ -289,7 +290,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to profile" onPress={() => setEditing(false)}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to profile" onPress={() => router.back()}>
           <Text style={styles.backLabel}>Back to profile</Text>
         </Pressable>
         <Text style={styles.pageTitle}>Edit profile</Text>
