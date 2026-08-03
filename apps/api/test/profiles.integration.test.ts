@@ -51,11 +51,12 @@ describe('profiles and verification integration contracts', () => {
       'verification/user-1/selfie.jpg',
     );
     expect(result).toMatchObject({ id: 'case-1', status: 'submitted', provider: 'manual_review' });
-    expect(artifactCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ caseId: 'case-1', storageKey: 'verification/user-1/selfie.jpg' }),
-      }),
-    );
+    expect(artifactCreate).toHaveBeenCalledTimes(1);
+    const [artifactArgs] = artifactCreate.mock.calls[0] as [{ data: { caseId: string; storageKey: string } }];
+    expect(artifactArgs.data).toMatchObject({
+      caseId: 'case-1',
+      storageKey: 'verification/user-1/selfie.jpg',
+    });
     expect(audit).toHaveBeenCalled();
   });
 
