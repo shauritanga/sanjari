@@ -7,6 +7,7 @@ import {
   UserIcon
 } from '@hugeicons/core-free-icons';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -107,6 +108,7 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [paused, setPaused] = useState(false);
   const [verificationCases, setVerificationCases] = useState<VerificationCase[]>([]);
   const [requesting, setRequesting] = useState<VerificationType | null>(null);
@@ -269,10 +271,28 @@ export default function ProfileScreen() {
   const primaryPhoto = profile.photos.find((photo) => photo.isPrimary) ?? profile.photos[0];
   const initial = (profile.displayName ?? 'S').trim().charAt(0).toUpperCase() || 'S';
 
+  if (!editing) {
+    return (
+      <ProfileHub
+        profile={profile}
+        age={age}
+        primaryPhoto={primaryPhoto}
+        initial={initial}
+        theme={theme}
+        loggingOut={loggingOut}
+        onEdit={() => setEditing(true)}
+        onLogout={confirmLogout}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.pageTitle}>Profile</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to profile" onPress={() => setEditing(false)}>
+          <Text style={styles.backLabel}>Back to profile</Text>
+        </Pressable>
+        <Text style={styles.pageTitle}>Edit profile</Text>
 
         <View style={styles.hero}>
           <View style={styles.heroAvatar}>
@@ -518,6 +538,106 @@ export default function ProfileScreen() {
   );
 }
 
+function ProfileHub({
+  profile,
+  age,
+  primaryPhoto,
+  initial,
+  theme,
+  loggingOut,
+  onEdit,
+  onLogout
+}: {
+  profile: Profile;
+  age: number | null;
+  primaryPhoto: PhotoItem | undefined;
+  initial: string;
+  theme: AppTheme;
+  loggingOut: boolean;
+  onEdit: () => void;
+  onLogout: () => void;
+}) {
+  const { colors, radius, spacing, typography } = theme;
+  const styles = createHubStyles(theme);
+  const displayName = profile.displayName || 'Your profile';
+
+  return (
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.kicker}>ACCOUNT</Text>
+            <Text style={[styles.title, { fontSize: typography.h1.fontSize }]}>Profile</Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+            onPress={() => router.push('/settings')}
+            style={[styles.settingsButton, { borderRadius: radius.pill, backgroundColor: colors.surfaceAlt }]}
+          >
+            <AppIcon icon={Shield01Icon} color={colors.accentAlt} size={21} />
+          </Pressable>
+        </View>
+
+        <View style={styles.identity}>
+          <View style={[styles.avatar, { borderRadius: radius.pill, backgroundColor: colors.surfaceAlt, borderColor: colors.accent }]}>
+            {primaryPhoto?.url ? (
+              <Image source={{ uri: primaryPhoto.url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            ) : (
+              <Text style={styles.initial}>{initial}</Text>
+            )}
+          </View>
+          <Text style={styles.name}>{displayName}{age ? `, ${age}` : ''}</Text>
+          <Text style={styles.handle}>{profile.city ?? 'Sanjari member'}</Text>
+        </View>
+
+        <View style={styles.menu}>
+          <HubRow icon={UserIcon} title="Edit profile" description="Update your photos, details, interests and preferences" onPress={onEdit} theme={theme} />
+          <HubRow icon={Shield01Icon} title="Settings" description="Privacy, notifications and active devices" onPress={() => router.push('/settings')} theme={theme} />
+          <HubRow icon={CheckmarkBadge01Icon} title="Safety and data" description="Request your data or schedule account deletion" onPress={() => router.push('/safety')} theme={theme} />
+        </View>
+
+        <View style={[styles.accountNote, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
+          <AppIcon icon={IdVerifiedIcon} color={colors.accent} size={20} />
+          <View style={{ flex: 1, gap: spacing.xs }}>
+            <Text style={styles.noteTitle}>Your account is yours</Text>
+            <Text style={styles.noteBody}>Manage your profile, privacy and data whenever you need.</Text>
+          </View>
+        </View>
+
+        <AppButton label="Log out" variant="ghost" loading={loggingOut} onPress={onLogout} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function HubRow({
+  icon,
+  title,
+  description,
+  onPress,
+  theme
+}: {
+  icon: Parameters<typeof AppIcon>[0]['icon'];
+  title: string;
+  description: string;
+  onPress: () => void;
+  theme: AppTheme;
+}) {
+  const { colors, spacing } = theme;
+  const styles = createHubStyles(theme);
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.row}>
+      <AppIcon icon={icon} color={colors.textPrimary} size={22} />
+      <View style={{ flex: 1, gap: spacing.xs }}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        <Text style={styles.rowDescription}>{description}</Text>
+      </View>
+      <Text style={styles.chevron}>›</Text>
+    </Pressable>
+  );
+}
+
 function Section({
   title,
   hint,
@@ -604,6 +724,7 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       fontWeight: '800',
       color: colors.textPrimary
     },
+    backLabel: { color: colors.accent, fontWeight: '700', fontSize: 15 },
     hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     heroAvatar: {
       width: 84,
@@ -648,5 +769,38 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       borderTopColor: colors.border,
       backgroundColor: colors.background
     }
+  });
+}
+
+function createHubStyles({ colors, radius, spacing, typography }: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl },
+    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    kicker: { color: colors.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1.2 },
+    title: { color: colors.textPrimary, fontWeight: '800' },
+    settingsButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    identity: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
+    avatar: { width: 104, height: 104, borderWidth: 3, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+    initial: { color: colors.accentAlt, fontSize: 42, fontWeight: '800' },
+    name: { color: colors.textPrimary, fontSize: typography.h2.fontSize, fontWeight: '800', marginTop: spacing.sm },
+    handle: { color: colors.textSecondary, fontSize: typography.bodyMedium.fontSize },
+    menu: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+    row: {
+      minHeight: 76,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border
+    },
+    rowTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
+    rowDescription: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
+    chevron: { color: colors.textSecondary, fontSize: 28, fontWeight: '300' },
+    accountNote: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, borderWidth: 1, padding: spacing.md },
+    noteTitle: { color: colors.textPrimary, fontWeight: '800' },
+    noteBody: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
+    backLabel: { color: colors.accent, fontWeight: '700', fontSize: 15 }
   });
 }
