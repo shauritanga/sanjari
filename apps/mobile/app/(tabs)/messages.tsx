@@ -6,11 +6,11 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppIcon } from '../../src/components/AppIcon';
 import { api } from '../../src/api';
 import { joinConversationRoom, leaveConversationRoom, getRealtimeSocket } from '../../src/realtime';

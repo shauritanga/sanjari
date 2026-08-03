@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
 import { AppButton } from '../src/components/AppButton';
 import { useAppTheme, type AppTheme } from '../src/theme/useAppTheme';

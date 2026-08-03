@@ -16,13 +16,12 @@ import {
   Alert,
   Dimensions,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { AppButton } from '../../src/components/AppButton';
 import { AppIcon } from '../../src/components/AppIcon';

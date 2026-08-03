@@ -1,6 +1,7 @@
 import { FavouriteIcon } from '@hugeicons/core-free-icons';
 import { router } from 'expo-router';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from '../../src/components/AppButton';
 import { AppIcon } from '../../src/components/AppIcon';
 import { useAppTheme } from '../../src/theme/useAppTheme';
