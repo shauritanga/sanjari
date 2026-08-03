@@ -144,7 +144,7 @@ button[type='submit']:hover, .primary-button:hover { background: var(--coral-str
 .search-field { display: grid; min-width: 180px; gap: 6px; color: var(--charcoal); font-size: 12px; font-weight: 800; }
 .search-field input { margin: 0; }
 .filter-submit { width: auto; }
-.filter-bar .filter-submit { min-height: 42px; white-space: nowrap; }
+.filter-bar .filter-submit { width: auto; min-height: 42px; white-space: nowrap; }
 .data-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
 .data-table { width: 100%; border-collapse: collapse; text-align: left; }
 .data-table th, .data-table td { border-bottom: 1px solid var(--line); padding: 14px 16px; vertical-align: top; }
