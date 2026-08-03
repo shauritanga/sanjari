@@ -10,7 +10,20 @@ export class DiscoveryController {
 
   @Get()
   async discover(@Req() request: AuthenticatedRequest, @Query() query: DiscoveryQueryDto) {
-    return this.discovery.discover(request.user!.sub, query.cursor);
+    return this.discovery.discover(request.user!.sub, query.cursor, {
+      ...(query.recentlyActive !== undefined && { recentlyActive: query.recentlyActive }),
+      ...(query.newMembers !== undefined && { newMembers: query.newMembers }),
+    });
+  }
+
+  @Get('likes-received')
+  async likesReceived(@Req() request: AuthenticatedRequest) {
+    return { data: await this.discovery.likesReceived(request.user!.sub) };
+  }
+
+  @Get('profile/:userId')
+  async profileDetail(@Req() request: AuthenticatedRequest, @Param('userId') userId: string) {
+    return { data: await this.discovery.profileDetail(request.user!.sub, userId) };
   }
 
   @Post(':userId/like')

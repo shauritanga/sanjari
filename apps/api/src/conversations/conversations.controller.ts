@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from '../auth/access-token.guard';
+import { ConversationsGateway } from './conversations.gateway';
 import { ConversationsService } from './conversations.service';
 import {
   AttachmentCompleteDto,
@@ -13,7 +14,10 @@ import {
 @UseGuards(AccessTokenGuard)
 @Controller({ path: 'conversations', version: '1' })
 export class ConversationsController {
-  constructor(private readonly conversations: ConversationsService) {}
+  constructor(
+    private readonly conversations: ConversationsService,
+    private readonly gateway: ConversationsGateway,
+  ) {}
 
   @Get()
   async list(@Req() request: AuthenticatedRequest) {
@@ -35,7 +39,14 @@ export class ConversationsController {
     @Param('conversationId') conversationId: string,
     @Body() dto: SendMessageDto,
   ) {
-    return { data: await this.conversations.send(request.user!.sub, conversationId, dto.body) };
+    const message = await this.conversations.send(
+      request.user!.sub,
+      conversationId,
+      dto.body,
+      dto.replyToMessageId,
+    );
+    this.gateway.notifyNewMessage(conversationId, message);
+    return { data: message };
   }
 
   @Post(':conversationId/read')
@@ -44,9 +55,12 @@ export class ConversationsController {
     @Param('conversationId') conversationId: string,
     @Body() dto: ReadReceiptDto,
   ) {
-    return {
-      data: await this.conversations.markRead(request.user!.sub, conversationId, dto.messageId),
-    };
+    const result = await this.conversations.markRead(request.user!.sub, conversationId, dto.messageId);
+    this.gateway.notifyMessageUpdate(conversationId, 'message.read', {
+      messageId: dto.messageId,
+      userId: request.user!.sub,
+    });
+    return { data: result };
   }
 
   @Delete('messages/:messageId')
@@ -60,7 +74,9 @@ export class ConversationsController {
     @Param('messageId') messageId: string,
     @Body() dto: ReactionDto,
   ) {
-    return { data: await this.conversations.react(request.user!.sub, messageId, dto.reaction) };
+    const reaction = await this.conversations.react(request.user!.sub, messageId, dto.reaction);
+    this.gateway.notifyMessageUpdate(reaction.conversationId, 'message.reaction', reaction);
+    return { data: reaction };
   }
 
   @Post(':conversationId/messages/:messageId/attachments/presign')

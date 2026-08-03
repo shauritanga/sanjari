@@ -16,10 +16,13 @@ describe('admin operations RBAC contracts', () => {
         { id: 'user-1', email: 'person@example.test', status: 'active', profile: null },
       ]);
     const audit = vi.fn().mockResolvedValue({});
-    const result = await new AdminOperationsService({
-      user: { findMany },
-      auditLog: { create: audit },
-    } as never).searchUsers(admin(['users.read']), { query: 'person' });
+    const result = await new AdminOperationsService(
+      {
+        user: { findMany },
+        auditLog: { create: audit },
+      } as never,
+      {} as never,
+    ).searchUsers(admin(['users.read']), { query: 'person' });
     expect(result).toHaveLength(1);
     expect(findMany).toHaveBeenCalled();
     expect(audit).toHaveBeenCalled();
@@ -27,7 +30,7 @@ describe('admin operations RBAC contracts', () => {
 
   it('rejects mutations without the required permission', async () => {
     await expect(
-      new AdminOperationsService({} as never).suspendUser(admin(['users.read']), 'user-1', {
+      new AdminOperationsService({} as never, {} as never).suspendUser(admin(['users.read']), 'user-1', {
         reason: 'A sufficiently detailed reason.',
       }),
     ).rejects.toMatchObject({ response: { code: 'ADMIN_PERMISSION_REQUIRED' } });
@@ -45,7 +48,7 @@ describe('admin operations RBAC contracts', () => {
         Promise.resolve(callback(tx)),
       ),
     };
-    const result = await new AdminOperationsService(prisma as never).suspendUser(
+    const result = await new AdminOperationsService(prisma as never, {} as never).suspendUser(
       admin(['users.suspend']),
       'user-1',
       { reason: 'A sufficiently detailed reason.' },
@@ -67,7 +70,7 @@ describe('admin operations RBAC contracts', () => {
         Promise.resolve(callback(tx)),
       ),
     };
-    const result = await new AdminOperationsService(prisma as never).assignRole(
+    const result = await new AdminOperationsService(prisma as never, {} as never).assignRole(
       admin(['configuration.manage']),
       'admin-2',
       { roleId: 'role-1' },
@@ -100,7 +103,7 @@ describe('admin operations RBAC contracts', () => {
         Promise.resolve(callback(tx)),
       ),
     };
-    const result = await new AdminOperationsService(prisma as never).reviewVerification(
+    const result = await new AdminOperationsService(prisma as never, {} as never).reviewVerification(
       admin(['verification.review']),
       'case-1',
       { status: 'approved', reason: 'Human review completed.' },
@@ -114,10 +117,13 @@ describe('admin operations RBAC contracts', () => {
       { id: 'flag-1', key: 'matching.v2', enabled: false, rules: null, updatedAt: new Date() },
     ]);
     const audit = vi.fn().mockResolvedValue({});
-    const result = await new AdminOperationsService({
-      featureFlag: { findMany },
-      auditLog: { create: audit },
-    } as never).featureFlags(admin(['configuration.manage']));
+    const result = await new AdminOperationsService(
+      {
+        featureFlag: { findMany },
+        auditLog: { create: audit },
+      } as never,
+      {} as never,
+    ).featureFlags(admin(['configuration.manage']));
     expect(result).toHaveLength(1);
     expect(findMany).toHaveBeenCalled();
     expect(audit).toHaveBeenCalled();
@@ -141,7 +147,7 @@ describe('admin operations RBAC contracts', () => {
       },
       $transaction: vi.fn((callback: (client: typeof tx) => unknown) => Promise.resolve(callback(tx))),
     };
-    const result = await new AdminOperationsService(prisma as never).updateFeatureFlag(
+    const result = await new AdminOperationsService(prisma as never, {} as never).updateFeatureFlag(
       admin(['configuration.manage']),
       'flag-1',
       { enabled: true },
@@ -161,7 +167,7 @@ describe('admin operations RBAC contracts', () => {
       },
       auditLog: { create: audit },
     };
-    const result = await new AdminOperationsService(prisma as never).health(
+    const result = await new AdminOperationsService(prisma as never, {} as never).health(
       admin(['health.read']),
     );
     expect(result.failedJobs).toBe(2);
@@ -181,7 +187,7 @@ describe('admin operations RBAC contracts', () => {
       supportTicket: { findUnique: vi.fn().mockResolvedValue({ id: 'ticket-1', status: 'open', priority: 'high' }) },
       $transaction: vi.fn((callback: (client: typeof tx) => unknown) => Promise.resolve(callback(tx))),
     };
-    const result = await new AdminOperationsService(prisma as never).updateSupportTicket(
+    const result = await new AdminOperationsService(prisma as never, {} as never).updateSupportTicket(
       admin(['support.manage']),
       'ticket-1',
       { status: 'resolved', priority: 'high', reason: 'Support review completed successfully.' },
@@ -199,7 +205,7 @@ describe('admin operations RBAC contracts', () => {
       backgroundJobRecord: { count: vi.fn().mockResolvedValue(2) },
       auditLog: { count: vi.fn().mockResolvedValue(8), create: audit },
     };
-    const result = await new AdminOperationsService(prisma as never).analytics(
+    const result = await new AdminOperationsService(prisma as never, {} as never).analytics(
       admin(['analytics.read']),
     );
     expect(result).toEqual({ unreadNotifications: 3, openSupportTickets: 4, failedExports: 1, failedJobs: 2, recentAuditEvents: 8 });

@@ -1,7 +1,8 @@
 import { Add01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from './AppIcon';
 import { api } from '../api';
 import { uploadBinaryFile } from '../upload';
@@ -12,6 +13,7 @@ export interface PhotoItem {
   position: number;
   isPrimary: boolean;
   moderationStatus: string;
+  url?: string;
 }
 
 interface PhotoGridProps {
@@ -91,10 +93,26 @@ export function PhotoGrid({ photos, onChange, slots = 6 }: PhotoGridProps) {
         >
           {photo ? (
             <>
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.accentAlt, borderRadius: radius.md }]} />
-              {photo.moderationStatus === 'pending' ? (
-                <View style={styles.pendingBadge}>
-                  <ActivityIndicator size="small" color={colors.onAccent} />
+              {photo.url ? (
+                <Image
+                  source={{ uri: photo.url }}
+                  style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
+                  contentFit="cover"
+                  transition={150}
+                />
+              ) : (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.accentAlt, borderRadius: radius.md }]} />
+              )}
+              {photo.moderationStatus === 'pending' || photo.moderationStatus === 'under_review' ? (
+                <View style={[styles.statusPill, { backgroundColor: colors.overlay }]}>
+                  <Text style={styles.statusPillText}>In review</Text>
+                </View>
+              ) : null}
+              {photo.moderationStatus === 'rejected' || photo.moderationStatus === 'hidden' ? (
+                <View style={[styles.statusPill, { backgroundColor: colors.error }]}>
+                  <Text style={styles.statusPillText}>
+                    {photo.moderationStatus === 'rejected' ? 'Rejected' : 'Hidden'}
+                  </Text>
                 </View>
               ) : null}
               <Pressable
@@ -151,6 +169,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  primaryBadge: { position: 'absolute', bottom: 6, left: 6, width: 8, height: 8, borderRadius: 4 },
-  pendingBadge: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' }
+  primaryBadge: { position: 'absolute', top: 6, left: 6, width: 8, height: 8, borderRadius: 4 },
+  statusPill: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    right: 6,
+    borderRadius: 6,
+    paddingVertical: 3,
+    alignItems: 'center'
+  },
+  statusPillText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' }
 });

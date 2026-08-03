@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { AuthModule } from '../auth/auth.module';
+import { ProfilesModule } from '../profiles/profiles.module';
 import { DiscoveryController } from './discovery.controller';
 import { DiscoveryService } from './discovery.service';
 import { DiscoveryEntitlementService } from './entitlement.service';
@@ -12,6 +13,7 @@ const workerProviders = process.env.RUN_WORKERS === 'true' ? [RankingEvaluationW
 @Module({
   imports: [
     AuthModule,
+    ProfilesModule,
     BullModule.registerQueue({
       name: 'ranking-evaluation',
       defaultJobOptions: {

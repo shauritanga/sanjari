@@ -65,6 +65,26 @@ export class NotificationUpdateDto {
   reason!: string;
 }
 
+export class PhotoReviewDto {
+  @IsIn(['approved', 'rejected', 'hidden'])
+  status!: string;
+
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1_000)
+  reason!: string;
+}
+
+export class ProfileReviewDto {
+  @IsIn(['approved', 'rejected', 'hidden'])
+  status!: string;
+
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1_000)
+  reason!: string;
+}
+
 export class VerificationReviewDto {
   @IsString()
   @MaxLength(40)

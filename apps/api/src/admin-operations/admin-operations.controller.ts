@@ -25,6 +25,8 @@ import {
   LegalDocumentCreateDto,
   MatchingConfigUpdateDto,
   NotificationUpdateDto,
+  PhotoReviewDto,
+  ProfileReviewDto,
   RoleAssignmentDto,
   SupportTicketUpdateDto,
   UserSearchQueryDto,
@@ -259,5 +261,39 @@ export class AdminOperationsController {
   @UseGuards(AdminCsrfGuard)
   async updateAppVersion(@Req() request: AdminRequest, @Body() dto: AppVersionUpdateDto) {
     return { data: await this.operations.updateAppVersion(request.admin!, dto) };
+  }
+
+  @Get('photos/queue')
+  @SetMetadata('adminPermission', 'verification.review')
+  async photoQueue(@Req() request: AdminRequest) {
+    return { data: await this.operations.photoQueue(request.admin!) };
+  }
+
+  @Patch('photos/:photoId')
+  @SetMetadata('adminPermission', 'verification.review')
+  @UseGuards(AdminCsrfGuard)
+  async reviewPhoto(
+    @Req() request: AdminRequest,
+    @Param('photoId') photoId: string,
+    @Body() dto: PhotoReviewDto,
+  ) {
+    return { data: await this.operations.reviewPhoto(request.admin!, photoId, dto) };
+  }
+
+  @Get('profiles/queue')
+  @SetMetadata('adminPermission', 'verification.review')
+  async profileQueue(@Req() request: AdminRequest) {
+    return { data: await this.operations.profileQueue(request.admin!) };
+  }
+
+  @Patch('profiles/:profileId')
+  @SetMetadata('adminPermission', 'verification.review')
+  @UseGuards(AdminCsrfGuard)
+  async reviewProfile(
+    @Req() request: AdminRequest,
+    @Param('profileId') profileId: string,
+    @Body() dto: ProfileReviewDto,
+  ) {
+    return { data: await this.operations.reviewProfile(request.admin!, profileId, dto) };
   }
 }

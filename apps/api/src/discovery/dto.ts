@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsIn,
@@ -10,6 +11,11 @@ import {
   MinLength,
 } from 'class-validator';
 
+function toBoolean({ value }: { value: unknown }): boolean | undefined {
+  if (value === undefined) return undefined;
+  return value === true || value === 'true';
+}
+
 export class DiscoveryQueryDto {
   @IsOptional()
   @IsString()
@@ -20,6 +26,16 @@ export class DiscoveryQueryDto {
   @IsString()
   @IsIn(['card', 'list'])
   view?: 'card' | 'list';
+
+  @IsOptional()
+  @Transform(toBoolean)
+  @IsBoolean()
+  recentlyActive?: boolean;
+
+  @IsOptional()
+  @Transform(toBoolean)
+  @IsBoolean()
+  newMembers?: boolean;
 }
 
 export class LikeDto {

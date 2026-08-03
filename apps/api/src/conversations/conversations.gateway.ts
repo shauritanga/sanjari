@@ -1,18 +1,26 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
+import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import type { Server } from 'socket.io';
 import { ConversationsService } from './conversations.service';
 
 type Client = {
   data: { userId?: string };
   handshake: { auth?: { token?: string } };
+  rooms: Set<string>;
+  join: (room: string) => void;
+  leave: (room: string) => void;
+  to: (room: string) => { emit: (event: string, payload: unknown) => void };
   disconnect: (close?: boolean) => void;
 };
-type MessagePayload = { conversationId: string; body: string };
+type MessagePayload = { conversationId: string; body: string; replyToMessageId?: string };
 type RecoveryPayload = { conversationId: string; cursor?: string };
 
 @WebSocketGateway({ namespace: '/communications', cors: true })
 export class ConversationsGateway {
+  @WebSocketServer()
+  server!: Server;
+
   constructor(
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
@@ -33,9 +41,29 @@ export class ConversationsGateway {
     }
   }
 
+  @SubscribeMessage('conversation.join')
+  async join(client: Client, payload: { conversationId: string }) {
+    await this.conversations.authorize(this.userId(client), payload.conversationId);
+    client.join(payload.conversationId);
+    return { joined: true, conversationId: payload.conversationId };
+  }
+
+  @SubscribeMessage('conversation.leave')
+  leave(client: Client, payload: { conversationId: string }) {
+    client.leave(payload.conversationId);
+    return { joined: false, conversationId: payload.conversationId };
+  }
+
   @SubscribeMessage('message.send')
   async send(client: Client, payload: MessagePayload) {
-    return this.conversations.send(this.userId(client), payload.conversationId, payload.body);
+    const message = await this.conversations.send(
+      this.userId(client),
+      payload.conversationId,
+      payload.body,
+      payload.replyToMessageId,
+    );
+    this.notifyNewMessage(payload.conversationId, message);
+    return message;
   }
 
   @SubscribeMessage('messages.recover')
@@ -45,16 +73,26 @@ export class ConversationsGateway {
 
   @SubscribeMessage('conversation.typing')
   typing(client: Client, payload: { conversationId: string; active: boolean }) {
-    return {
-      conversationId: payload.conversationId,
-      active: payload.active,
-      userId: this.userId(client),
-    };
+    const event = { conversationId: payload.conversationId, active: payload.active, userId: this.userId(client) };
+    client.to(payload.conversationId).emit('conversation.typing', event);
+    return event;
   }
 
   @SubscribeMessage('presence.update')
   presence(client: Client, payload: { state: 'online' | 'away' | 'offline' }) {
-    return { state: payload.state, userId: this.userId(client) };
+    const event = { state: payload.state, userId: this.userId(client) };
+    for (const room of client.rooms) {
+      if (room !== client.data.userId) client.to(room).emit('presence.update', event);
+    }
+    return event;
+  }
+
+  notifyNewMessage(conversationId: string, message: unknown): void {
+    this.server?.to(conversationId).emit('message.new', message);
+  }
+
+  notifyMessageUpdate(conversationId: string, event: string, payload: unknown): void {
+    this.server?.to(conversationId).emit(event, payload);
   }
 
   private userId(client: Client): string {

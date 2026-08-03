@@ -14,6 +14,7 @@ model User {
   dateOfBirth          DateTime          @db.Date
   ageEligibilityStatus String            @default("pending")
   status               String            @default("active")
+  lastActiveAt         DateTime?
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
   deletedAt            DateTime?
@@ -254,6 +255,9 @@ model DiscoveryPreference {
   maxDistanceKm Int      @default(50)
   genders       String[]
   intentions    String[]
+  languages     String[] @default([])
+  interests     String[] @default([])
+  verifiedOnly  Boolean  @default(false)
   showDistance  Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -440,10 +444,13 @@ model Message {
   senderId           String              @db.Uuid
   body               String?
   status             String              @default("sent")
+  replyToMessageId   String?             @db.Uuid
   deletedForSenderAt DateTime?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   conversation       Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  replyTo            Message?            @relation("message_replies", fields: [replyToMessageId], references: [id])
+  replies            Message[]           @relation("message_replies")
   attachments        MessageAttachment[]
   reactions          MessageReaction[]
   receipts           MessageReceipt[]

@@ -10,6 +10,7 @@ export default function RootLayout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="profile/[id]" />
       <Stack.Screen name="conversation/[id]" />
+      <Stack.Screen name="match-celebration" options={{ presentation: 'modal' }} />
       <Stack.Screen name="safety" />
       <Stack.Screen name="settings" />
     </Stack>

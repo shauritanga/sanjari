@@ -1,0 +1,462 @@
+import {
+  ArrowLeft01Icon,
+  CheckmarkBadge01Icon,
+  Flag02Icon,
+  PauseCircleIcon,
+  PlayCircleIcon,
+  Shield01Icon,
+  StarIcon,
+} from '@hugeicons/core-free-icons';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useEffect } from 'react';
+import { AppButton } from '../../src/components/AppButton';
+import { AppIcon } from '../../src/components/AppIcon';
+import { api } from '../../src/api';
+import { useAppTheme, type AppTheme } from '../../src/theme/useAppTheme';
+
+interface ProfilePhoto {
+  id: string;
+  isPrimary: boolean;
+  url: string;
+}
+
+interface ProfileDetail {
+  id: string;
+  displayName: string | null;
+  age: number;
+  city: string | null;
+  biography: string | null;
+  verificationStatus: string;
+  distanceCategory: string;
+  photos: ProfilePhoto[];
+  interests: Array<{ slug: string; labelEn: string }>;
+  languages: Array<{ code: string; labelEn: string }>;
+  prompts: Array<{ prompt: string; answer: string }>;
+  voiceIntroUrl: string | null;
+}
+
+interface LikeResult {
+  liked: true;
+  matched: boolean;
+  matchId?: string;
+  conversationId?: string;
+  likeId: string;
+  matchedUser?: { id: string; displayName: string | null; primaryPhoto: { id: string; url: string } | null };
+}
+
+const DISTANCE_LABELS: Record<string, string> = {
+  not_shared: 'Location private',
+  nearby: 'Nearby',
+  within_25km: 'Within 25 km',
+  within_50km: 'Within 50 km',
+  farther_away: 'Farther away',
+};
+
+function initialsFor(name: string | null) {
+  const trimmed = (name ?? '').trim();
+  if (!trimmed) return '?';
+  return trimmed
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+const screenWidth = Dimensions.get('window').width;
+
+function VoiceIntro({ uri, theme }: { uri: string; theme: AppTheme }) {
+  const { colors, radius, spacing, typography } = theme;
+  const player = useAudioPlayer(uri);
+  const playerStatus = useAudioPlayerStatus(player);
+
+  function togglePlayback() {
+    if (playerStatus.playing) {
+      player.pause();
+    } else {
+      player.play();
+    }
+  }
+
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Text style={{ fontSize: typography.caption.fontSize, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        Voice intro
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={playerStatus.playing ? 'Pause voice intro' : 'Play voice intro'}
+        onPress={togglePlayback}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          backgroundColor: colors.surfaceAlt,
+          borderRadius: radius.lg,
+          padding: spacing.md,
+        }}
+      >
+        <AppIcon icon={playerStatus.playing ? PauseCircleIcon : PlayCircleIcon} color={colors.accentAlt} size={36} />
+        <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>
+          {playerStatus.playing ? 'Playing…' : 'Play voice intro'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+export default function ProfileDetailScreen() {
+  const theme = useAppTheme();
+  const { colors } = theme;
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [profile, setProfile] = useState<ProfileDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notFound, setNotFound] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError('');
+    setNotFound(false);
+    void api
+      .get<ProfileDetail>(`/discovery/profile/${id}`)
+      .then((result) => {
+        if (result.data) setProfile(result.data);
+        else setNotFound(true);
+      })
+      .catch((cause) => {
+        const message = cause instanceof Error ? cause.message : 'Unable to load this profile.';
+        if (/not found/i.test(message)) setNotFound(true);
+        else setError(message);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  async function respond(action: 'like' | 'pass', priority = false) {
+    if (!profile) return;
+    setActionBusy(true);
+    setError('');
+    try {
+      if (action === 'pass') {
+        await api.post(`/discovery/${profile.id}/pass`, { idempotencyKey: `${profile.id}-${Date.now()}` });
+        router.back();
+        return;
+      }
+      const result = await api.post<LikeResult>(`/discovery/${profile.id}/like`, {
+        priority,
+        idempotencyKey: `${profile.id}-${Date.now()}`,
+      });
+      if (result.data?.matched) {
+        router.replace({
+          pathname: '/match-celebration',
+          params: {
+            matchId: result.data.matchId ?? '',
+            conversationId: result.data.conversationId ?? '',
+            displayName: result.data.matchedUser?.displayName ?? profile.displayName ?? '',
+            photoId: result.data.matchedUser?.primaryPhoto?.id ?? profile.photos.find((p) => p.isPrimary)?.id ?? '',
+          },
+        });
+      } else {
+        router.back();
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to complete this action.');
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function block() {
+    if (!profile) return;
+    setActionBusy(true);
+    setError('');
+    try {
+      await api.post(`/blocks/${profile.id}`, { reason: 'Blocked from profile view.' });
+      router.back();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to block this member.');
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  function confirmBlock() {
+    if (!profile) return;
+    Alert.alert('Block this member', `Block ${profile.displayName ?? 'this member'}? They will no longer be able to contact you.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Block', style: 'destructive', onPress: () => void block() },
+    ]);
+  }
+
+  async function report() {
+    if (!profile) return;
+    setError('');
+    try {
+      await api.post('/reports', {
+        reportedUserId: profile.id,
+        category: 'other',
+        description: 'Reported from profile view.',
+      });
+      setError('Report submitted for review.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to submit report.');
+    }
+  }
+
+  function confirmReport() {
+    Alert.alert('Report profile', 'Submit this profile for safety review?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Report', onPress: () => void report() },
+    ]);
+  }
+
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.centered}>
+          <ActivityIndicator color={colors.accent} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (notFound || !profile) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.centered}>
+          <Text style={styles.errorTitle}>This profile is no longer available</Text>
+          <AppButton label="Go back" variant="secondary" onPress={() => router.back()} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.header}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} hitSlop={12}>
+          <AppIcon icon={ArrowLeft01Icon} color={colors.textPrimary} size={24} />
+        </Pressable>
+      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {profile.photos.length > 0 ? (
+          <View>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) => {
+                const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+                setActivePhotoIndex(index);
+              }}
+            >
+              {profile.photos.map((photo) => (
+                <View key={photo.id} style={[styles.photoSlide, { width: screenWidth }]}>
+                  <View style={styles.photoBlock}>
+                    <Image
+                      source={{ uri: photo.url }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                      transition={150}
+                    />
+                    {photo.isPrimary ? (
+                      <View style={styles.primaryBadge}>
+                        <Text style={styles.primaryBadgeLabel}>Primary</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            {profile.photos.length > 1 ? (
+              <View style={styles.dotsRow}>
+                {profile.photos.map((photo, index) => (
+                  <View
+                    key={photo.id}
+                    style={[styles.dot, { backgroundColor: index === activePhotoIndex ? colors.accent : colors.border }]}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : (
+          <View style={[styles.photoSlide, { width: screenWidth }]}>
+            <View style={[styles.photoBlock, styles.photoPlaceholder]}>
+              <Text style={styles.initials}>{initialsFor(profile.displayName)}</Text>
+            </View>
+          </View>
+        )}
+
+        <View style={styles.body}>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>
+              {profile.displayName ?? 'Sanjari member'}, {profile.age}
+            </Text>
+            {profile.verificationStatus === 'verified' ? (
+              <AppIcon icon={CheckmarkBadge01Icon} color={colors.accent} size={20} />
+            ) : null}
+          </View>
+          <Text style={styles.meta}>
+            {[profile.city, DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private'].filter(Boolean).join(' · ')}
+          </Text>
+
+          {profile.biography ? <Text style={styles.biography}>{profile.biography}</Text> : null}
+
+          {profile.voiceIntroUrl ? <VoiceIntro uri={profile.voiceIntroUrl} theme={theme} /> : null}
+
+          {profile.interests.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Interests</Text>
+              <View style={styles.chipWrap}>
+                {profile.interests.map((interest) => (
+                  <View key={interest.slug} style={styles.chip}>
+                    <Text style={styles.chipLabel}>{interest.labelEn}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {profile.languages.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Languages</Text>
+              <View style={styles.chipWrap}>
+                {profile.languages.map((language) => (
+                  <View key={language.code} style={styles.chip}>
+                    <Text style={styles.chipLabel}>{language.labelEn}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {profile.prompts.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Prompts</Text>
+              {profile.prompts.map((entry) => (
+                <View key={entry.prompt} style={styles.promptCard}>
+                  <Text style={styles.promptQuestion}>{entry.prompt}</Text>
+                  <Text style={styles.promptAnswer}>{entry.answer}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          <View style={styles.safetyRow}>
+            <Pressable accessibilityRole="button" onPress={confirmBlock} style={styles.safetyAction} hitSlop={8}>
+              <AppIcon icon={Shield01Icon} color={colors.textSecondary} size={16} />
+              <Text style={styles.safetyLabel}>Block</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={confirmReport} style={styles.safetyAction} hitSlop={8}>
+              <AppIcon icon={Flag02Icon} color={colors.textSecondary} size={16} />
+              <Text style={styles.safetyLabel}>Report</Text>
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <AppButton
+          label="Pass"
+          variant="secondary"
+          disabled={actionBusy}
+          onPress={() => {
+            void respond('pass');
+          }}
+        />
+        <AppButton
+          label="Super Like"
+          variant="secondary"
+          icon={<AppIcon icon={StarIcon} color={colors.accentAlt} size={18} />}
+          disabled={actionBusy}
+          onPress={() => {
+            void respond('like', true);
+          }}
+        />
+        <AppButton
+          label="Like"
+          loading={actionBusy}
+          onPress={() => {
+            void respond('like', false);
+          }}
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function createStyles({ colors, radius, spacing, typography }: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs },
+    scrollContent: { paddingBottom: spacing.xl },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
+    errorTitle: { fontSize: typography.h3.fontSize, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+    error: { color: colors.error, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
+    photoSlide: { height: 420 },
+    photoBlock: { flex: 1, margin: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceAlt, overflow: 'hidden' },
+    photoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+    initials: { fontSize: 64, fontWeight: '800', color: colors.accentAlt },
+    primaryBadge: {
+      position: 'absolute',
+      top: spacing.md,
+      left: spacing.md,
+      backgroundColor: colors.accent,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+    },
+    primaryBadgeLabel: { color: colors.onAccent, fontSize: typography.micro.fontSize, fontWeight: '700' },
+    dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: -spacing.sm, marginBottom: spacing.sm },
+    dot: { width: 6, height: 6, borderRadius: 3 },
+    body: { paddingHorizontal: spacing.lg, gap: spacing.md },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    name: { fontSize: typography.h1.fontSize, fontWeight: '800', color: colors.textPrimary },
+    meta: { fontSize: typography.body.fontSize, color: colors.textSecondary },
+    biography: { fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight, color: colors.textPrimary },
+    section: { gap: spacing.sm },
+    sectionLabel: {
+      fontSize: typography.caption.fontSize,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    chip: { backgroundColor: colors.surfaceAlt, borderRadius: radius.pill, paddingHorizontal: spacing.md, height: 34, alignItems: 'center', justifyContent: 'center' },
+    chipLabel: { color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
+    promptCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: 4, marginBottom: spacing.sm },
+    promptQuestion: { fontSize: 13, fontWeight: '700', color: colors.accentAlt },
+    promptAnswer: { fontSize: 15, lineHeight: 21, color: colors.textPrimary },
+    safetyRow: { flexDirection: 'row', gap: spacing.lg, paddingTop: spacing.sm },
+    safetyAction: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    safetyLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+    footer: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      padding: spacing.lg,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+    },
+  });
+}

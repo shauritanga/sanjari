@@ -2,7 +2,42 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../common/database/prisma.service';
 import { DiscoveryPreferenceDto, OnboardingUpdateDto, PromptAnswerDto } from './dto';
 import { PhotoPresignDto } from './dto';
+import { PhotoScanService } from './photo-scan.service';
 import { StorageService } from './storage.service';
+
+const bannedTerms = [
+  'onlyfans',
+  'escort',
+  'sugar daddy',
+  'sugar baby',
+  'cashapp',
+  'venmo me',
+  'whatsapp me',
+  'telegram me',
+];
+
+function hasSuspiciousLink(text: string): boolean {
+  return /(?:https?:\/\/|www\.)[^\s]+/i.test(text);
+}
+
+function hasBannedTerm(text: string): boolean {
+  const normalized = text.toLowerCase();
+  return bannedTerms.some((term) => normalized.includes(term));
+}
+
+/**
+ * Lightweight automated content screen for profile text, mirroring the
+ * suspicious-link check already used for messages. Flags obvious scam/spam
+ * signals to human review rather than blindly approving every profile, but
+ * does not hold clean profiles back the way photo review does — there's no
+ * equivalent to nudity risk in plain text, so the safe default is to publish
+ * immediately unless something is actually flagged.
+ */
+function screenProfileContent(displayName: string | null, biography: string | null): 'approved' | 'under_review' {
+  const text = `${displayName ?? ''} ${biography ?? ''}`;
+  if (hasSuspiciousLink(text) || hasBannedTerm(text)) return 'under_review';
+  return 'approved';
+}
 
 const profileFields = [
   'displayName',
@@ -57,6 +92,7 @@ export class ProfilesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly photoScan: PhotoScanService,
   ) {}
 
   async getOnboarding(userId: string) {
@@ -111,12 +147,15 @@ export class ProfilesService {
           visibilitySettings: profile.visibilitySettings,
           interests: profile.interests.map((item) => item.interest.slug),
           languages: profile.languages.map((item) => item.language.code),
-          photos: profile.photos.map((photo) => ({
-            id: photo.id,
-            position: photo.position,
-            isPrimary: photo.isPrimary,
-            moderationStatus: photo.moderationStatus,
-          })),
+          photos: await Promise.all(
+            profile.photos.map(async (photo) => ({
+              id: photo.id,
+              position: photo.position,
+              isPrimary: photo.isPrimary,
+              moderationStatus: photo.moderationStatus,
+              url: await this.storage.presignDownload(photo.storageKey),
+            })),
+          ),
         },
     };
   }
@@ -192,7 +231,9 @@ export class ProfilesService {
           },
         }),
         onboardingStep: Math.max(current.onboardingStep, input.step ?? current.onboardingStep),
-        onboardingStatus: 'in_progress',
+        // Editing an already-published profile should not silently unpublish it —
+        // only move a fresh/in-progress profile forward to 'in_progress'.
+        onboardingStatus: current.onboardingStatus === 'published' ? 'published' : 'in_progress',
       },
       include: { interests: true, languages: true, photos: true },
     });
@@ -257,11 +298,32 @@ export class ProfilesService {
       });
     }
 
+    const moderationStatus = screenProfileContent(profile.displayName, profile.biography);
     const published = await this.prisma.profile.update({
       where: { userId },
-      data: { onboardingStatus: 'published', publishedAt: new Date(), completionScore: 100 },
+      data: {
+        onboardingStatus: 'published',
+        publishedAt: new Date(),
+        completionScore: 100,
+        moderationStatus,
+      },
     });
-    return { userId, onboardingStatus: published.onboardingStatus, completionScore: 100 };
+    if (moderationStatus === 'under_review') {
+      await this.prisma.auditLog.create({
+        data: {
+          userId,
+          actorType: 'system',
+          action: 'profile.flagged_for_review',
+          metadata: { reason: 'automated_content_screen' },
+        },
+      });
+    }
+    return {
+      userId,
+      onboardingStatus: published.onboardingStatus,
+      moderationStatus: published.moderationStatus,
+      completionScore: 100,
+    };
   }
 
   async preview(userId: string) {
@@ -304,8 +366,9 @@ export class ProfilesService {
         moderationStatus: 'pending',
         processingStatus: 'pending_scan',
       },
-      select: { id: true, position: true, isPrimary: true, moderationStatus: true },
+      select: { id: true, position: true, isPrimary: true, moderationStatus: true, storageKey: true },
     });
+    await this.photoScan.enqueue(photo.id);
     await this.refreshCompletionScore(userId);
     await this.prisma.auditLog.create({
       data: {
@@ -315,7 +378,8 @@ export class ProfilesService {
         metadata: { photoId: photo.id },
       },
     });
-    return photo;
+    const { storageKey: key, ...rest } = photo;
+    return { ...rest, url: await this.storage.presignDownload(key) };
   }
 
   async reorderPhotos(userId: string, photoIds: string[]) {
@@ -426,6 +490,9 @@ export class ProfilesService {
         maxDistanceKm: 50,
         genders: [],
         intentions: [],
+        languages: [],
+        interests: [],
+        verifiedOnly: false,
         showDistance: true,
       }
     );
@@ -455,6 +522,9 @@ export class ProfilesService {
         maxDistanceKm: input.maxDistanceKm ?? 50,
         genders: input.genders ?? [],
         intentions: input.intentions ?? [],
+        languages: input.languages ?? [],
+        interests: input.interests ?? [],
+        verifiedOnly: input.verifiedOnly ?? false,
         showDistance: input.showDistance ?? true,
       },
       update: {
@@ -463,6 +533,9 @@ export class ProfilesService {
         ...(input.maxDistanceKm !== undefined && { maxDistanceKm: input.maxDistanceKm }),
         ...(input.genders !== undefined && { genders: input.genders }),
         ...(input.intentions !== undefined && { intentions: input.intentions }),
+        ...(input.languages !== undefined && { languages: input.languages }),
+        ...(input.interests !== undefined && { interests: input.interests }),
+        ...(input.verifiedOnly !== undefined && { verifiedOnly: input.verifiedOnly }),
         ...(input.showDistance !== undefined && { showDistance: input.showDistance }),
       },
     });

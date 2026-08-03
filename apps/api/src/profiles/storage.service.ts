@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, HeadBucketCommand, CreateBucketCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, HeadBucketCommand, CreateBucketCommand, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'node:crypto';
 
@@ -74,5 +74,13 @@ export class StorageService {
 
   async presignVerification(userId: string, mimeType: string): Promise<PresignedUpload> {
     return this.presign(userId, 'verification', mimeType);
+  }
+
+  async presignDownload(storageKey: string): Promise<string> {
+    return getSignedUrl(
+      this.presignClient,
+      new GetObjectCommand({ Bucket: this.bucket, Key: storageKey }),
+      { expiresIn: 300 },
+    );
   }
 }

@@ -15,7 +15,7 @@ export class ConversationsService {
     private readonly attachmentScan: AttachmentScanService,
   ) {}
 
-  private async authorize(userId: string, conversationId: string) {
+  async authorize(userId: string, conversationId: string) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
         id: conversationId,
@@ -56,6 +56,8 @@ export class ConversationsService {
     const matches = await this.prisma.match.findMany({
       where: { status: 'active', OR: [{ userAId: userId }, { userBId: userId }] },
       include: {
+        userA: { select: { id: true, profile: { select: { displayName: true } } } },
+        userB: { select: { id: true, profile: { select: { displayName: true } } } },
         conversation: {
           include: {
             members: true,
@@ -86,10 +88,22 @@ export class ConversationsService {
               },
             },
           }));
+        const other = match.userAId === userId ? match.userB : match.userA;
+        const self = conversation.members.find((member) => member.userId === userId);
+        const unreadCount = await this.prisma.message.count({
+          where: {
+            conversationId: conversation.id,
+            senderId: { not: userId },
+            deletedForSenderAt: null,
+            ...(self?.lastReadAt ? { createdAt: { gt: self.lastReadAt } } : {}),
+          },
+        });
         return {
           id: conversation.id,
           matchId: match.id,
+          otherUser: { id: other.id, displayName: other.profile?.displayName ?? null },
           lastMessage: conversation.messages[0] ?? null,
+          unreadCount,
         };
       }),
     );
@@ -109,23 +123,39 @@ export class ConversationsService {
         body: true,
         status: true,
         createdAt: true,
+        replyToMessageId: true,
+        replyTo: { select: { id: true, senderId: true, body: true } },
         attachments: {
           where: { status: 'approved' },
           select: { id: true, mimeType: true, sizeBytes: true },
         },
+        reactions: { select: { userId: true, reaction: true } },
+        receipts: { where: { type: 'read' }, select: { userId: true, createdAt: true } },
       },
     });
     return { data: messages, nextCursor: messages.length === 30 ? String(skip + 30) : null };
   }
 
-  async send(userId: string, conversationId: string, body: string) {
+  async send(userId: string, conversationId: string, body: string, replyToMessageId?: string) {
     await this.authorize(userId, conversationId);
+    if (replyToMessageId) {
+      const replyTarget = await this.prisma.message.findFirst({
+        where: { id: replyToMessageId, conversationId },
+        select: { id: true },
+      });
+      if (!replyTarget)
+        throw new NotFoundException({
+          code: 'REPLY_TARGET_NOT_FOUND',
+          message: 'The message being replied to was not found.',
+        });
+    }
     const message = await this.prisma.message.create({
       data: {
         conversationId,
         senderId: userId,
         body,
         status: hasSuspiciousLink(body) ? 'pending_review' : 'sent',
+        ...(replyToMessageId ? { replyToMessageId } : {}),
       },
       select: {
         id: true,
@@ -133,6 +163,7 @@ export class ConversationsService {
         senderId: true,
         body: true,
         status: true,
+        replyToMessageId: true,
         createdAt: true,
       },
     });
@@ -213,11 +244,12 @@ export class ConversationsService {
     if (!message)
       throw new NotFoundException({ code: 'MESSAGE_NOT_FOUND', message: 'Message not found.' });
     await this.authorize(userId, message.conversationId);
-    return this.prisma.messageReaction.upsert({
+    const created = await this.prisma.messageReaction.upsert({
       where: { messageId_userId_reaction: { messageId, userId, reaction } },
       create: { messageId, userId, reaction },
       update: {},
     });
+    return { ...created, conversationId: message.conversationId };
   }
 
   async presignAttachment(

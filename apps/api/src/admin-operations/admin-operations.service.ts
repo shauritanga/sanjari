@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Prisma } from '@prisma/client';
 import type { AdminClaims } from '../admin-auth/admin-auth.types';
 import { PrismaService } from '../common/database/prisma.service';
+import { StorageService } from '../profiles/storage.service';
 import {
   AppVersionUpdateDto,
   AuditQueryDto,
@@ -13,6 +14,8 @@ import {
   LegalDocumentCreateDto,
   MatchingConfigUpdateDto,
   NotificationUpdateDto,
+  PhotoReviewDto,
+  ProfileReviewDto,
   RoleAssignmentDto,
   SupportTicketUpdateDto,
   UserSearchQueryDto,
@@ -33,6 +36,7 @@ function requirePermission(admin: AdminClaims, permission: string) {
 export class AdminOperationsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
     @Optional() private readonly config?: ConfigService,
   ) {}
 
@@ -848,5 +852,118 @@ export class AdminOperationsService {
       return result;
     });
     return updated.value;
+  }
+
+  async photoQueue(admin: AdminClaims) {
+    requirePermission(admin, 'verification.review');
+    const photos = await this.prisma.profilePhoto.findMany({
+      where: { moderationStatus: { in: ['pending', 'under_review'] } },
+      orderBy: { createdAt: 'asc' },
+      take: 100,
+      select: {
+        id: true,
+        storageKey: true,
+        moderationStatus: true,
+        createdAt: true,
+        profile: {
+          select: {
+            userId: true,
+            displayName: true,
+            user: { select: { email: true } },
+          },
+        },
+      },
+    });
+    return Promise.all(
+      photos.map(async (photo) => ({
+        id: photo.id,
+        moderationStatus: photo.moderationStatus,
+        createdAt: photo.createdAt,
+        userId: photo.profile.userId,
+        displayName: photo.profile.displayName,
+        email: photo.profile.user.email,
+        url: await this.storage.presignDownload(photo.storageKey),
+      })),
+    );
+  }
+
+  async reviewPhoto(admin: AdminClaims, photoId: string, dto: PhotoReviewDto) {
+    requirePermission(admin, 'verification.review');
+    const current = await this.prisma.profilePhoto.findUnique({
+      where: { id: photoId },
+      select: { id: true, moderationStatus: true, profileId: true },
+    });
+    if (!current)
+      throw new NotFoundException({ code: 'PHOTO_NOT_FOUND', message: 'Photo not found.' });
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.profilePhoto.update({
+        where: { id: photoId },
+        data: { moderationStatus: dto.status },
+        select: { id: true, moderationStatus: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.photo_reviewed',
+          metadata: {
+            photoId,
+            before: { status: current.moderationStatus },
+            after: { status: result.moderationStatus },
+            reason: dto.reason,
+          },
+        },
+      });
+      return result;
+    });
+  }
+
+  async profileQueue(admin: AdminClaims) {
+    requirePermission(admin, 'verification.review');
+    return this.prisma.profile.findMany({
+      where: { moderationStatus: { in: ['pending', 'under_review'] }, onboardingStatus: 'published' },
+      orderBy: { publishedAt: 'asc' },
+      take: 100,
+      select: {
+        id: true,
+        userId: true,
+        displayName: true,
+        biography: true,
+        moderationStatus: true,
+        publishedAt: true,
+        user: { select: { email: true } },
+      },
+    });
+  }
+
+  async reviewProfile(admin: AdminClaims, profileId: string, dto: ProfileReviewDto) {
+    requirePermission(admin, 'verification.review');
+    const current = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      select: { id: true, moderationStatus: true },
+    });
+    if (!current)
+      throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.profile.update({
+        where: { id: profileId },
+        data: { moderationStatus: dto.status },
+        select: { id: true, moderationStatus: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          adminUserId: admin.id,
+          actorType: 'admin',
+          action: 'admin.profile_reviewed',
+          metadata: {
+            profileId,
+            before: { status: current.moderationStatus },
+            after: { status: result.moderationStatus },
+            reason: dto.reason,
+          },
+        },
+      });
+      return result;
+    });
   }
 }

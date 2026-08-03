@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/database/prisma.service';
+import { StorageService } from '../profiles/storage.service';
 import { DiscoveryEntitlementService } from './entitlement.service';
 import type { ProtectedLocationDto } from './dto';
 
@@ -29,6 +30,7 @@ export class DiscoveryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly entitlements: DiscoveryEntitlementService,
+    private readonly storage: StorageService,
   ) {}
 
   private async getMatchingWeights() {
@@ -51,7 +53,11 @@ export class DiscoveryService {
     };
   }
 
-  async discover(userId: string, cursor?: string) {
+  async discover(
+    userId: string,
+    cursor?: string,
+    filters?: { recentlyActive?: boolean; newMembers?: boolean },
+  ) {
     const viewer = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { profile: { include: { discoveryPreference: true } } },
@@ -65,17 +71,22 @@ export class DiscoveryService {
     const distanceMap = new Map(distances.map((item) => [item.id, Number(item.distanceKm)]));
     const excluded = await this.prisma.$queryRaw<
       Array<{ id: string }>
-    >`SELECT "blockedId" AS id FROM "Block" WHERE "blockerId" = ${userId}::uuid UNION SELECT "blockerId" AS id FROM "Block" WHERE "blockedId" = ${userId}::uuid UNION SELECT "receiverId" AS id FROM "Like" WHERE "senderId" = ${userId}::uuid UNION SELECT "receiverId" AS id FROM "Pass" WHERE "senderId" = ${userId}::uuid`;
+    >`SELECT "blockedId" AS id FROM "Block" WHERE "blockerId" = ${userId}::uuid UNION SELECT "blockerId" AS id FROM "Block" WHERE "blockedId" = ${userId}::uuid UNION SELECT "receiverId" AS id FROM "Like" WHERE "senderId" = ${userId}::uuid UNION SELECT "receiverId" AS id FROM "Pass" WHERE "senderId" = ${userId}::uuid AND ("expiresAt" IS NULL OR "expiresAt" > now())`;
     const excludedIds = new Set(excluded.map((item) => item.id));
+    const recentlyActiveSince = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    const newMemberSince = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     const candidates = await this.prisma.user.findMany({
       where: {
         id: { not: userId, notIn: [...excludedIds] },
         status: 'active',
+        ...(filters?.recentlyActive ? { lastActiveAt: { gte: recentlyActiveSince } } : {}),
+        ...(filters?.newMembers ? { createdAt: { gte: newMemberSince } } : {}),
         profile: {
           is: {
             onboardingStatus: 'published',
             moderationStatus: 'approved',
             discoveryPausedAt: null,
+            ...(preference?.verifiedOnly ? { verificationStatus: 'verified' } : {}),
           },
         },
       },
@@ -84,8 +95,10 @@ export class DiscoveryService {
           include: {
             photos: {
               where: { isPrimary: true, moderationStatus: 'approved' },
-              select: { id: true, thumbnailKey: true },
+              select: { id: true, storageKey: true },
             },
+            interests: { select: { interest: { select: { slug: true } } } },
+            languages: { select: { language: { select: { code: true } } } },
             discoveryPreference: true,
           },
         },
@@ -93,9 +106,21 @@ export class DiscoveryService {
       orderBy: { createdAt: 'desc' },
       take: 30,
     });
+    const preferredLanguages = new Set(preference?.languages ?? []);
+    const preferredInterests = new Set(preference?.interests ?? []);
     const filtered = candidates.filter((candidate) => {
       const candidateAge = age(candidate.dateOfBirth);
       const distanceKm = distanceMap.get(candidate.id);
+      if (
+        preferredLanguages.size > 0 &&
+        !candidate.profile!.languages.some((item) => preferredLanguages.has(item.language.code))
+      )
+        return false;
+      if (
+        preferredInterests.size > 0 &&
+        !candidate.profile!.interests.some((item) => preferredInterests.has(item.interest.slug))
+      )
+        return false;
       return (
         candidateAge >= (preference?.minAge ?? 18) &&
         candidateAge <= (preference?.maxAge ?? 80) &&
@@ -107,7 +132,7 @@ export class DiscoveryService {
       (cursor ? Number(cursor) || 0 : 0) + 20,
     );
     const weights = await this.getMatchingWeights();
-    const data = page.map((candidate) => {
+    const data = await Promise.all(page.map(async (candidate) => {
       const sharedInterests = viewer.profile!.interestedIn.filter((value) =>
         candidate.profile!.interestedIn.includes(value),
       );
@@ -126,6 +151,7 @@ export class DiscoveryService {
           Math.round(components.profileCompleteness * weights.completenessWeight) +
           components.verification,
       );
+      const primaryPhoto = candidate.profile!.photos[0];
       return {
         id: candidate.id,
         displayName: candidate.profile!.displayName,
@@ -133,11 +159,13 @@ export class DiscoveryService {
         city: candidate.profile!.city,
         distanceCategory: this.distanceCategory(distanceMap.get(candidate.id)),
         verificationStatus: candidate.profile!.verificationStatus,
-        primaryPhoto: candidate.profile!.photos[0] ?? null,
+        primaryPhoto: primaryPhoto
+          ? { id: primaryPhoto.id, url: await this.storage.presignDownload(primaryPhoto.storageKey) }
+          : null,
         score,
         explanation: { rankingVersion, components },
       };
-    });
+    }));
     await Promise.all(
       data.map((candidate) =>
         this.prisma.recommendation.upsert({
@@ -201,10 +229,26 @@ export class DiscoveryService {
     }
     const candidate = await this.prisma.user.findUnique({
       where: { id: candidateId },
-      select: { id: true, status: true },
+      select: {
+        id: true,
+        status: true,
+        profile: {
+          select: {
+            displayName: true,
+            photos: {
+              where: { isPrimary: true, moderationStatus: 'approved' },
+              select: { id: true, storageKey: true },
+            },
+          },
+        },
+      },
     });
     if (!candidate || candidate.status !== 'active')
       throw new NotFoundException({ code: 'CANDIDATE_NOT_FOUND', message: 'Profile not found.' });
+    const matchedPrimaryPhoto = candidate.profile?.photos[0];
+    const matchedPhoto = matchedPrimaryPhoto
+      ? { id: matchedPrimaryPhoto.id, url: await this.storage.presignDownload(matchedPrimaryPhoto.storageKey) }
+      : null;
     return this.prisma.$transaction(async (tx) => {
       await this.consumeDaily(tx, userId, 'like', 50);
       const like = await tx.like.upsert({
@@ -242,6 +286,15 @@ export class DiscoveryService {
         create: { userAId, userBId },
         update: { status: 'active' },
       });
+      const conversation = await tx.conversation.upsert({
+        where: { matchId: match.id },
+        create: {
+          matchId: match.id,
+          members: { create: [{ userId: userAId }, { userId: userBId }] },
+        },
+        update: {},
+        select: { id: true },
+      });
       await tx.discoveryAction.create({
         data: {
           userId,
@@ -254,7 +307,18 @@ export class DiscoveryService {
         where: { userId, candidateUserId: candidateId, rankingVersion, userAction: null },
         data: { userAction: 'liked', matchOutcome: 'matched' },
       });
-      return { liked: true, matched: true, matchId: match.id, likeId: like.id };
+      return {
+        liked: true,
+        matched: true,
+        matchId: match.id,
+        conversationId: conversation.id,
+        likeId: like.id,
+        matchedUser: {
+          id: candidate.id,
+          displayName: candidate.profile?.displayName ?? null,
+          primaryPhoto: matchedPhoto,
+        },
+      };
     });
   }
 
@@ -405,6 +469,128 @@ export class DiscoveryService {
       }
     }
     return { saved: true, approximateCity: current.approximateCity };
+  }
+
+  async likesReceived(userId: string) {
+    const excluded = await this.prisma.$queryRaw<
+      Array<{ id: string }>
+    >`SELECT "blockedId" AS id FROM "Block" WHERE "blockerId" = ${userId}::uuid UNION SELECT "blockerId" AS id FROM "Block" WHERE "blockedId" = ${userId}::uuid UNION SELECT "userAId" AS id FROM "Match" WHERE "userBId" = ${userId}::uuid AND status = 'active' UNION SELECT "userBId" AS id FROM "Match" WHERE "userAId" = ${userId}::uuid AND status = 'active'`;
+    const excludedIds = new Set(excluded.map((item) => item.id));
+    const likes = await this.prisma.like.findMany({
+      where: { receiverId: userId, senderId: { notIn: [...excludedIds] } },
+      orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+      take: 50,
+      select: {
+        id: true,
+        comment: true,
+        priority: true,
+        createdAt: true,
+        sender: {
+          select: {
+            id: true,
+            profile: {
+              select: {
+                displayName: true,
+                city: true,
+                verificationStatus: true,
+                photos: {
+                  where: { isPrimary: true, moderationStatus: 'approved' },
+                  select: { id: true, storageKey: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    return Promise.all(
+      likes
+        .filter((like) => like.sender.profile)
+        .map(async (like) => {
+          const primaryPhoto = like.sender.profile!.photos[0];
+          return {
+            likeId: like.id,
+            userId: like.sender.id,
+            comment: like.comment,
+            priority: like.priority,
+            createdAt: like.createdAt,
+            displayName: like.sender.profile!.displayName,
+            city: like.sender.profile!.city,
+            verificationStatus: like.sender.profile!.verificationStatus,
+            primaryPhoto: primaryPhoto
+              ? { id: primaryPhoto.id, url: await this.storage.presignDownload(primaryPhoto.storageKey) }
+              : null,
+          };
+        }),
+    );
+  }
+
+  async profileDetail(viewerId: string, targetUserId: string) {
+    const blocked = await this.prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: viewerId, blockedId: targetUserId },
+          { blockerId: targetUserId, blockedId: viewerId },
+        ],
+      },
+    });
+    if (blocked)
+      throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+    const target = await this.prisma.user.findFirst({
+      where: {
+        id: targetUserId,
+        status: 'active',
+        profile: { is: { onboardingStatus: 'published', moderationStatus: 'approved' } },
+      },
+      include: {
+        profile: {
+          include: {
+            photos: {
+              where: { moderationStatus: 'approved' },
+              orderBy: { position: 'asc' },
+              select: { id: true, isPrimary: true, storageKey: true },
+            },
+            interests: { select: { interest: { select: { slug: true, labelEn: true } } } },
+            languages: { select: { language: { select: { code: true, labelEn: true } } } },
+            prompts: {
+              select: { answer: true, prompt: { select: { prompt: true } } },
+            },
+          },
+        },
+      },
+    });
+    if (!target?.profile)
+      throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+    const distances = await this.prisma.$queryRaw<
+      Array<{ distanceKm: number }>
+    >`WITH latest AS (SELECT DISTINCT ON ("userId") "userId", "protectedPointWkt" FROM "UserLocation" ORDER BY "userId", "createdAt" DESC) SELECT ST_Distance(ST_GeogFromText(viewer."protectedPointWkt"), ST_GeogFromText(candidate."protectedPointWkt")) / 1000 AS "distanceKm" FROM latest viewer JOIN latest candidate ON candidate."userId" = ${targetUserId}::uuid WHERE viewer."userId" = ${viewerId}::uuid`;
+    const voiceIntroUrl = target.profile.voiceIntroKey
+      ? await this.storage.presignDownload(target.profile.voiceIntroKey)
+      : null;
+    const photos = await Promise.all(
+      target.profile.photos.map(async (photo) => ({
+        id: photo.id,
+        isPrimary: photo.isPrimary,
+        url: await this.storage.presignDownload(photo.storageKey),
+      })),
+    );
+    return {
+      id: target.id,
+      displayName: target.profile.displayName,
+      age: age(target.dateOfBirth),
+      city: target.profile.city,
+      biography: target.profile.biography,
+      verificationStatus: target.profile.verificationStatus,
+      distanceCategory: this.distanceCategory(Number(distances[0]?.distanceKm) || undefined),
+      photos,
+      interests: target.profile.interests.map((item) => item.interest),
+      languages: target.profile.languages.map((item) => item.language),
+      prompts: target.profile.prompts.map((item) => ({
+        prompt: item.prompt.prompt,
+        answer: item.answer,
+      })),
+      voiceIntroUrl,
+    };
   }
 
   private distanceCategory(distanceKm?: number): string {

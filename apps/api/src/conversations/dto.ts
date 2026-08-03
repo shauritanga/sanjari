@@ -5,6 +5,11 @@ export class SendMessageDto {
   @MinLength(1)
   @MaxLength(4000)
   body!: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  replyToMessageId?: string;
 }
 
 export class MessageHistoryQueryDto {

@@ -51,7 +51,7 @@ interface OnboardingState {
   hideAge: boolean;
   hideOnlineStatus: boolean;
   hideReadReceipts: boolean;
-  photos: { id: string; position: number; isPrimary: boolean; moderationStatus: string }[];
+  photos: { id: string; position: number; isPrimary: boolean; moderationStatus: string; url?: string }[];
   promptAnswers: PromptAnswerDraft[];
   discoveryPreference: DiscoveryPreferenceDraft;
   approximateLocationSet: boolean;
