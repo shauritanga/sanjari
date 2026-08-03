@@ -1,11 +1,23 @@
-import { useEffect, useState } from 'react';
-import * as ImagePicker from 'expo-image-picker';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { CheckmarkBadge01Icon, IdVerifiedIcon, Location01Icon } from '@hugeicons/core-free-icons';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
+import { AppIcon } from '../../src/components/AppIcon';
 import { AppTextInput } from '../../src/components/AppTextInput';
+import { ChipGroup } from '../../src/components/ChipGroup';
+import { PhotoGrid, type PhotoItem } from '../../src/components/PhotoGrid';
+import { SelectableCard } from '../../src/components/SelectableCard';
+import { ToggleRow } from '../../src/components/ToggleRow';
 import { api } from '../../src/api';
-import { uploadBinaryFile } from '../../src/upload';
-import { theme } from '../../src/theme/theme';
+import {
+  GENDER_OPTIONS,
+  INTENTION_OPTIONS,
+  INTEREST_OPTIONS,
+  LANGUAGE_OPTIONS,
+  WHO_TO_MEET_OPTIONS
+} from '../../src/onboarding/options';
+import { useAppTheme } from '../../src/theme/useAppTheme';
+import { captureAndSubmitVerification, type VerificationCase, type VerificationType } from '../../src/verification';
 
 type Profile = {
   displayName: string | null;
@@ -27,18 +39,31 @@ type Profile = {
     hideOnlineStatus?: boolean;
     hideReadReceipts?: boolean;
   };
-  photos?: { id: string; moderationStatus?: string }[];
+  photos: PhotoItem[];
 };
 type Onboarding = { completionScore: number; onboardingStatus: string; profile: Profile };
-type LocationCatalog = { code: string; name: string; cities: Array<{ id: string; name: string }> };
-type VerificationCase = {
-  id: string;
-  type: 'selfie_liveness' | 'identity_document';
-  status: string;
-  provider: string;
-};
+interface CountryOption {
+  code: string;
+  name: string;
+  cities: { id: string; name: string }[];
+}
+
+function statusLabel(status?: string) {
+  switch (status) {
+    case 'approved':
+      return 'Verified';
+    case 'submitted':
+    case 'pending':
+      return 'In review';
+    case 'rejected':
+      return 'Rejected — try again';
+    default:
+      return 'Not started';
+  }
+}
 
 export default function ProfileScreen() {
+  const { colors, radius, spacing, typography } = useAppTheme();
   const [profile, setProfile] = useState<Profile>({
     displayName: '',
     city: '',
@@ -49,50 +74,76 @@ export default function ProfileScreen() {
     interests: [],
     languages: [],
     visibilitySettings: {},
+    photos: []
   });
   const [score, setScore] = useState(0);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [paused, setPaused] = useState(false);
   const [verificationCases, setVerificationCases] = useState<VerificationCase[]>([]);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [requesting, setRequesting] = useState<VerificationType | null>(null);
   const [onboardingStatus, setOnboardingStatus] = useState('not_started');
-  const [locations, setLocations] = useState<LocationCatalog[]>([]);
+  const [countries, setCountries] = useState<CountryOption[]>([]);
+  const [countryQuery, setCountryQuery] = useState('');
+  const [cityQuery, setCityQuery] = useState('');
+
   useEffect(() => {
     void api
       .get<Onboarding>('/onboarding')
       .then((result) => {
         if (result.data) {
-          setProfile(result.data.profile);
+          setProfile({ ...result.data.profile, photos: result.data.profile.photos ?? [] });
           setScore(result.data.completionScore);
           setOnboardingStatus(result.data.onboardingStatus);
         }
       })
-      .catch((cause) =>
-        setError(cause instanceof Error ? cause.message : 'Unable to load profile.'),
-      );
-  }, []);
-  useEffect(() => {
-    void api.get<LocationCatalog[]>('/catalog/locations')
-      .then((result) => setLocations(result.data ?? []))
+      .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to load profile.'));
+    void api
+      .get<CountryOption[]>('/catalog/locations')
+      .then((result) => setCountries(result.data ?? []))
       .catch(() => setError('Unable to load the location list.'));
-  }, []);
-  useEffect(() => {
     void api
       .get<VerificationCase[]>('/onboarding/verification')
       .then((result) => setVerificationCases(result.data ?? []))
       .catch(() => undefined);
   }, []);
+
+  const selectedCountry = useMemo(
+    () => countries.find((item) => item.code === profile.countryCode) ?? null,
+    [countries, profile.countryCode]
+  );
+  const filteredCountries = useMemo(() => {
+    const normalized = countryQuery.trim().toLowerCase();
+    if (!normalized) return countries;
+    return countries.filter((item) => item.name.toLowerCase().includes(normalized));
+  }, [countries, countryQuery]);
+  const filteredCities = useMemo(() => {
+    const normalized = cityQuery.trim().toLowerCase();
+    const cities = selectedCountry?.cities ?? [];
+    if (!normalized) return cities;
+    return cities.filter((item) => item.name.toLowerCase().includes(normalized));
+  }, [selectedCountry, cityQuery]);
+
+  function latestVerificationFor(type: VerificationType) {
+    return verificationCases.find((item) => item.type === type);
+  }
+  function verificationColorFor(status?: string) {
+    if (status === 'approved') return colors.success;
+    if (status === 'rejected') return colors.error;
+    if (status) return colors.accent;
+    return colors.textSecondary;
+  }
+
   async function save() {
     setError('');
     setSaved(false);
+    setSaving(true);
     try {
       const result = await api.put<{ completionScore: number }>('/onboarding', {
         step: 4,
         ...(profile.displayName !== null ? { displayName: profile.displayName } : {}),
-        ...(profile.pronouns !== null && profile.pronouns !== undefined
-          ? { pronouns: profile.pronouns }
-          : {}),
+        ...(profile.pronouns !== null && profile.pronouns !== undefined ? { pronouns: profile.pronouns } : {}),
         ...(profile.gender !== null ? { gender: profile.gender } : {}),
         interestedIn: profile.interestedIn,
         relationshipIntentions: profile.relationshipIntentions,
@@ -110,15 +161,18 @@ export default function ProfileScreen() {
         ...(profile.cityId ? { cityId: profile.cityId } : {}),
         hideAge: profile.visibilitySettings?.hideAge ?? false,
         hideOnlineStatus: profile.visibilitySettings?.hideOnlineStatus ?? false,
-        hideReadReceipts: profile.visibilitySettings?.hideReadReceipts ?? false,
+        hideReadReceipts: profile.visibilitySettings?.hideReadReceipts ?? false
       });
       setScore(result.data?.completionScore ?? score);
       setOnboardingStatus('in_progress');
       setSaved(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to save profile.');
+    } finally {
+      setSaving(false);
     }
   }
+
   async function publish() {
     setError('');
     try {
@@ -129,109 +183,88 @@ export default function ProfileScreen() {
       setError(cause instanceof Error ? cause.message : 'Complete the required fields before publishing.');
     }
   }
+
   async function togglePause() {
     try {
       const result = await api.request<{ paused: boolean }>('/onboarding/discovery-pause', {
         method: 'PATCH',
-        body: JSON.stringify({ paused: !paused }),
+        body: JSON.stringify({ paused: !paused })
       });
       setPaused(result.data?.paused ?? !paused);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to update discovery.');
     }
   }
-  async function requestVerification(type: VerificationCase['type']) {
+
+  async function requestVerification(type: VerificationType) {
     setError('');
+    setRequesting(type);
     try {
-      const result = await api.post<VerificationCase>(`/onboarding/verification/${type}/request`, {});
-      if (result.data) setVerificationCases((current) => [result.data!, ...current]);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to request verification.');
-    }
-  }
-  async function addPhoto() {
-    setError('');
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      setError('Photo library access is required to add a profile photo.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.85,
-      allowsEditing: true,
-      aspect: [1, 1],
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    const mimeType = asset.mimeType ?? 'image/jpeg';
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
-      setError('Choose a JPEG, PNG, or WebP image.');
-      return;
-    }
-    setUploadingPhoto(true);
-    try {
-      const presign = await api.post<{ storageKey: string; uploadUrl: string }>(
-        '/onboarding/photos/presign',
-        { mimeType, sizeBytes: asset.fileSize ?? 1 },
-      );
-      if (!presign.data) throw new Error('Unable to prepare photo upload.');
-      await uploadBinaryFile(asset.uri, presign.data.uploadUrl, mimeType);
-      const completed = await api.post<{ id: string; moderationStatus: string }>(
-        '/onboarding/photos/complete',
-        { storageKey: presign.data.storageKey },
-      );
-      if (completed.data) {
-        setProfile((current) => ({
-          ...current,
-          photos: [...(current.photos ?? []), completed.data!],
-        }));
+      const submitted = await captureAndSubmitVerification(type);
+      if (submitted) {
+        setVerificationCases((current) => [submitted, ...current.filter((item) => item.id !== submitted.id)]);
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to upload photo.');
+      setError(cause instanceof Error ? cause.message : 'Unable to submit verification.');
     } finally {
-      setUploadingPhoto(false);
+      setRequesting(null);
     }
   }
+
+  function selectCountry(country: CountryOption) {
+    setProfile((current) => ({ ...current, countryCode: country.code, cityId: null, cityName: null, city: null }));
+    setCityQuery('');
+  }
+  function selectCity(city: { id: string; name: string }) {
+    setProfile((current) => ({ ...current, cityId: city.id, cityName: city.name, city: city.name }));
+  }
+
+  const selfieCase = latestVerificationFor('selfie_liveness');
+  const idCase = latestVerificationFor('identity_document');
+
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Profile</Text>
-            <Text style={styles.title}>Your profile</Text>
-            <Text style={styles.status}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={[styles.content, { padding: spacing.lg, gap: spacing.md }]}>
+        <View style={[styles.header, { gap: spacing.md }]}>
+          <View style={{ flex: 1, gap: spacing.xs }}>
+            <Text style={[styles.eyebrow, { color: colors.accent }]}>Profile</Text>
+            <Text
+              style={{
+                color: colors.accentAlt,
+                fontSize: typography.h1.fontSize,
+                lineHeight: typography.h1.lineHeight,
+                fontWeight: typography.h1.fontWeight
+              }}
+            >
+              Your profile
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: typography.body.fontSize }}>
               {onboardingStatus === 'published' ? 'Submitted for review' : 'Complete your profile to submit it'}
             </Text>
           </View>
-          <View style={styles.completionBadge}>
-            <Text style={styles.completionValue}>{score}%</Text>
-            <Text style={styles.completionLabel}>complete</Text>
+          <View
+            style={[
+              styles.completionBadge,
+              { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, minWidth: 76 }
+            ]}
+          >
+            <Text style={{ color: colors.accent, fontSize: 22, fontWeight: '700' }}>{score}%</Text>
+            <Text style={{ color: colors.accentAlt, fontSize: 12, fontWeight: '600' }}>complete</Text>
           </View>
         </View>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {saved ? <Text style={styles.saved}>Saved</Text> : null}
-        <View style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>Profile photos</Text>
-            <Text style={styles.sectionHint}>Lead with a clear photo that feels like you.</Text>
-          </View>
-          <Text style={styles.photoStatus}>
-            {profile.photos?.length ?? 0} of 6 added. New photos are reviewed before publishing.
-          </Text>
-          <AppButton
-            label={uploadingPhoto ? 'Uploading photo...' : 'Add profile photo'}
-            variant="secondary"
-            onPress={() => {
-              void addPhoto();
-            }}
+
+        {error ? <Text style={{ color: colors.error, fontWeight: '600' }}>{error}</Text> : null}
+        {saved ? <Text style={{ color: colors.success, fontWeight: '600' }}>Saved</Text> : null}
+
+        <Section title="Profile photos" hint="Lead with a clear photo that feels like you.">
+          <PhotoGrid
+            photos={profile.photos}
+            onChange={(photos) => setProfile((current) => ({ ...current, photos }))}
+            slots={6}
           />
-        </View>
-        <View style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>About you</Text>
-            <Text style={styles.sectionHint}>Share the details people need to get to know you.</Text>
-          </View>
+        </Section>
+
+        <Section title="About you" hint="Share the details people need to get to know you.">
           <AppTextInput
             label="Display name"
             value={profile.displayName ?? ''}
@@ -240,50 +273,68 @@ export default function ProfileScreen() {
               setProfile((current) => ({ ...current, displayName: value }));
             }}
           />
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldHalf}>
-              <AppTextInput
-                label="Gender"
-                value={profile.gender ?? ''}
-                onChangeText={(value) => setProfile((current) => ({ ...current, gender: value }))}
-              />
-            </View>
-            <View style={styles.fieldHalf}>
-              <AppTextInput
-                label="Pronouns"
-                value={profile.pronouns ?? ''}
-                onChangeText={(value) => setProfile((current) => ({ ...current, pronouns: value }))}
-              />
-            </View>
+          <View style={{ gap: spacing.sm }}>
+            <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>Gender</Text>
+            <ChipGroup
+              options={GENDER_OPTIONS}
+              selected={profile.gender ? [profile.gender] : []}
+              onChange={(next) => setProfile((current) => ({ ...current, gender: next[0] ?? '' }))}
+              multiple={false}
+            />
           </View>
+          <AppTextInput
+            label="Pronouns"
+            value={profile.pronouns ?? ''}
+            onChangeText={(value) => setProfile((current) => ({ ...current, pronouns: value }))}
+            placeholder="e.g. she/her, he/him, they/them"
+            maxLength={40}
+          />
           <AppTextInput
             label="Biography"
             value={profile.biography ?? ''}
             multiline
+            maxLength={500}
             onChangeText={(value) => setProfile((current) => ({ ...current, biography: value }))}
           />
-        </View>
-        <View style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>Location</Text>
-            <Text style={styles.sectionHint}>Choose a broad area. Your exact address is never required.</Text>
+        </Section>
+
+        <Section title="Location" hint="Choose a broad area. Your exact address is never required.">
+          <View style={[styles.locationSummary, { gap: spacing.sm }]}>
+            <AppIcon icon={Location01Icon} color={colors.accent} size={18} />
+            <Text style={{ color: colors.textSecondary }}>
+              {profile.cityName ?? profile.city ?? 'Choose a country, then a city'}
+            </Text>
           </View>
-          <LocationPicker
-            locations={locations}
-            countryCode={profile.countryCode ?? null}
-            cityId={profile.cityId ?? null}
-            selectedCity={profile.cityName ?? profile.city ?? null}
-            onSelect={(countryCode, cityId, cityName) =>
-              setProfile((current) => ({ ...current, countryCode, cityId, cityName, city: cityName }))
-            }
-          />
-        </View>
-        <View style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>Background</Text>
-            <Text style={styles.sectionHint}>These optional details add context to your profile.</Text>
+          <AppTextInput label="Search countries" value={countryQuery} onChangeText={setCountryQuery} placeholder="Type a country name" />
+          <View style={[styles.choiceGrid, { gap: spacing.xs }]}>
+            {filteredCountries.map((country) => (
+              <Choice
+                key={country.code}
+                label={country.name}
+                active={country.code === profile.countryCode}
+                onPress={() => selectCountry(country)}
+              />
+            ))}
           </View>
-          <View style={styles.fieldRow}>
+          {selectedCountry ? (
+            <>
+              <AppTextInput label="Search cities" value={cityQuery} onChangeText={setCityQuery} placeholder="Type a city name" />
+              <View style={[styles.choiceGrid, { gap: spacing.xs }]}>
+                {filteredCities.map((city) => (
+                  <Choice
+                    key={city.id}
+                    label={city.name}
+                    active={city.id === profile.cityId}
+                    onPress={() => selectCity(city)}
+                  />
+                ))}
+              </View>
+            </>
+          ) : null}
+        </Section>
+
+        <Section title="Background" hint="These optional details add context to your profile.">
+          <View style={[styles.fieldRow, { gap: spacing.sm }]}>
             <View style={styles.fieldHalf}>
               <AppTextInput
                 label="Occupation"
@@ -299,105 +350,108 @@ export default function ProfileScreen() {
               />
             </View>
           </View>
-        </View>
-        <View style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>What you&apos;re looking for</Text>
-            <Text style={styles.sectionHint}>Use commas to separate multiple choices.</Text>
-          </View>
-          <AppTextInput
-            label="Interested in"
-            value={profile.interestedIn.join(', ')}
-            onChangeText={(value) => setProfile((current) => ({ ...current, interestedIn: splitList(value) }))}
-          />
-          <AppTextInput
-            label="Relationship intentions"
-            value={profile.relationshipIntentions.join(', ')}
-            onChangeText={(value) => setProfile((current) => ({ ...current, relationshipIntentions: splitList(value) }))}
-          />
-          <AppTextInput
-            label="Interests"
-            value={profile.interests.join(', ')}
-            onChangeText={(value) => setProfile((current) => ({ ...current, interests: splitList(value) }))}
-          />
-          <AppTextInput
-            label="Languages"
-            value={profile.languages.join(', ')}
-            onChangeText={(value) => setProfile((current) => ({ ...current, languages: splitList(value) }))}
-          />
-        </View>
-        <View style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>Privacy</Text>
-            <Text style={styles.sectionHint}>Choose what other people can see.</Text>
-          </View>
-          <VisibilityRow
-            label="Hide my age"
+        </Section>
+
+        <Section title="What you're looking for" hint="Tap to update any of these anytime.">
+          <Labeled label="Interested in" color={colors.textPrimary}>
+            <ChipGroup
+              options={WHO_TO_MEET_OPTIONS}
+              selected={profile.interestedIn}
+              onChange={(next) => setProfile((current) => ({ ...current, interestedIn: next }))}
+            />
+          </Labeled>
+          <Labeled label="Relationship intentions" color={colors.textPrimary}>
+            <ChipGroup
+              options={INTENTION_OPTIONS}
+              selected={profile.relationshipIntentions}
+              onChange={(next) => setProfile((current) => ({ ...current, relationshipIntentions: next }))}
+              max={3}
+            />
+          </Labeled>
+          <Labeled label="Interests" color={colors.textPrimary}>
+            <ChipGroup
+              options={INTEREST_OPTIONS}
+              selected={profile.interests}
+              onChange={(next) => setProfile((current) => ({ ...current, interests: next }))}
+              max={20}
+            />
+          </Labeled>
+          <Labeled label="Languages" color={colors.textPrimary}>
+            <ChipGroup
+              options={LANGUAGE_OPTIONS}
+              selected={profile.languages}
+              onChange={(next) => setProfile((current) => ({ ...current, languages: next }))}
+              max={10}
+            />
+          </Labeled>
+        </Section>
+
+        <Section title="Privacy" hint="Choose what other people can see.">
+          <ToggleRow
+            title="Hide my age"
             value={profile.visibilitySettings?.hideAge ?? false}
-            onValueChange={(value) =>
+            onChange={(value) =>
               setProfile((current) => ({
                 ...current,
-                visibilitySettings: { ...current.visibilitySettings, hideAge: value },
+                visibilitySettings: { ...current.visibilitySettings, hideAge: value }
               }))
             }
           />
-          <VisibilityRow
-            label="Hide online status"
+          <ToggleRow
+            title="Hide online status"
             value={profile.visibilitySettings?.hideOnlineStatus ?? false}
-            onValueChange={(value) =>
+            onChange={(value) =>
               setProfile((current) => ({
                 ...current,
-                visibilitySettings: { ...current.visibilitySettings, hideOnlineStatus: value },
+                visibilitySettings: { ...current.visibilitySettings, hideOnlineStatus: value }
               }))
             }
           />
-          <VisibilityRow
-            label="Hide read receipts"
+          <ToggleRow
+            title="Hide read receipts"
             value={profile.visibilitySettings?.hideReadReceipts ?? false}
-            onValueChange={(value) =>
+            onChange={(value) =>
               setProfile((current) => ({
                 ...current,
-                visibilitySettings: { ...current.visibilitySettings, hideReadReceipts: value },
+                visibilitySettings: { ...current.visibilitySettings, hideReadReceipts: value }
               }))
             }
           />
-        </View>
-        <View style={styles.section}>
-          <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>Verification</Text>
-            <Text style={styles.sectionHint}>Verification badges describe the check performed.</Text>
-          </View>
-          <Text style={styles.verificationNote}>
-            They do not guarantee someone&apos;s character or safety.
-          </Text>
-          {verificationCases.map((item) => (
-            <View key={item.id} style={styles.verificationRow}>
-              <Text style={styles.visibilityLabel}>
-                {item.type === 'selfie_liveness' ? 'Selfie check' : 'Identity document'}
-              </Text>
-              <Text style={styles.verificationStatus}>{item.status}</Text>
-            </View>
-          ))}
-          <AppButton
-            label="Request selfie verification"
-            variant="secondary"
+        </Section>
+
+        <Section title="Verification" hint="Verification badges describe the check performed, not someone's character or safety.">
+          <SelectableCard
+            title="Selfie verification"
+            description={requesting === 'selfie_liveness' ? 'Uploading…' : statusLabel(selfieCase?.status)}
+            icon={<AppIcon icon={CheckmarkBadge01Icon} color={verificationColorFor(selfieCase?.status)} size={24} />}
+            selected={selfieCase?.status === 'approved'}
             onPress={() => {
+              if (requesting || selfieCase?.status === 'approved') return;
               void requestVerification('selfie_liveness');
             }}
           />
-          <AppButton
-            label="Request identity review"
-            variant="secondary"
+          <SelectableCard
+            title="ID verification"
+            description={requesting === 'identity_document' ? 'Uploading…' : statusLabel(idCase?.status)}
+            icon={<AppIcon icon={IdVerifiedIcon} color={verificationColorFor(idCase?.status)} size={24} />}
+            selected={idCase?.status === 'approved'}
             onPress={() => {
+              if (requesting || idCase?.status === 'approved') return;
               void requestVerification('identity_document');
             }}
           />
-        </View>
-        <View style={styles.actions}>
-          <AppButton label="Save profile" onPress={() => { void save(); }} />
-          <AppButton label="Submit profile for review" variant="secondary" onPress={() => { void publish(); }} />
-          <Pressable style={styles.pauseAction} onPress={() => { void togglePause(); }}>
-            <Text style={styles.pauseActionText}>{paused ? 'Resume discovery' : 'Pause discovery'}</Text>
+        </Section>
+
+        <View style={{ gap: spacing.sm, paddingTop: spacing.xs }}>
+          <AppButton label={saving ? 'Saving...' : 'Save profile'} loading={saving} onPress={() => void save()} />
+          <AppButton label="Submit profile for review" variant="secondary" onPress={() => void publish()} />
+          <Pressable
+            style={[styles.pauseAction, { backgroundColor: colors.surfaceAlt, borderRadius: radius.md }]}
+            onPress={() => void togglePause()}
+          >
+            <Text style={{ color: colors.accentAlt, fontWeight: '700', fontSize: 16 }}>
+              {paused ? 'Resume discovery' : 'Pause discovery'}
+            </Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -405,134 +459,71 @@ export default function ProfileScreen() {
   );
 }
 
-function splitList(value: string) {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function LocationPicker({
-  locations,
-  countryCode,
-  cityId,
-  selectedCity,
-  onSelect,
-}: {
-  locations: LocationCatalog[];
-  countryCode: string | null;
-  cityId: string | null;
-  selectedCity: string | null;
-  onSelect: (countryCode: string, cityId: string, cityName: string) => void;
-}) {
-  const country = locations.find((item) => item.code === countryCode);
+function Section({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
+  const { colors, radius, spacing } = useAppTheme();
   return (
-    <View style={styles.locationSection}>
-      <Text style={styles.locationHint}>{selectedCity ?? 'Choose a country, then a major city'}</Text>
-      <View style={styles.choiceGrid}>
-        {locations.map((item) => (
-          <Pressable key={item.code} style={[styles.choice, item.code === countryCode && styles.choiceSelected]} onPress={() => onSelect(item.code, '', '')}>
-            <Text style={[styles.choiceText, item.code === countryCode && styles.choiceTextSelected]}>{item.name}</Text>
-          </Pressable>
-        ))}
+    <View
+      style={[
+        styles.section,
+        { gap: spacing.md, padding: spacing.md, backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md }
+      ]}
+    >
+      <View style={{ gap: spacing.xs }}>
+        <Text style={{ color: colors.accentAlt, fontSize: 18, fontWeight: '700' }}>{title}</Text>
+        <Text style={{ color: colors.textSecondary, lineHeight: 19 }}>{hint}</Text>
       </View>
-      {country ? <View style={styles.choiceGrid}>
-        {country.cities.map((city) => (
-          <Pressable key={city.id} style={[styles.choice, city.id === cityId && styles.choiceSelected]} onPress={() => onSelect(country.code, city.id, city.name)}>
-            <Text style={[styles.choiceText, city.id === cityId && styles.choiceTextSelected]}>{city.name}</Text>
-          </Pressable>
-        ))}
-      </View> : null}
+      {children}
     </View>
   );
 }
 
-function VisibilityRow({
-  label,
-  value,
-  onValueChange,
-}: {
-  label: string;
-  value: boolean;
-  onValueChange: (value: boolean) => void;
-}) {
+function Labeled({ label, color, children }: { label: string; color: string; children: React.ReactNode }) {
+  const { spacing } = useAppTheme();
   return (
-    <View style={styles.visibilityRow}>
-      <Text style={styles.visibilityLabel}>{label}</Text>
-      <Switch
-        accessibilityLabel={label}
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: '#E9DADD', true: theme.colors.coral }}
-        thumbColor="#FFFFFF"
-      />
+    <View style={{ gap: spacing.sm }}>
+      <Text style={[styles.fieldLabel, { color }]}>{label}</Text>
+      {children}
     </View>
+  );
+}
+
+function Choice({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const { colors, radius, spacing } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={[
+        styles.choice,
+        {
+          borderRadius: radius.sm,
+          borderColor: active ? colors.accent : colors.border,
+          backgroundColor: active ? colors.surfaceAlt : colors.surface,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: spacing.xs
+        }
+      ]}
+    >
+      <Text style={{ color: active ? colors.accentAlt : colors.textPrimary, fontWeight: active ? '700' : '500' }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.colors.warmWhite, padding: theme.spacing.lg },
-  content: { gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: theme.spacing.md,
-    paddingBottom: theme.spacing.xs,
-  },
-  headerCopy: { flex: 1, gap: theme.spacing.xs },
-  eyebrow: { color: theme.colors.coral, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  title: { color: theme.colors.deepPlum, fontSize: 30, fontWeight: '700' },
-  completionBadge: {
-    minWidth: 76,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.xs,
-    alignItems: 'center',
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.softRose,
-  },
-  completionValue: { color: theme.colors.coral, fontSize: 22, fontWeight: '700' },
-  completionLabel: { color: theme.colors.deepPlum, fontSize: 12, fontWeight: '600' },
-  status: { color: theme.colors.secondaryText, fontSize: 14 },
-  saved: { color: theme.colors.success },
-  error: { color: theme.colors.error },
-  section: {
-    gap: theme.spacing.md,
-    padding: theme.spacing.md,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F0E5E6',
-    borderRadius: theme.radius.md,
-  },
-  sectionHeading: { gap: theme.spacing.xs },
-  sectionHint: { color: theme.colors.secondaryText, lineHeight: 19 },
-  fieldRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  screen: { flex: 1 },
+  content: {},
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  eyebrow: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  completionBadge: { paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center' },
+  section: { borderWidth: 1 },
+  fieldRow: { flexDirection: 'row' },
   fieldHalf: { flex: 1, minWidth: 0 },
-  actions: { gap: theme.spacing.sm, paddingTop: theme.spacing.xs },
-  pauseAction: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: theme.radius.md, backgroundColor: '#F5ECEE' },
-  pauseActionText: { color: theme.colors.deepPlum, fontWeight: '700', fontSize: 16 },
-  locationSection: { gap: theme.spacing.sm },
-  locationHint: { color: theme.colors.secondaryText },
-  choiceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
-  choice: { borderWidth: 1, borderColor: '#E9DADD', borderRadius: theme.radius.sm, paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, backgroundColor: '#FFFFFF' },
-  choiceSelected: { borderColor: theme.colors.coral, backgroundColor: theme.colors.softRose },
-  choiceText: { color: theme.colors.charcoal },
-  choiceTextSelected: { color: theme.colors.deepPlum, fontWeight: '700' },
-  sectionTitle: { color: theme.colors.deepPlum, fontSize: 18, fontWeight: '700' },
-  visibilityRow: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  visibilityLabel: { color: theme.colors.charcoal, fontSize: 16 },
-  verificationNote: { color: theme.colors.deepPlum, lineHeight: 20 },
-  verificationRow: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  verificationStatus: { color: theme.colors.coral, fontWeight: '700' },
-  photoStatus: { color: theme.colors.deepPlum, lineHeight: 20 },
+  fieldLabel: { fontWeight: '600' },
+  locationSummary: { flexDirection: 'row', alignItems: 'center' },
+  choiceGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  choice: { borderWidth: 1 },
+  pauseAction: { minHeight: 48, alignItems: 'center', justifyContent: 'center' }
 });

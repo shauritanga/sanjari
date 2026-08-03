@@ -1,27 +1,14 @@
 import { CheckmarkBadge01Icon, IdVerifiedIcon } from '@hugeicons/core-free-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { OnboardingScreen } from '../../src/components/OnboardingScreen';
 import { SelectableCard } from '../../src/components/SelectableCard';
 import { AppIcon } from '../../src/components/AppIcon';
 import { api } from '../../src/api';
-import { uploadBinaryFile } from '../../src/upload';
 import { useAppTheme } from '../../src/theme/useAppTheme';
 import { stepNumber } from '../../src/onboarding/steps';
-
-type VerificationType = 'selfie_liveness' | 'identity_document';
-
-interface VerificationCase {
-  id: string;
-  type: VerificationType;
-  status: string;
-  provider: string;
-  confidence: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import { captureAndSubmitVerification, type VerificationCase, type VerificationType } from '../../src/verification';
 
 function statusLabel(status?: string) {
   switch (status) {
@@ -74,34 +61,10 @@ export default function VerificationScreen() {
 
   async function captureAndSubmit(type: VerificationType) {
     setError(null);
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Camera access needed', 'Allow camera access to complete verification.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      quality: 0.85,
-      cameraType:
-        type === 'selfie_liveness' ? ImagePicker.CameraType.front : ImagePicker.CameraType.back,
-      allowsEditing: false
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    const mimeType = asset.mimeType ?? 'image/jpeg';
-
     setRequesting(type);
     try {
-      const presign = await api.post<{ storageKey: string; uploadUrl: string }>(
-        `/onboarding/verification/${type}/presign`,
-        { mimeType, sizeBytes: asset.fileSize ?? 2_000_000 }
-      );
-      if (!presign.data) throw new Error('Unable to prepare upload.');
-      await uploadBinaryFile(asset.uri, presign.data.uploadUrl, mimeType);
-      await api.post(`/onboarding/verification/${type}/request`, {
-        storageKey: presign.data.storageKey
-      });
-      await loadStatus();
+      const submitted = await captureAndSubmitVerification(type);
+      if (submitted) await loadStatus();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to submit verification.');
     } finally {
