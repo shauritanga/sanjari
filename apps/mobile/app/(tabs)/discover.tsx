@@ -431,9 +431,6 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
       } else {
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
-        if (Math.abs(event.translationX) < 12 && Math.abs(event.translationY) < 12) {
-          runOnJS(handleTap)();
-        }
       }
     });
 
@@ -460,13 +457,19 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
 
   return (
     <GestureDetector gesture={panGesture}>
-      <Animated.View
-        style={[
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`View ${candidate.displayName ?? 'Sanjari member'}'s profile`}
+        onPress={handleTap}
+        style={{ flex: 1 }}
+      >
+        <Animated.View
+          style={[
           styles.card,
           cardStyle,
           { backgroundColor: colors.surface, borderRadius: radius.lg, borderColor: colors.border }
-        ]}
-      >
+          ]}
+        >
         <View style={[styles.photo, { backgroundColor: colors.surfaceAlt, borderRadius: radius.lg }]}>
           {candidate.primaryPhoto?.url ? (
             <Image
@@ -503,7 +506,8 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
             {candidate.score}% compatibility based on your shared preferences.
           </Text>
         </View>
-      </Animated.View>
+        </Animated.View>
+      </Pressable>
     </GestureDetector>
   );
 }
