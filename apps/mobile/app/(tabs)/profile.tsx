@@ -8,7 +8,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from '../../src/components/AppButton';
 import { AppIcon } from '../../src/components/AppIcon';
@@ -106,6 +106,7 @@ export default function ProfileScreen() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [paused, setPaused] = useState(false);
   const [verificationCases, setVerificationCases] = useState<VerificationCase[]>([]);
   const [requesting, setRequesting] = useState<VerificationType | null>(null);
@@ -239,6 +240,20 @@ export default function ProfileScreen() {
     } finally {
       setRequesting(null);
     }
+  }
+
+  function confirmLogout() {
+    Alert.alert('Log out?', 'You can log back in at any time.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: () => {
+          setLoggingOut(true);
+          void api.logout().finally(() => setLoggingOut(false));
+        }
+      }
+    ]);
   }
 
   function selectCountry(country: CountryOption) {
@@ -484,6 +499,8 @@ export default function ProfileScreen() {
             }}
           />
         </Section>
+
+        <AppButton label="Log out" variant="ghost" loading={loggingOut} onPress={confirmLogout} />
       </ScrollView>
 
       <View style={styles.footer}>

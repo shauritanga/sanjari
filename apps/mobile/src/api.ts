@@ -11,6 +11,24 @@ async function clearSession() {
   await SecureStore.deleteItemAsync('sanjari.refreshToken');
 }
 
+async function logout() {
+  const refreshToken = await SecureStore.getItemAsync('sanjari.refreshToken');
+  try {
+    if (refreshToken) {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
+    }
+  } catch {
+    // Local credentials are still cleared when the server is unavailable.
+  } finally {
+    await clearSession();
+    router.replace('/(auth)/login');
+  }
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
   refreshPromise = (async () => {
@@ -72,6 +90,7 @@ async function request<T = unknown>(
 
 export const api = {
   request,
+  logout,
   post: <T = unknown>(path: string, data: unknown) =>
     request<T>(path, { method: 'POST', body: JSON.stringify(data) }),
   put: <T = unknown>(path: string, data: unknown) =>
