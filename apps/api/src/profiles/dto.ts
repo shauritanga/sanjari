@@ -240,3 +240,20 @@ export class VoiceIntroCompleteDto {
   @MinLength(8)
   storageKey!: string;
 }
+
+export class VerificationPresignDto {
+  @IsString()
+  @IsIn(['image/jpeg', 'image/png', 'image/webp'])
+  mimeType!: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(8 * 1024 * 1024)
+  sizeBytes!: number;
+}
+
+export class VerificationSubmitDto {
+  @IsString()
+  @MinLength(8)
+  storageKey!: string;
+}

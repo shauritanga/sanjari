@@ -28,7 +28,7 @@
       "expo-localization",
       "expo-notifications",
       ["expo-audio", { "microphonePermission": "Sanjari uses the microphone for optional voice introductions." }],
-      ["expo-image-picker", { "photosPermission": "Sanjari uses your photo library to add profile photos." }],
+      ["expo-image-picker", { "photosPermission": "Sanjari uses your photo library to add profile photos.", "cameraPermission": "Sanjari uses the camera for profile photos and identity verification." }],
       ["expo-location", { "locationWhenInUsePermission": "Sanjari uses approximate location to recommend nearby compatible adults." }],
       "./plugins/withCleartextTraffic"
     ],

@@ -20,6 +20,8 @@ import {
   PhotoPresignDto,
   PhotoReorderDto,
   PromptAnswersDto,
+  VerificationPresignDto,
+  VerificationSubmitDto,
   VoiceIntroCompleteDto,
   VoiceIntroPresignDto,
 } from './dto';
@@ -79,12 +81,22 @@ export class ProfilesController {
     return { data: await this.verification.status(request.user!.sub) };
   }
 
+  @Post('verification/:type/presign')
+  async presignVerification(
+    @Req() request: AuthenticatedRequest,
+    @Param('type') type: VerificationProvider,
+    @Body() dto: VerificationPresignDto,
+  ) {
+    return { data: await this.verification.presign(request.user!.sub, type, dto.mimeType) };
+  }
+
   @Post('verification/:type/request')
   async requestVerification(
     @Req() request: AuthenticatedRequest,
     @Param('type') type: VerificationProvider,
+    @Body() dto: VerificationSubmitDto,
   ) {
-    return { data: await this.verification.request(request.user!.sub, type) };
+    return { data: await this.verification.request(request.user!.sub, type, dto.storageKey) };
   }
 
   @Post('publish')

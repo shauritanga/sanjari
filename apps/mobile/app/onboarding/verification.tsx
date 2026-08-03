@@ -1,11 +1,13 @@
 import { CheckmarkBadge01Icon, IdVerifiedIcon } from '@hugeicons/core-free-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import { OnboardingScreen } from '../../src/components/OnboardingScreen';
 import { SelectableCard } from '../../src/components/SelectableCard';
 import { AppIcon } from '../../src/components/AppIcon';
 import { api } from '../../src/api';
+import { uploadBinaryFile } from '../../src/upload';
 import { useAppTheme } from '../../src/theme/useAppTheme';
 import { stepNumber } from '../../src/onboarding/steps';
 
@@ -70,14 +72,38 @@ export default function VerificationScreen() {
     return colors.textSecondary;
   }
 
-  async function requestVerification(type: VerificationType) {
-    setRequesting(type);
+  async function captureAndSubmit(type: VerificationType) {
     setError(null);
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Camera access needed', 'Allow camera access to complete verification.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+      cameraType:
+        type === 'selfie_liveness' ? ImagePicker.CameraType.front : ImagePicker.CameraType.back,
+      allowsEditing: false
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType ?? 'image/jpeg';
+
+    setRequesting(type);
     try {
-      await api.post(`/onboarding/verification/${type}/request`, {});
+      const presign = await api.post<{ storageKey: string; uploadUrl: string }>(
+        `/onboarding/verification/${type}/presign`,
+        { mimeType, sizeBytes: asset.fileSize ?? 2_000_000 }
+      );
+      if (!presign.data) throw new Error('Unable to prepare upload.');
+      await uploadBinaryFile(asset.uri, presign.data.uploadUrl, mimeType);
+      await api.post(`/onboarding/verification/${type}/request`, {
+        storageKey: presign.data.storageKey
+      });
       await loadStatus();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to start verification.');
+      setError(cause instanceof Error ? cause.message : 'Unable to submit verification.');
     } finally {
       setRequesting(null);
     }
@@ -104,27 +130,28 @@ export default function VerificationScreen() {
           <SelectableCard
             title="Selfie verification"
             description={
-              requesting === 'selfie_liveness' ? 'Requesting…' : statusLabel(selfieCase?.status)
+              requesting === 'selfie_liveness' ? 'Uploading…' : statusLabel(selfieCase?.status)
             }
             icon={<AppIcon icon={CheckmarkBadge01Icon} color={colorFor(selfieCase?.status)} size={26} />}
             selected={selfieCase?.status === 'approved'}
             onPress={() => {
               if (requesting || selfieCase?.status === 'approved') return;
-              void requestVerification('selfie_liveness');
+              void captureAndSubmit('selfie_liveness');
             }}
           />
           <SelectableCard
             title="ID verification"
-            description={requesting === 'identity_document' ? 'Requesting…' : statusLabel(idCase?.status)}
+            description={requesting === 'identity_document' ? 'Uploading…' : statusLabel(idCase?.status)}
             icon={<AppIcon icon={IdVerifiedIcon} color={colorFor(idCase?.status)} size={26} />}
             selected={idCase?.status === 'approved'}
             onPress={() => {
               if (requesting || idCase?.status === 'approved') return;
-              void requestVerification('identity_document');
+              void captureAndSubmit('identity_document');
             }}
           />
           <Text style={[styles.hint, { color: colors.textSecondary }]}>
-            ID verification is optional and adds an extra layer of trust to your profile.
+            Tapping a card opens your camera to take a photo for that verification step. ID
+            verification is optional and adds an extra layer of trust to your profile.
           </Text>
         </View>
       )}

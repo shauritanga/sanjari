@@ -26,7 +26,7 @@ describe('profiles and verification integration contracts', () => {
     expect(result.expiresIn).toBe(300);
   });
 
-  it('creates an auditable manual verification case without exposing artifacts', async () => {
+  it('creates an auditable manual verification case with its uploaded artifact', async () => {
     const create = vi.fn().mockResolvedValue({
       id: 'case-1',
       type: 'selfie_liveness',
@@ -34,20 +34,46 @@ describe('profiles and verification integration contracts', () => {
       provider: 'manual_review',
       createdAt: new Date(),
     });
+    const artifactCreate = vi.fn().mockResolvedValue({});
     const audit = vi.fn().mockResolvedValue({});
-    const service = new VerificationService({
+    const tx = {
       verificationCase: { create },
+      verificationArtifact: { create: artifactCreate },
       auditLog: { create: audit },
-    } as never);
-    const result = await service.request('user-1', 'selfie_liveness');
+    };
+    const service = new VerificationService(
+      { $transaction: (fn: (tx: unknown) => unknown) => fn(tx) } as never,
+      {} as never,
+    );
+    const result = await service.request(
+      'user-1',
+      'selfie_liveness',
+      'verification/user-1/selfie.jpg',
+    );
     expect(result).toMatchObject({ id: 'case-1', status: 'submitted', provider: 'manual_review' });
+    expect(artifactCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ caseId: 'case-1', storageKey: 'verification/user-1/selfie.jpg' }),
+      }),
+    );
     expect(audit).toHaveBeenCalled();
   });
 
   it('rejects unknown verification types', async () => {
-    const service = new VerificationService({} as never);
-    await expect(service.request('user-1', 'unknown' as never)).rejects.toMatchObject({
+    const service = new VerificationService({} as never, {} as never);
+    await expect(
+      service.request('user-1', 'unknown' as never, 'verification/user-1/selfie.jpg'),
+    ).rejects.toMatchObject({
       response: { code: 'INVALID_VERIFICATION_TYPE' },
+    });
+  });
+
+  it('rejects artifacts uploaded to another account', async () => {
+    const service = new VerificationService({} as never, {} as never);
+    await expect(
+      service.request('user-1', 'selfie_liveness', 'verification/someone-else/selfie.jpg'),
+    ).rejects.toMatchObject({
+      response: { code: 'INVALID_VERIFICATION_ARTIFACT' },
     });
   });
 });
