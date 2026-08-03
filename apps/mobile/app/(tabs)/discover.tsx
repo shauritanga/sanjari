@@ -49,12 +49,6 @@ interface Candidate {
   explanation: { rankingVersion: string; components: Record<string, number> };
 }
 
-interface DiscoveryResponse {
-  data: Candidate[];
-  nextCursor: string | null;
-  rankingVersion: string;
-}
-
 interface LikeResult {
   liked: true;
   matched: boolean;
@@ -105,11 +99,11 @@ export default function DiscoverScreen() {
       if (recentlyActive) params.set('recentlyActive', 'true');
       if (newMembers) params.set('newMembers', 'true');
       const query = params.toString();
-      const result = await api.get<DiscoveryResponse>(`/discovery${query ? `?${query}` : ''}`);
-      const payload = result.data;
-      const candidates = payload?.data ?? [];
+      // The API envelope contains the candidate array directly in `data`.
+      const result = await api.get<Candidate[]>(`/discovery${query ? `?${query}` : ''}`);
+      const candidates = result.data ?? [];
       setQueue((current) => (cursor ? [...current, ...candidates] : candidates));
-      setNextCursor(payload?.nextCursor ?? null);
+      setNextCursor((result as typeof result & { nextCursor?: string | null }).nextCursor ?? null);
     },
     [recentlyActive, newMembers]
   );
