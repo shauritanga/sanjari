@@ -144,11 +144,13 @@ button[type='submit']:hover, .primary-button:hover { background: var(--coral-str
 .search-field { display: grid; min-width: 180px; gap: 6px; color: var(--charcoal); font-size: 12px; font-weight: 800; }
 .search-field input { margin: 0; }
 .filter-submit { width: auto; }
+.filter-bar .filter-submit { min-height: 42px; white-space: nowrap; }
 .data-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
 .data-table { width: 100%; border-collapse: collapse; text-align: left; }
 .data-table th, .data-table td { border-bottom: 1px solid var(--line); padding: 14px 16px; vertical-align: top; }
 .data-table th { background: var(--surface-muted); color: var(--secondary); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
 .data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tbody tr { transition: background-color .16s ease; }
 .data-table tbody tr:hover { background: var(--surface-muted); }
 .responsive-data-list { display: none; }
 .responsive-data-item { display: grid; gap: 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); padding: 14px; }
@@ -172,10 +174,11 @@ button[type='submit']:hover, .primary-button:hover { background: var(--coral-str
 .pagination .secondary-button { min-width: 92px; }
 .users-metrics { margin-bottom: 28px; }
 .users-section { border: 1px solid var(--line); border-radius: 7px; background: var(--surface); box-shadow: var(--shadow); padding: 20px; }
-.section-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+.users-section .filter-bar { margin: 0 -20px 20px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface-muted); padding: 16px 20px; }
+.section-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
 .section-toolbar h2 { margin: 0; font-size: 17px; }
 .section-toolbar p { margin: 5px 0 0; color: var(--secondary); }
-.result-count { color: var(--secondary); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.result-count { color: var(--secondary); font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
 .select-filter { display: grid; min-width: 150px; flex: 0 1 180px; gap: 6px; color: var(--charcoal); font-size: 12px; font-weight: 800; }
 .select-filter select { min-height: 42px; }
 .user-identity { display: flex; min-width: 190px; align-items: center; gap: 10px; }
@@ -183,6 +186,7 @@ button[type='submit']:hover, .primary-button:hover { background: var(--coral-str
 .user-identity strong, .user-identity small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-identity strong { color: var(--charcoal); font-size: 13px; }
 .user-identity small { color: var(--secondary); font-size: 11px; }
+.user-identity .user-id { color: color-mix(in srgb, var(--secondary) 75%, transparent); font-size: 10px; letter-spacing: .04em; }
 .user-avatar { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--surface-muted); color: var(--plum); font-size: 12px; font-weight: 800; }
 .table-secondary { color: var(--secondary); font-size: 12px; line-height: 1.45; }
 .table-secondary small { color: var(--secondary); font-size: 10px; font-weight: 800; letter-spacing: .06em; }
@@ -247,10 +251,11 @@ button[type='submit']:hover, .primary-button:hover { background: var(--coral-str
   .responsive-data-list { display: grid; gap: 10px; }
   .filter-bar { align-items: stretch; }
   .filter-fields { align-items: stretch; flex-basis: 100%; }
-  .filter-submit, .filter-bar .secondary-button { flex: 1 1 140px; }
+  .filter-submit, .filter-bar .secondary-button { flex: 1 1 140px; width: auto; }
   .pagination { justify-content: space-between; }
   .toast { right: 16px; bottom: 16px; }
   .users-section { padding: 14px; }
+  .users-section .filter-bar { margin: 0 -14px 16px; padding: 14px; }
   .section-toolbar { align-items: flex-start; }
   .result-count { display: none; }
 }

@@ -65,6 +65,7 @@ function UserIdentity({ user }: { user: User }) {
       <span>
         <strong>{name}</strong>
         <small>{user.email}</small>
+        <small className="user-id">ID {user.id.slice(0, 8)}...</small>
       </span>
     </div>
   );
@@ -178,7 +179,7 @@ export default function UsersPage() {
       <section className="users-section" aria-labelledby="users-directory-title">
         <div className="section-toolbar">
           <div><h2 id="users-directory-title">User directory</h2><p>{users ? `${filteredUsers.length} matching users` : 'Loading directory'}</p></div>
-          {users ? <span className="result-count">Updated just now</span> : null}
+          {users ? <span className="result-count">Showing {filteredUsers.length ? (page - 1) * PAGE_SIZE + 1 : 0}-{Math.min(page * PAGE_SIZE, filteredUsers.length)} of {filteredUsers.length}</span> : null}
         </div>
         <FilterBar onSubmit={(event) => void loadUsers(event)} onReset={resetFilters}>
           <SearchField label="Search" value={query} onChange={setQuery} placeholder="Email, name, or user ID" />
