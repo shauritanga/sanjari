@@ -438,7 +438,9 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
     runOnJS(handleTap)();
   });
 
-  const composedGesture = Gesture.Race(tapGesture, panGesture);
+  // A stationary touch should open the profile; only a competing drag should
+  // be handled by the swipe recognizer.
+  const composedGesture = Gesture.Exclusive(tapGesture, panGesture);
 
   const cardStyle = useAnimatedStyle(() => {
     const rotate = interpolate(translateX.value, [-width, 0, width], [-12, 0, 12], Extrapolation.CLAMP);

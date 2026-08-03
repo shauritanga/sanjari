@@ -1,7 +1,9 @@
 import {
   ArrowLeft01Icon,
+  Cancel01Icon,
   CheckmarkBadge01Icon,
   Flag02Icon,
+  FavouriteIcon,
   PauseCircleIcon,
   PlayCircleIcon,
   Shield01Icon,
@@ -303,16 +305,17 @@ export default function ProfileDetailScreen() {
 
           <View style={styles.heroNamePlate}>
             <View style={styles.nameRow}>
-              <Text style={styles.heroName}>
-                {profile.displayName ?? 'Sanjari member'}, {profile.age}
-              </Text>
+              <Text style={styles.heroName}>{profile.displayName ?? 'Sanjari member'}</Text>
+              <Text style={styles.heroAge}>{profile.age}</Text>
               {profile.verificationStatus === 'verified' ? (
                 <AppIcon icon={CheckmarkBadge01Icon} color="#FFFFFF" size={20} />
               ) : null}
             </View>
-            <Text style={styles.heroMeta}>
-              {[profile.city, DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private'].filter(Boolean).join(' · ')}
-            </Text>
+            <View style={styles.metaRow}>
+              <Text style={styles.heroMeta}>{profile.city ?? 'Location private'}</Text>
+              <View style={styles.metaDivider} />
+              <Text style={styles.heroMeta}>{DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private'}</Text>
+            </View>
           </View>
         </View>
 
@@ -375,32 +378,86 @@ export default function ProfileDetailScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <AppButton
+        <ProfileActionButton
+          icon={Cancel01Icon}
           label="Pass"
-          variant="secondary"
+          color={colors.error}
+          background={colors.surfaceAlt}
           disabled={actionBusy}
           onPress={() => {
             void respond('pass');
           }}
         />
-        <AppButton
+        <ProfileActionButton
+          icon={StarIcon}
           label="Super Like"
-          variant="secondary"
-          icon={<AppIcon icon={StarIcon} color={colors.accentAlt} size={18} />}
+          color={colors.accentAlt}
+          background={colors.surfaceAlt}
           disabled={actionBusy}
           onPress={() => {
             void respond('like', true);
           }}
         />
-        <AppButton
+        <ProfileActionButton
+          icon={FavouriteIcon}
           label="Like"
+          color={colors.onAccent}
+          background={colors.accent}
           loading={actionBusy}
+          disabled={actionBusy}
           onPress={() => {
             void respond('like', false);
           }}
         />
       </View>
     </View>
+  );
+}
+
+function ProfileActionButton({
+  icon,
+  label,
+  color,
+  background,
+  onPress,
+  disabled,
+  loading
+}: {
+  icon: Parameters<typeof AppIcon>[0]['icon'];
+  label: string;
+  color: string;
+  background: string;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+}) {
+  const { colors, radius } = useAppTheme();
+  const isDisabled = disabled || loading;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: isDisabled }}
+      disabled={isDisabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        {
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1,
+          borderColor: colors.border
+        },
+        {
+          width: label === 'Like' ? 60 : 52,
+          height: label === 'Like' ? 60 : 52,
+          borderRadius: radius.pill,
+          backgroundColor: background,
+          opacity: isDisabled ? 0.55 : pressed ? 0.8 : 1
+        }
+      ]}
+    >
+      {loading ? <ActivityIndicator color={color} /> : <AppIcon icon={icon} color={color} size={24} />}
+    </Pressable>
   );
 }
 
@@ -419,7 +476,7 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       left: 0,
       right: 0,
       bottom: 0,
-      height: heroHeight * 0.4,
+      height: heroHeight * 0.25,
       // Flat translucent scrim (no gradient dependency in this project) — dark enough
       // that the white name/meta text stays legible over any photo.
       backgroundColor: 'rgba(0,0,0,0.38)'
@@ -442,9 +499,12 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       gap: 6
     },
     dot: { width: 6, height: 6, borderRadius: 3 },
-    heroNamePlate: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg, gap: 2 },
-    nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    heroNamePlate: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg, gap: spacing.sm },
+    nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
     heroName: { fontSize: typography.display.fontSize, fontWeight: '800', color: '#FFFFFF' },
+    heroAge: { fontSize: typography.h3.fontSize, fontWeight: '700', color: 'rgba(255,255,255,0.94)' },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    metaDivider: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.72)' },
     heroMeta: { fontSize: typography.bodyLarge.fontSize, color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
     panel: {
       marginTop: -radius.xl,
@@ -475,7 +535,9 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
     safetyLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
     footer: {
       flexDirection: 'row',
-      gap: spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.md,
       padding: spacing.lg,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
