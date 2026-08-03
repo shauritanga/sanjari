@@ -165,16 +165,24 @@ export default function UsersPage() {
     }
   }
 
+  const metrics: Array<[string, number, string, string]> = [
+    ['Loaded users', users?.length ?? 0, 'neutral', 'Latest results'],
+    ['Active accounts', users?.filter((user) => user.status === 'active').length ?? 0, 'success', 'Across loaded results'],
+    ['Needs review', users?.filter((user) => user.profile?.verificationStatus === 'pending' || user.profile?.moderationStatus === 'pending').length ?? 0, 'warning', 'Across loaded results'],
+    ['Suspended', users?.filter((user) => user.status === 'suspended').length ?? 0, 'error', 'Across loaded results'],
+  ];
+
   return (
     <AdminShell>
-      <PageHeader title="User directory" description={users ? `${filteredUsers.length} matching users` : 'Review account status and trust signals.'} />
+      <PageHeader eyebrow="Trust & safety" title="Users" description="Review account status, profile readiness, and trust signals from one workspace." status={<span className="status-chip"><span className="status-dot" />Live directory</span>} />
+      <div className="metrics users-metrics">{metrics.map(([label, value, tone, caption]) => <div className={`metric metric-${tone}`} key={label}><span>{label}</span><strong>{loading ? '—' : value}</strong><small>{caption}</small></div>)}</div>
       <FilterBar onSubmit={(event) => void loadUsers(event)} onReset={resetFilters}>
         <SearchField label="Search" value={query} onChange={setQuery} placeholder="Email, name, or user ID" />
         <SelectFilter label="Account status" value={status} onChange={(value) => { setStatus(value); setPage(1); }} options={statusOptions} />
         <SelectFilter label="Moderation" value={moderationStatus} onChange={(value) => { setModerationStatus(value); setPage(1); }} options={moderationOptions} />
         <SelectFilter label="Verification" value={verificationStatus} onChange={(value) => { setVerificationStatus(value); setPage(1); }} options={verificationOptions} />
       </FilterBar>
-      <section aria-label="User directory results">
+      <section aria-label="Users results">
         {error ? <ErrorState message={error} action={<button className="secondary-button" onClick={() => void loadUsers()}>Try again</button>} /> : null}
         {loading && users === null ? <LoadingState label="Loading user directory" /> : null}
         {!loading && users && filteredUsers.length === 0 ? <EmptyState title="No matching users" description="Try a different search term or clear the filters." action={<button className="secondary-button" onClick={resetFilters}>Clear filters</button>} /> : null}
