@@ -8,18 +8,21 @@ import {
 } from '@hugeicons/core-free-icons';
 import type { ColorValue } from 'react-native';
 import { AppIcon } from '../../src/components/AppIcon';
-import { theme } from '../../src/theme/theme';
+import { useAppTheme } from '../../src/theme/useAppTheme';
 
 const tabIcon = (icon: typeof Home01Icon) => ({ color, size }: { color: ColorValue; size: number }) => (
   <AppIcon icon={icon} color={String(color)} size={size} />
 );
 
 export default function TabsLayout() {
+  const { colors } = useAppTheme();
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.colors.coral,
-        tabBarInactiveTintColor: theme.colors.secondaryText,
+        headerShown: false,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
         tabBarLabelStyle: { fontWeight: '600' },
       }}
     >

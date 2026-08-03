@@ -1,4 +1,12 @@
-import { CheckmarkBadge01Icon, IdVerifiedIcon, Location01Icon } from '@hugeicons/core-free-icons';
+import {
+  CheckmarkBadge01Icon,
+  FavouriteIcon,
+  IdVerifiedIcon,
+  Location01Icon,
+  Shield01Icon,
+  UserIcon
+} from '@hugeicons/core-free-icons';
+import { Image } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../../src/components/AppButton';
@@ -6,6 +14,7 @@ import { AppIcon } from '../../src/components/AppIcon';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { ChipGroup } from '../../src/components/ChipGroup';
 import { PhotoGrid, type PhotoItem } from '../../src/components/PhotoGrid';
+import { ProgressBar } from '../../src/components/ProgressBar';
 import { SelectableCard } from '../../src/components/SelectableCard';
 import { ToggleRow } from '../../src/components/ToggleRow';
 import { api } from '../../src/api';
@@ -16,7 +25,7 @@ import {
   LANGUAGE_OPTIONS,
   WHO_TO_MEET_OPTIONS
 } from '../../src/onboarding/options';
-import { useAppTheme } from '../../src/theme/useAppTheme';
+import { useAppTheme, type AppTheme } from '../../src/theme/useAppTheme';
 import { captureAndSubmitVerification, type VerificationCase, type VerificationType } from '../../src/verification';
 
 type Profile = {
@@ -41,7 +50,7 @@ type Profile = {
   };
   photos: PhotoItem[];
 };
-type Onboarding = { completionScore: number; onboardingStatus: string; profile: Profile };
+type Onboarding = { completionScore: number; onboardingStatus: string; age: number; profile: Profile };
 interface CountryOption {
   code: string;
   name: string;
@@ -62,8 +71,22 @@ function statusLabel(status?: string) {
   }
 }
 
+function publishLabel(status: string) {
+  switch (status) {
+    case 'published':
+      return 'Live';
+    case 'in_progress':
+      return 'Draft';
+    default:
+      return 'Not started';
+  }
+}
+
 export default function ProfileScreen() {
-  const { colors, radius, spacing, typography } = useAppTheme();
+  const theme = useAppTheme();
+  const { colors } = theme;
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   const [profile, setProfile] = useState<Profile>({
     displayName: '',
     city: '',
@@ -76,10 +99,12 @@ export default function ProfileScreen() {
     visibilitySettings: {},
     photos: []
   });
+  const [age, setAge] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [paused, setPaused] = useState(false);
   const [verificationCases, setVerificationCases] = useState<VerificationCase[]>([]);
   const [requesting, setRequesting] = useState<VerificationType | null>(null);
@@ -96,6 +121,7 @@ export default function ProfileScreen() {
           setProfile({ ...result.data.profile, photos: result.data.profile.photos ?? [] });
           setScore(result.data.completionScore);
           setOnboardingStatus(result.data.onboardingStatus);
+          setAge(result.data.age);
         }
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to load profile.'));
@@ -164,7 +190,7 @@ export default function ProfileScreen() {
         hideReadReceipts: profile.visibilitySettings?.hideReadReceipts ?? false
       });
       setScore(result.data?.completionScore ?? score);
-      setOnboardingStatus('in_progress');
+      setOnboardingStatus((current) => (current === 'published' ? 'published' : 'in_progress'));
       setSaved(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to save profile.');
@@ -175,12 +201,15 @@ export default function ProfileScreen() {
 
   async function publish() {
     setError('');
+    setPublishing(true);
     try {
       const result = await api.post<{ completionScore: number; onboardingStatus: string }>('/onboarding/publish', {});
       setScore(result.data?.completionScore ?? score);
       setOnboardingStatus(result.data?.onboardingStatus ?? 'published');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Complete the required fields before publishing.');
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -221,42 +250,49 @@ export default function ProfileScreen() {
 
   const selfieCase = latestVerificationFor('selfie_liveness');
   const idCase = latestVerificationFor('identity_document');
+  const primaryPhoto = profile.photos.find((photo) => photo.isPrimary) ?? profile.photos[0];
+  const initial = (profile.displayName ?? 'S').trim().charAt(0).toUpperCase() || 'S';
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={[styles.content, { padding: spacing.lg, gap: spacing.md }]}>
-        <View style={[styles.header, { gap: spacing.md }]}>
-          <View style={{ flex: 1, gap: spacing.xs }}>
-            <Text style={[styles.eyebrow, { color: colors.accent }]}>Profile</Text>
-            <Text
-              style={{
-                color: colors.accentAlt,
-                fontSize: typography.h1.fontSize,
-                lineHeight: typography.h1.lineHeight,
-                fontWeight: typography.h1.fontWeight
-              }}
-            >
-              Your profile
-            </Text>
-            <Text style={{ color: colors.textSecondary, fontSize: typography.body.fontSize }}>
-              {onboardingStatus === 'published' ? 'Submitted for review' : 'Complete your profile to submit it'}
-            </Text>
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.pageTitle}>Profile</Text>
+
+        <View style={styles.hero}>
+          <View style={styles.heroAvatar}>
+            {primaryPhoto?.url ? (
+              <Image source={{ uri: primaryPhoto.url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+            ) : (
+              <Text style={styles.heroInitial}>{initial}</Text>
+            )}
           </View>
-          <View
-            style={[
-              styles.completionBadge,
-              { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, minWidth: 76 }
-            ]}
-          >
-            <Text style={{ color: colors.accent, fontSize: 22, fontWeight: '700' }}>{score}%</Text>
-            <Text style={{ color: colors.accentAlt, fontSize: 12, fontWeight: '600' }}>complete</Text>
+          <View style={styles.heroBody}>
+            <View style={styles.heroNameRow}>
+              <Text style={styles.heroName} numberOfLines={1}>
+                {profile.displayName || 'Add your name'}
+                {age ? `, ${age}` : ''}
+              </Text>
+              {selfieCase?.status === 'approved' ? (
+                <AppIcon icon={CheckmarkBadge01Icon} color={colors.accent} size={18} />
+              ) : null}
+            </View>
+            <View style={[styles.statusPill, onboardingStatus === 'published' ? styles.statusPillLive : styles.statusPillDraft]}>
+              <Text style={onboardingStatus === 'published' ? styles.statusPillTextLive : styles.statusPillTextDraft}>
+                {publishLabel(onboardingStatus)}
+              </Text>
+            </View>
           </View>
         </View>
 
-        {error ? <Text style={{ color: colors.error, fontWeight: '600' }}>{error}</Text> : null}
-        {saved ? <Text style={{ color: colors.success, fontWeight: '600' }}>Saved</Text> : null}
+        <View style={styles.progressRow}>
+          <ProgressBar current={score} total={100} />
+          <Text style={styles.progressLabel}>{score}% complete</Text>
+        </View>
 
-        <Section title="Profile photos" hint="Lead with a clear photo that feels like you.">
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {saved ? <Text style={styles.saved}>Saved</Text> : null}
+
+        <Section title="Photos" hint="Lead with a clear photo that feels like you." theme={theme}>
           <PhotoGrid
             photos={profile.photos}
             onChange={(photos) => setProfile((current) => ({ ...current, photos }))}
@@ -264,7 +300,7 @@ export default function ProfileScreen() {
           />
         </Section>
 
-        <Section title="About you" hint="Share the details people need to get to know you.">
+        <Section title="About you" icon={UserIcon} hint="Share the details people need to get to know you." theme={theme}>
           <AppTextInput
             label="Display name"
             value={profile.displayName ?? ''}
@@ -273,15 +309,14 @@ export default function ProfileScreen() {
               setProfile((current) => ({ ...current, displayName: value }));
             }}
           />
-          <View style={{ gap: spacing.sm }}>
-            <Text style={[styles.fieldLabel, { color: colors.textPrimary }]}>Gender</Text>
+          <Labeled label="Gender" theme={theme}>
             <ChipGroup
               options={GENDER_OPTIONS}
               selected={profile.gender ? [profile.gender] : []}
               onChange={(next) => setProfile((current) => ({ ...current, gender: next[0] ?? '' }))}
               multiple={false}
             />
-          </View>
+          </Labeled>
           <AppTextInput
             label="Pronouns"
             value={profile.pronouns ?? ''}
@@ -296,45 +331,7 @@ export default function ProfileScreen() {
             maxLength={500}
             onChangeText={(value) => setProfile((current) => ({ ...current, biography: value }))}
           />
-        </Section>
-
-        <Section title="Location" hint="Choose a broad area. Your exact address is never required.">
-          <View style={[styles.locationSummary, { gap: spacing.sm }]}>
-            <AppIcon icon={Location01Icon} color={colors.accent} size={18} />
-            <Text style={{ color: colors.textSecondary }}>
-              {profile.cityName ?? profile.city ?? 'Choose a country, then a city'}
-            </Text>
-          </View>
-          <AppTextInput label="Search countries" value={countryQuery} onChangeText={setCountryQuery} placeholder="Type a country name" />
-          <View style={[styles.choiceGrid, { gap: spacing.xs }]}>
-            {filteredCountries.map((country) => (
-              <Choice
-                key={country.code}
-                label={country.name}
-                active={country.code === profile.countryCode}
-                onPress={() => selectCountry(country)}
-              />
-            ))}
-          </View>
-          {selectedCountry ? (
-            <>
-              <AppTextInput label="Search cities" value={cityQuery} onChangeText={setCityQuery} placeholder="Type a city name" />
-              <View style={[styles.choiceGrid, { gap: spacing.xs }]}>
-                {filteredCities.map((city) => (
-                  <Choice
-                    key={city.id}
-                    label={city.name}
-                    active={city.id === profile.cityId}
-                    onPress={() => selectCity(city)}
-                  />
-                ))}
-              </View>
-            </>
-          ) : null}
-        </Section>
-
-        <Section title="Background" hint="These optional details add context to your profile.">
-          <View style={[styles.fieldRow, { gap: spacing.sm }]}>
+          <View style={styles.fieldRow}>
             <View style={styles.fieldHalf}>
               <AppTextInput
                 label="Occupation"
@@ -352,15 +349,52 @@ export default function ProfileScreen() {
           </View>
         </Section>
 
-        <Section title="What you're looking for" hint="Tap to update any of these anytime.">
-          <Labeled label="Interested in" color={colors.textPrimary}>
+        <Section title="Location" icon={Location01Icon} hint="Choose a broad area. Your exact address is never required." theme={theme}>
+          <View style={styles.locationSummary}>
+            <AppIcon icon={Location01Icon} color={colors.accent} size={18} />
+            <Text style={styles.locationSummaryText}>
+              {profile.cityName ?? profile.city ?? 'Choose a country, then a city'}
+            </Text>
+          </View>
+          <AppTextInput label="Search countries" value={countryQuery} onChangeText={setCountryQuery} placeholder="Type a country name" />
+          <View style={styles.choiceGrid}>
+            {filteredCountries.map((country) => (
+              <Choice
+                key={country.code}
+                label={country.name}
+                active={country.code === profile.countryCode}
+                onPress={() => selectCountry(country)}
+                theme={theme}
+              />
+            ))}
+          </View>
+          {selectedCountry ? (
+            <>
+              <AppTextInput label="Search cities" value={cityQuery} onChangeText={setCityQuery} placeholder="Type a city name" />
+              <View style={styles.choiceGrid}>
+                {filteredCities.map((city) => (
+                  <Choice
+                    key={city.id}
+                    label={city.name}
+                    active={city.id === profile.cityId}
+                    onPress={() => selectCity(city)}
+                    theme={theme}
+                  />
+                ))}
+              </View>
+            </>
+          ) : null}
+        </Section>
+
+        <Section title="What you're looking for" icon={FavouriteIcon} hint="Tap to update any of these anytime." theme={theme}>
+          <Labeled label="Interested in" theme={theme}>
             <ChipGroup
               options={WHO_TO_MEET_OPTIONS}
               selected={profile.interestedIn}
               onChange={(next) => setProfile((current) => ({ ...current, interestedIn: next }))}
             />
           </Labeled>
-          <Labeled label="Relationship intentions" color={colors.textPrimary}>
+          <Labeled label="Relationship intentions" theme={theme}>
             <ChipGroup
               options={INTENTION_OPTIONS}
               selected={profile.relationshipIntentions}
@@ -368,7 +402,7 @@ export default function ProfileScreen() {
               max={3}
             />
           </Labeled>
-          <Labeled label="Interests" color={colors.textPrimary}>
+          <Labeled label="Interests" theme={theme}>
             <ChipGroup
               options={INTEREST_OPTIONS}
               selected={profile.interests}
@@ -376,7 +410,7 @@ export default function ProfileScreen() {
               max={20}
             />
           </Labeled>
-          <Labeled label="Languages" color={colors.textPrimary}>
+          <Labeled label="Languages" theme={theme}>
             <ChipGroup
               options={LANGUAGE_OPTIONS}
               selected={profile.languages}
@@ -386,7 +420,7 @@ export default function ProfileScreen() {
           </Labeled>
         </Section>
 
-        <Section title="Privacy" hint="Choose what other people can see.">
+        <Section title="Privacy" icon={Shield01Icon} hint="Choose what other people can see." theme={theme}>
           <ToggleRow
             title="Hide my age"
             value={profile.visibilitySettings?.hideAge ?? false}
@@ -417,9 +451,17 @@ export default function ProfileScreen() {
               }))
             }
           />
+          <Pressable style={styles.pauseAction} onPress={() => void togglePause()}>
+            <Text style={styles.pauseActionText}>{paused ? 'Resume discovery' : 'Pause discovery'}</Text>
+          </Pressable>
         </Section>
 
-        <Section title="Verification" hint="Verification badges describe the check performed, not someone's character or safety.">
+        <Section
+          title="Verification"
+          icon={CheckmarkBadge01Icon}
+          hint="Verification badges describe the check performed, not someone's character or safety."
+          theme={theme}
+        >
           <SelectableCard
             title="Selfie verification"
             description={requesting === 'selfie_liveness' ? 'Uploading…' : statusLabel(selfieCase?.status)}
@@ -441,35 +483,49 @@ export default function ProfileScreen() {
             }}
           />
         </Section>
-
-        <View style={{ gap: spacing.sm, paddingTop: spacing.xs }}>
-          <AppButton label={saving ? 'Saving...' : 'Save profile'} loading={saving} onPress={() => void save()} />
-          <AppButton label="Submit profile for review" variant="secondary" onPress={() => void publish()} />
-          <Pressable
-            style={[styles.pauseAction, { backgroundColor: colors.surfaceAlt, borderRadius: radius.md }]}
-            onPress={() => void togglePause()}
-          >
-            <Text style={{ color: colors.accentAlt, fontWeight: '700', fontSize: 16 }}>
-              {paused ? 'Resume discovery' : 'Pause discovery'}
-            </Text>
-          </Pressable>
-        </View>
       </ScrollView>
+
+      <View style={styles.footer}>
+        <AppButton label={saving ? 'Saving...' : 'Save changes'} loading={saving} onPress={() => void save()} />
+        {onboardingStatus !== 'published' ? (
+          <AppButton
+            label={publishing ? 'Publishing...' : 'Publish profile'}
+            variant="secondary"
+            loading={publishing}
+            onPress={() => void publish()}
+          />
+        ) : null}
+      </View>
     </SafeAreaView>
   );
 }
 
-function Section({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
-  const { colors, radius, spacing } = useAppTheme();
+function Section({
+  title,
+  hint,
+  icon,
+  theme,
+  children
+}: {
+  title: string;
+  hint: string;
+  icon?: Parameters<typeof AppIcon>[0]['icon'];
+  theme: AppTheme;
+  children: React.ReactNode;
+}) {
+  const { colors, radius, spacing } = theme;
   return (
     <View
       style={[
-        styles.section,
-        { gap: spacing.md, padding: spacing.md, backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md }
+        sectionStyles.section,
+        { gap: spacing.md, padding: spacing.md, backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }
       ]}
     >
       <View style={{ gap: spacing.xs }}>
-        <Text style={{ color: colors.accentAlt, fontSize: 18, fontWeight: '700' }}>{title}</Text>
+        <View style={sectionStyles.titleRow}>
+          {icon ? <AppIcon icon={icon} color={colors.accent} size={18} /> : null}
+          <Text style={{ color: colors.accentAlt, fontSize: 17, fontWeight: '800' }}>{title}</Text>
+        </View>
         <Text style={{ color: colors.textSecondary, lineHeight: 19 }}>{hint}</Text>
       </View>
       {children}
@@ -477,53 +533,102 @@ function Section({ title, hint, children }: { title: string; hint: string; child
   );
 }
 
-function Labeled({ label, color, children }: { label: string; color: string; children: React.ReactNode }) {
-  const { spacing } = useAppTheme();
+function Labeled({ label, theme, children }: { label: string; theme: AppTheme; children: React.ReactNode }) {
+  const { colors, spacing } = theme;
   return (
     <View style={{ gap: spacing.sm }}>
-      <Text style={[styles.fieldLabel, { color }]}>{label}</Text>
+      <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+        {label}
+      </Text>
       {children}
     </View>
   );
 }
 
-function Choice({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  const { colors, radius, spacing } = useAppTheme();
+function Choice({ label, active, onPress, theme }: { label: string; active: boolean; onPress: () => void; theme: AppTheme }) {
+  const { colors, radius, spacing } = theme;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       onPress={onPress}
       style={[
-        styles.choice,
+        sectionStyles.choice,
         {
-          borderRadius: radius.sm,
+          borderRadius: radius.pill,
           borderColor: active ? colors.accent : colors.border,
           backgroundColor: active ? colors.surfaceAlt : colors.surface,
-          paddingHorizontal: spacing.sm,
+          paddingHorizontal: spacing.md,
           paddingVertical: spacing.xs
         }
       ]}
     >
-      <Text style={{ color: active ? colors.accentAlt : colors.textPrimary, fontWeight: active ? '700' : '500' }}>
+      <Text style={{ color: active ? colors.accentAlt : colors.textPrimary, fontWeight: active ? '700' : '500', fontSize: 13 }}>
         {label}
       </Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  content: {},
-  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  eyebrow: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  completionBadge: { paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center' },
+const sectionStyles = StyleSheet.create({
   section: { borderWidth: 1 },
-  fieldRow: { flexDirection: 'row' },
-  fieldHalf: { flex: 1, minWidth: 0 },
-  fieldLabel: { fontWeight: '600' },
-  locationSummary: { flexDirection: 'row', alignItems: 'center' },
-  choiceGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  choice: { borderWidth: 1 },
-  pauseAction: { minHeight: 48, alignItems: 'center', justifyContent: 'center' }
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  choice: { borderWidth: 1 }
 });
+
+function createStyles({ colors, radius, spacing, typography }: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
+    pageTitle: {
+      fontSize: typography.h1.fontSize,
+      lineHeight: typography.h1.lineHeight,
+      fontWeight: '800',
+      color: colors.textPrimary
+    },
+    hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    heroAvatar: {
+      width: 84,
+      height: 84,
+      borderRadius: radius.xl,
+      backgroundColor: colors.surfaceAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden'
+    },
+    heroInitial: { fontSize: 34, fontWeight: '800', color: colors.accentAlt },
+    heroBody: { flex: 1, gap: spacing.xs },
+    heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    heroName: { fontSize: typography.h2.fontSize, fontWeight: '800', color: colors.textPrimary, flexShrink: 1 },
+    statusPill: { alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+    statusPillLive: { backgroundColor: colors.success + '22' },
+    statusPillDraft: { backgroundColor: colors.surfaceAlt },
+    statusPillTextLive: { color: colors.success, fontSize: 12, fontWeight: '800' },
+    statusPillTextDraft: { color: colors.textSecondary, fontSize: 12, fontWeight: '800' },
+    progressRow: { gap: spacing.xs },
+    progressLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+    error: { color: colors.error, fontWeight: '600' },
+    saved: { color: colors.success, fontWeight: '600' },
+    fieldRow: { flexDirection: 'row', gap: spacing.sm },
+    fieldHalf: { flex: 1, minWidth: 0 },
+    locationSummary: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    locationSummaryText: { color: colors.textSecondary },
+    choiceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    pauseAction: {
+      minHeight: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      backgroundColor: colors.surfaceAlt
+    },
+    pauseActionText: { color: colors.accentAlt, fontWeight: '700', fontSize: 15 },
+    footer: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      padding: spacing.lg,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      backgroundColor: colors.background
+    }
+  });
+}

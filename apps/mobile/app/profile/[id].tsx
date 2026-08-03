@@ -22,6 +22,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { AppButton } from '../../src/components/AppButton';
 import { AppIcon } from '../../src/components/AppIcon';
@@ -77,6 +78,7 @@ function initialsFor(name: string | null) {
 }
 
 const screenWidth = Dimensions.get('window').width;
+const heroHeight = Math.round(Dimensions.get('window').height * 0.58);
 
 function VoiceIntro({ uri, theme }: { uri: string; theme: AppTheme }) {
   const { colors, radius, spacing, typography } = theme;
@@ -226,6 +228,7 @@ export default function ProfileDetailScreen() {
     ]);
   }
 
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   if (loading) {
@@ -250,17 +253,10 @@ export default function ProfileDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} hitSlop={12}>
-          <AppIcon icon={ArrowLeft01Icon} color={colors.textPrimary} size={24} />
-        </Pressable>
-      </View>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        {profile.photos.length > 0 ? (
-          <View>
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
+        <View style={styles.hero}>
+          {profile.photos.length > 0 ? (
             <ScrollView
               horizontal
               pagingEnabled
@@ -271,54 +267,58 @@ export default function ProfileDetailScreen() {
               }}
             >
               {profile.photos.map((photo) => (
-                <View key={photo.id} style={[styles.photoSlide, { width: screenWidth }]}>
-                  <View style={styles.photoBlock}>
-                    <Image
-                      source={{ uri: photo.url }}
-                      style={StyleSheet.absoluteFill}
-                      contentFit="cover"
-                      transition={150}
-                    />
-                    {photo.isPrimary ? (
-                      <View style={styles.primaryBadge}>
-                        <Text style={styles.primaryBadgeLabel}>Primary</Text>
-                      </View>
-                    ) : null}
-                  </View>
+                <View key={photo.id} style={{ width: screenWidth, height: heroHeight }}>
+                  <Image source={{ uri: photo.url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
                 </View>
               ))}
             </ScrollView>
-            {profile.photos.length > 1 ? (
-              <View style={styles.dotsRow}>
-                {profile.photos.map((photo, index) => (
-                  <View
-                    key={photo.id}
-                    style={[styles.dot, { backgroundColor: index === activePhotoIndex ? colors.accent : colors.border }]}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </View>
-        ) : (
-          <View style={[styles.photoSlide, { width: screenWidth }]}>
-            <View style={[styles.photoBlock, styles.photoPlaceholder]}>
+          ) : (
+            <View style={[styles.heroPlaceholder, { height: heroHeight }]}>
               <Text style={styles.initials}>{initialsFor(profile.displayName)}</Text>
             </View>
-          </View>
-        )}
+          )}
+          <View style={styles.heroScrim} pointerEvents="none" />
 
-        <View style={styles.body}>
-          <View style={styles.nameRow}>
-            <Text style={styles.name}>
-              {profile.displayName ?? 'Sanjari member'}, {profile.age}
-            </Text>
-            {profile.verificationStatus === 'verified' ? (
-              <AppIcon icon={CheckmarkBadge01Icon} color={colors.accent} size={20} />
-            ) : null}
+          <View style={[styles.heroTopBar, { paddingTop: insets.top + 8 }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              onPress={() => router.back()}
+              style={styles.roundButton}
+              hitSlop={12}
+            >
+              <AppIcon icon={ArrowLeft01Icon} color="#FFFFFF" size={22} />
+            </Pressable>
           </View>
-          <Text style={styles.meta}>
-            {[profile.city, DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private'].filter(Boolean).join(' · ')}
-          </Text>
+
+          {profile.photos.length > 1 ? (
+            <View style={[styles.dotsRow, { top: insets.top + 8 + 40 + 10 }]}>
+              {profile.photos.map((photo, index) => (
+                <View
+                  key={photo.id}
+                  style={[styles.dot, { backgroundColor: index === activePhotoIndex ? '#FFFFFF' : 'rgba(255,255,255,0.45)' }]}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          <View style={styles.heroNamePlate}>
+            <View style={styles.nameRow}>
+              <Text style={styles.heroName}>
+                {profile.displayName ?? 'Sanjari member'}, {profile.age}
+              </Text>
+              {profile.verificationStatus === 'verified' ? (
+                <AppIcon icon={CheckmarkBadge01Icon} color="#FFFFFF" size={20} />
+              ) : null}
+            </View>
+            <Text style={styles.heroMeta}>
+              {[profile.city, DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private'].filter(Boolean).join(' · ')}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.panel}>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
           {profile.biography ? <Text style={styles.biography}>{profile.biography}</Text> : null}
 
@@ -375,7 +375,7 @@ export default function ProfileDetailScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <AppButton
           label="Pass"
           variant="secondary"
@@ -401,38 +401,61 @@ export default function ProfileDetailScreen() {
           }}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 function createStyles({ colors, radius, spacing, typography }: AppTheme) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs },
     scrollContent: { paddingBottom: spacing.xl },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
     errorTitle: { fontSize: typography.h3.fontSize, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
-    error: { color: colors.error, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
-    photoSlide: { height: 420 },
-    photoBlock: { flex: 1, margin: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceAlt, overflow: 'hidden' },
-    photoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-    initials: { fontSize: 64, fontWeight: '800', color: colors.accentAlt },
-    primaryBadge: {
+    error: { color: colors.error, fontWeight: '600' },
+    hero: { height: heroHeight, backgroundColor: colors.surfaceAlt },
+    heroPlaceholder: { width: screenWidth, alignItems: 'center', justifyContent: 'center' },
+    initials: { fontSize: 72, fontWeight: '800', color: colors.accentAlt },
+    heroScrim: {
       position: 'absolute',
-      top: spacing.md,
-      left: spacing.md,
-      backgroundColor: colors.accent,
-      borderRadius: radius.pill,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 4,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: heroHeight * 0.4,
+      // Flat translucent scrim (no gradient dependency in this project) — dark enough
+      // that the white name/meta text stays legible over any photo.
+      backgroundColor: 'rgba(0,0,0,0.38)'
     },
-    primaryBadgeLabel: { color: colors.onAccent, fontSize: typography.micro.fontSize, fontWeight: '700' },
-    dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: -spacing.sm, marginBottom: spacing.sm },
+    heroTopBar: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: spacing.lg },
+    roundButton: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    dotsRow: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 6
+    },
     dot: { width: 6, height: 6, borderRadius: 3 },
-    body: { paddingHorizontal: spacing.lg, gap: spacing.md },
+    heroNamePlate: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg, gap: 2 },
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    name: { fontSize: typography.h1.fontSize, fontWeight: '800', color: colors.textPrimary },
-    meta: { fontSize: typography.body.fontSize, color: colors.textSecondary },
+    heroName: { fontSize: typography.display.fontSize, fontWeight: '800', color: '#FFFFFF' },
+    heroMeta: { fontSize: typography.bodyLarge.fontSize, color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
+    panel: {
+      marginTop: -radius.xl,
+      backgroundColor: colors.background,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      gap: spacing.md
+    },
     biography: { fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight, color: colors.textPrimary },
     section: { gap: spacing.sm },
     sectionLabel: {
@@ -457,6 +480,7 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       padding: spacing.lg,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
+      backgroundColor: colors.background
     },
   });
 }
