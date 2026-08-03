@@ -12,11 +12,13 @@ import {
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  FlatList,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -131,6 +133,8 @@ export default function ProfileDetailScreen() {
   const [notFound, setNotFound] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const photoViewerRef = useRef<FlatList<ProfilePhoto>>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -268,9 +272,15 @@ export default function ProfileDetailScreen() {
               }}
             >
               {profile.photos.map((photo) => (
-                <View key={photo.id} style={{ width: screenWidth, height: heroHeight }}>
+                <Pressable
+                  key={photo.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open photo ${profile.photos.indexOf(photo) + 1}`}
+                  onPress={() => setPhotoViewerOpen(true)}
+                  style={{ width: screenWidth, height: heroHeight }}
+                >
                   <Image source={{ uri: photo.url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
-                </View>
+                </Pressable>
               ))}
             </ScrollView>
           ) : (
@@ -411,6 +421,45 @@ export default function ProfileDetailScreen() {
           />
         </View>
       </View>
+
+      <Modal
+        visible={photoViewerOpen}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setPhotoViewerOpen(false)}
+        onShow={() => {
+          photoViewerRef.current?.scrollToIndex({ index: activePhotoIndex, animated: false });
+        }}
+      >
+        <View style={styles.photoViewer}>
+          <FlatList
+            ref={photoViewerRef}
+            data={profile.photos}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(photo) => photo.id}
+            getItemLayout={(_, index) => ({ length: screenWidth, offset: screenWidth * index, index })}
+            onMomentumScrollEnd={(event) => {
+              setActivePhotoIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth));
+            }}
+            renderItem={({ item }) => (
+              <View style={styles.photoViewerPage}>
+                <Image source={{ uri: item.url }} style={styles.photoViewerImage} contentFit="contain" />
+              </View>
+            )}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close photo viewer"
+            onPress={() => setPhotoViewerOpen(false)}
+            style={[styles.photoViewerClose, { top: insets.top + 12 }]}
+            hitSlop={10}
+          >
+            <AppIcon icon={Cancel01Icon} color="#FFFFFF" size={24} />
+          </Pressable>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -542,5 +591,18 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       backgroundColor: colors.background
     },
     likeActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    photoViewer: { flex: 1, backgroundColor: '#000000' },
+    photoViewerPage: { width: screenWidth, height: Dimensions.get('window').height, justifyContent: 'center' },
+    photoViewerImage: { width: screenWidth, height: Dimensions.get('window').height },
+    photoViewerClose: {
+      position: 'absolute',
+      right: spacing.lg,
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.55)'
+    },
   });
 }
