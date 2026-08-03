@@ -29,6 +29,12 @@ async function bootstrap(): Promise<void> {
       const requestId = request.header('x-request-id') ?? randomUUID();
       const startedAt = Date.now();
       response.setHeader('X-Request-Id', requestId);
+      // Discovery and other authenticated responses are personalized and must not be served as 304s.
+      if (request.path.startsWith('/api/')) {
+        response.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.setHeader('Pragma', 'no-cache');
+        response.setHeader('Expires', '0');
+      }
       response.on('finish', () => {
         console.log(
           JSON.stringify({

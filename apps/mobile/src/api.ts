@@ -52,6 +52,8 @@ async function request<T = unknown>(
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
