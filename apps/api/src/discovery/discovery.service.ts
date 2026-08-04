@@ -14,6 +14,12 @@ import type { ProtectedLocationDto } from './dto';
 
 const rankingVersion = 'w04-rules-v1';
 
+export interface VerificationFlags {
+  photoVerified: boolean;
+  ageVerified: boolean;
+  idVerified: boolean;
+}
+
 function age(dateOfBirth: Date): number {
   const now = new Date();
   let value = now.getUTCFullYear() - dateOfBirth.getUTCFullYear();
@@ -32,6 +38,26 @@ export class DiscoveryService {
     private readonly entitlements: DiscoveryEntitlementService,
     private readonly storage: StorageService,
   ) {}
+
+  private async verificationFlagsFor(userIds: string[]): Promise<Map<string, VerificationFlags>> {
+    const map = new Map<string, VerificationFlags>();
+    if (userIds.length === 0) return map;
+    const cases = await this.prisma.verificationCase.findMany({
+      where: { userId: { in: userIds }, status: 'approved' },
+      select: { userId: true, type: true },
+    });
+    for (const item of cases) {
+      const flags = map.get(item.userId) ?? { photoVerified: false, ageVerified: false, idVerified: false };
+      if (item.type === 'selfie_liveness') flags.photoVerified = true;
+      // Age is proven against the identity document, so it shares that case's outcome.
+      if (item.type === 'identity_document') {
+        flags.ageVerified = true;
+        flags.idVerified = true;
+      }
+      map.set(item.userId, flags);
+    }
+    return map;
+  }
 
   private async getMatchingWeights() {
     const row = await this.prisma.applicationConfiguration.findUnique({
@@ -87,6 +113,7 @@ export class DiscoveryService {
             moderationStatus: 'approved',
             discoveryPausedAt: null,
             ...(preference?.verifiedOnly ? { verificationStatus: 'verified' } : {}),
+            ...(preference?.genders?.length ? { gender: { in: preference.genders } } : {}),
           },
         },
       },
@@ -101,6 +128,7 @@ export class DiscoveryService {
             interests: { select: { interest: { select: { slug: true } } } },
             languages: { select: { language: { select: { code: true } } } },
             discoveryPreference: true,
+            country: { select: { code: true, name: true } },
           },
         },
       },
@@ -122,6 +150,13 @@ export class DiscoveryService {
         !candidate.profile!.interests.some((item) => preferredInterests.has(item.interest.slug))
       )
         return false;
+      const candidateGenders = candidate.profile!.discoveryPreference?.genders ?? [];
+      if (
+        viewer.profile!.gender &&
+        candidateGenders.length > 0 &&
+        !candidateGenders.includes(viewer.profile!.gender)
+      )
+        return false;
       return (
         candidateAge >= (preference?.minAge ?? 18) &&
         candidateAge <= (preference?.maxAge ?? 80) &&
@@ -133,6 +168,7 @@ export class DiscoveryService {
       (cursor ? Number(cursor) || 0 : 0) + 20,
     );
     const weights = await this.getMatchingWeights();
+    const verificationFlags = await this.verificationFlagsFor(page.map((candidate) => candidate.id));
     const data = await Promise.all(page.map(async (candidate) => {
       const sharedInterests = viewer.profile!.interestedIn.filter((value) =>
         candidate.profile!.interestedIn.includes(value),
@@ -158,8 +194,15 @@ export class DiscoveryService {
         displayName: candidate.profile!.displayName,
         age: age(candidate.dateOfBirth),
         city: candidate.profile!.city,
+        countryCode: candidate.profile!.country?.code ?? null,
+        countryName: candidate.profile!.country?.name ?? null,
         distanceCategory: this.distanceCategory(distanceMap.get(candidate.id)),
         verificationStatus: candidate.profile!.verificationStatus,
+        verification: verificationFlags.get(candidate.id) ?? {
+          photoVerified: false,
+          ageVerified: false,
+          idVerified: false,
+        },
         primaryPhoto: primaryPhoto
           ? { id: primaryPhoto.id, url: await this.storage.presignDownload(primaryPhoto.storageKey) }
           : null,
@@ -558,6 +601,7 @@ export class DiscoveryService {
             prompts: {
               select: { answer: true, prompt: { select: { prompt: true } } },
             },
+            country: { select: { code: true, name: true } },
           },
         },
       },
@@ -577,13 +621,21 @@ export class DiscoveryService {
         url: await this.storage.presignDownload(photo.storageKey),
       })),
     );
+    const verificationFlags = await this.verificationFlagsFor([target.id]);
     return {
       id: target.id,
       displayName: target.profile.displayName,
       age: age(target.dateOfBirth),
       city: target.profile.city,
+      countryCode: target.profile.country?.code ?? null,
+      countryName: target.profile.country?.name ?? null,
       biography: target.profile.biography,
       verificationStatus: target.profile.verificationStatus,
+      verification: verificationFlags.get(target.id) ?? {
+        photoVerified: false,
+        ageVerified: false,
+        idVerified: false,
+      },
       distanceCategory: this.distanceCategory(Number(distances[0]?.distanceKm) || undefined),
       photos,
       interests: target.profile.interests.map((item) => item.interest),

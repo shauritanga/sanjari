@@ -11,7 +11,13 @@ import {
   ReportDto,
 } from './dto';
 
-const highRiskCategories = new Set(['scam', 'impersonation', 'underage_concern', 'unsafe_meeting']);
+const highRiskCategories = new Set([
+  'scam',
+  'impersonation',
+  'underage_concern',
+  'unsafe_meeting',
+  'violence',
+]);
 const caseStatuses = new Set([
   'submitted',
   'triaged',

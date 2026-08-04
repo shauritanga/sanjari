@@ -8,4 +8,8 @@ export class AttachmentStorageService {
   presign(userId: string, mimeType: string) {
     return this.storage.presign(userId, 'messages', mimeType);
   }
+
+  presignDownload(storageKey: string) {
+    return this.storage.presignDownload(storageKey);
+  }
 }

@@ -15,6 +15,8 @@ export const reportCategories = [
   'unsafe_meeting',
   'underage_concern',
   'sexual_content',
+  'violence',
+  'privacy_violation',
   'spam',
   'other',
 ] as const;

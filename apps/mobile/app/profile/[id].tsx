@@ -1,7 +1,6 @@
 import {
   ArrowLeft01Icon,
   Cancel01Icon,
-  CheckmarkBadge01Icon,
   Flag02Icon,
   FavouriteIcon,
   PauseCircleIcon,
@@ -15,7 +14,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   FlatList,
   Modal,
@@ -29,6 +27,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useEffect } from 'react';
 import { AppButton } from '../../src/components/AppButton';
 import { AppIcon } from '../../src/components/AppIcon';
+import { LocationBadge } from '../../src/components/LocationBadge';
+import { VerificationBadge, type VerificationFlags } from '../../src/components/VerificationBadge';
 import { api } from '../../src/api';
 import { useAppTheme, type AppTheme } from '../../src/theme/useAppTheme';
 
@@ -43,8 +43,11 @@ interface ProfileDetail {
   displayName: string | null;
   age: number;
   city: string | null;
+  countryCode: string | null;
+  countryName: string | null;
   biography: string | null;
   verificationStatus: string;
+  verification: VerificationFlags;
   distanceCategory: string;
   photos: ProfilePhoto[];
   interests: Array<{ slug: string; labelEn: string }>;
@@ -189,48 +192,24 @@ export default function ProfileDetailScreen() {
     }
   }
 
-  async function block() {
+  function openBlock() {
     if (!profile) return;
-    setActionBusy(true);
-    setError('');
-    try {
-      await api.post(`/blocks/${profile.id}`, { reason: 'Blocked from profile view.' });
-      router.back();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to block this member.');
-    } finally {
-      setActionBusy(false);
-    }
+    router.push({
+      pathname: '/profile/block',
+      params: {
+        userId: profile.id,
+        displayName: profile.displayName ?? '',
+        photoUrl: profile.photos.find((p) => p.isPrimary)?.url ?? profile.photos[0]?.url ?? '',
+      },
+    });
   }
 
-  function confirmBlock() {
+  function openReport() {
     if (!profile) return;
-    Alert.alert('Block this member', `Block ${profile.displayName ?? 'this member'}? They will no longer be able to contact you.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Block', style: 'destructive', onPress: () => void block() },
-    ]);
-  }
-
-  async function report() {
-    if (!profile) return;
-    setError('');
-    try {
-      await api.post('/reports', {
-        reportedUserId: profile.id,
-        category: 'other',
-        description: 'Reported from profile view.',
-      });
-      setError('Report submitted for review.');
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to submit report.');
-    }
-  }
-
-  function confirmReport() {
-    Alert.alert('Report profile', 'Submit this profile for safety review?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Report', onPress: () => void report() },
-    ]);
+    router.push({
+      pathname: '/profile/report',
+      params: { userId: profile.id, displayName: profile.displayName ?? '', mode: 'report' },
+    });
   }
 
   const insets = useSafeAreaInsets();
@@ -318,13 +297,19 @@ export default function ProfileDetailScreen() {
               <Text style={styles.heroName}>
                 {profile.displayName ?? 'Sanjari member'}, {profile.age}
               </Text>
-              {profile.verificationStatus === 'verified' ? (
-                <AppIcon icon={CheckmarkBadge01Icon} color="#FFFFFF" size={20} />
-              ) : null}
+              <VerificationBadge
+                displayName={profile.displayName ?? 'This member'}
+                tone="overlay"
+                size={20}
+                {...profile.verification}
+              />
             </View>
-            <Text style={styles.heroMeta}>
-              {[profile.city, DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private'].filter(Boolean).join(' · ')}
-            </Text>
+            <LocationBadge
+              countryCode={profile.countryCode}
+              label={[DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private', profile.city, profile.countryName]
+                .filter(Boolean)
+                .join(', ')}
+            />
           </View>
         </View>
 
@@ -374,11 +359,11 @@ export default function ProfileDetailScreen() {
           ) : null}
 
           <View style={styles.safetyRow}>
-            <Pressable accessibilityRole="button" onPress={confirmBlock} style={styles.safetyAction} hitSlop={8}>
+            <Pressable accessibilityRole="button" onPress={openBlock} style={styles.safetyAction} hitSlop={8}>
               <AppIcon icon={Shield01Icon} color={colors.textSecondary} size={16} />
               <Text style={styles.safetyLabel}>Block</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" onPress={confirmReport} style={styles.safetyAction} hitSlop={8}>
+            <Pressable accessibilityRole="button" onPress={openReport} style={styles.safetyAction} hitSlop={8}>
               <AppIcon icon={Flag02Icon} color={colors.textSecondary} size={16} />
               <Text style={styles.safetyLabel}>Report</Text>
             </Pressable>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "942230679436",
+    "project_id": "sanjari-babda",
+    "storage_bucket": "sanjari-babda.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:942230679436:android:7afe0604d5a82fa1bdb0a9",
+        "android_client_info": {
+          "package_name": "com.zanua.sanjari"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGzXYyprv88vTwXct2ij46k3J_gDBKRA8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

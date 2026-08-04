@@ -127,13 +127,24 @@ export class ConversationsService {
         replyTo: { select: { id: true, senderId: true, body: true } },
         attachments: {
           where: { status: 'approved' },
-          select: { id: true, mimeType: true, sizeBytes: true },
+          select: { id: true, storageKey: true, mimeType: true, sizeBytes: true },
         },
         reactions: { select: { userId: true, reaction: true } },
         receipts: { where: { type: 'read' }, select: { userId: true, createdAt: true } },
       },
     });
-    return { data: messages, nextCursor: messages.length === 30 ? String(skip + 30) : null };
+    const withAttachmentUrls = await Promise.all(
+      messages.map(async (message) => ({
+        ...message,
+        attachments: await Promise.all(
+          message.attachments.map(async ({ storageKey, ...attachment }) => ({
+            ...attachment,
+            url: await this.attachmentStorage.presignDownload(storageKey),
+          })),
+        ),
+      })),
+    );
+    return { data: withAttachmentUrls, nextCursor: messages.length === 30 ? String(skip + 30) : null };
   }
 
   async send(userId: string, conversationId: string, body: string, replyToMessageId?: string) {
@@ -316,6 +327,6 @@ export class ConversationsService {
       select: { id: true, status: true, mimeType: true, sizeBytes: true },
     });
     await this.attachmentScan.enqueue(attachment.id);
-    return attachment;
+    return { ...attachment, messageId, url: await this.attachmentStorage.presignDownload(storageKey) };
   }
 }

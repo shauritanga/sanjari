@@ -1,7 +1,6 @@
 import {
   Alert01Icon,
   Cancel01Icon,
-  CheckmarkBadge01Icon,
   FavouriteIcon,
   FilterIcon,
   Search01Icon,
@@ -32,6 +31,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { AppButton } from '../../src/components/AppButton';
+import { LocationBadge } from '../../src/components/LocationBadge';
+import { VerificationBadge, type VerificationFlags } from '../../src/components/VerificationBadge';
 import { AppIcon } from '../../src/components/AppIcon';
 import { api } from '../../src/api';
 import { useDiscoveryFiltersStore } from '../../src/store/discoveryFilters';
@@ -42,8 +43,11 @@ interface Candidate {
   displayName: string | null;
   age: number;
   city: string | null;
+  countryCode: string | null;
+  countryName: string | null;
   distanceCategory: string;
   verificationStatus: string;
+  verification: VerificationFlags;
   primaryPhoto: { id: string; url: string } | null;
   score: number;
   explanation: { rankingVersion: string; components: Record<string, number> };
@@ -481,11 +485,6 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
           ) : (
             <Text style={[styles.photoInitial, { color: colors.accentAlt }]}>{initial}</Text>
           )}
-          {candidate.verificationStatus === 'verified' ? (
-            <View style={[styles.verifiedBadge, { backgroundColor: colors.surface, borderRadius: radius.pill }]}>
-              <AppIcon icon={CheckmarkBadge01Icon} color={colors.accent} size={16} />
-            </View>
-          ) : null}
         </View>
 
         <Animated.View style={[styles.stamp, styles.likeStamp, likeStampStyle, { borderColor: colors.success }]}>
@@ -495,14 +494,25 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
           <Text style={[styles.stampText, { color: colors.error }]}>PASS</Text>
         </Animated.View>
 
-        <View style={[styles.cardInfo, { padding: spacing.lg, gap: spacing.xs }]}>
-          <Text style={[styles.name, { color: colors.textPrimary }]}>
-            {candidate.displayName ?? 'Sanjari member'}, {candidate.age}
-          </Text>
-          <Text style={{ color: colors.textSecondary }}>
-            {candidate.city ?? 'Location not shared'} · {distanceLabel(candidate.distanceCategory)}
-          </Text>
-          <Text style={{ color: colors.textSecondary, lineHeight: 19 }}>
+        <View style={[styles.cardScrim, { borderRadius: radius.lg }]} pointerEvents="none" />
+        <View style={[styles.cardInfo, { padding: spacing.lg, gap: spacing.sm }]}>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>
+              {candidate.displayName ?? 'Sanjari member'}, {candidate.age}
+            </Text>
+            <VerificationBadge
+              displayName={candidate.displayName ?? 'This member'}
+              tone="overlay"
+              {...candidate.verification}
+            />
+          </View>
+          <LocationBadge
+            countryCode={candidate.countryCode}
+            label={[distanceLabel(candidate.distanceCategory), candidate.city, candidate.countryName]
+              .filter(Boolean)
+              .join(', ')}
+          />
+          <Text style={styles.compatibility}>
             {candidate.score}% compatibility based on your shared preferences.
           </Text>
         </View>
@@ -527,17 +537,18 @@ const styles = StyleSheet.create({
   },
   photo: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   photoInitial: { fontSize: 96, fontWeight: '800' },
-  verifiedBadge: {
+  cardScrim: {
     position: 'absolute',
-    top: 16,
-    right: 16,
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center'
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '45%',
+    backgroundColor: 'rgba(0,0,0,0.42)'
   },
   cardInfo: { position: 'absolute', bottom: 0, left: 0, right: 0 },
-  name: { fontSize: 26, fontWeight: '700' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  name: { fontSize: 26, fontWeight: '700', color: '#FFFFFF' },
+  compatibility: { color: 'rgba(255,255,255,0.85)', lineHeight: 19 },
   stamp: {
     position: 'absolute',
     top: 32,

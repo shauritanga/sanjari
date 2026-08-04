@@ -18,6 +18,7 @@ import { ChipGroup } from '../../src/components/ChipGroup';
 import { PhotoGrid, type PhotoItem } from '../../src/components/PhotoGrid';
 import { ProgressBar } from '../../src/components/ProgressBar';
 import { SelectableCard } from '../../src/components/SelectableCard';
+import { VerificationBadge } from '../../src/components/VerificationBadge';
 import { ToggleRow } from '../../src/components/ToggleRow';
 import { api } from '../../src/api';
 import {
@@ -281,6 +282,8 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
         initial={initial}
         theme={theme}
         loggingOut={loggingOut}
+        photoVerified={selfieCase?.status === 'approved'}
+        idVerified={idCase?.status === 'approved'}
         onEdit={() => router.push('/profile/edit')}
         onLogout={confirmLogout}
       />
@@ -309,9 +312,13 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
                 {profile.displayName || 'Add your name'}
                 {age ? `, ${age}` : ''}
               </Text>
-              {selfieCase?.status === 'approved' ? (
-                <AppIcon icon={CheckmarkBadge01Icon} color={colors.accent} size={18} />
-              ) : null}
+              <VerificationBadge
+                displayName={profile.displayName || 'You'}
+                size={18}
+                photoVerified={selfieCase?.status === 'approved'}
+                ageVerified={idCase?.status === 'approved'}
+                idVerified={idCase?.status === 'approved'}
+              />
             </View>
             <View style={[styles.statusPill, onboardingStatus === 'published' ? styles.statusPillLive : styles.statusPillDraft]}>
               <Text style={onboardingStatus === 'published' ? styles.statusPillTextLive : styles.statusPillTextDraft}>
@@ -546,6 +553,8 @@ function ProfileHub({
   initial,
   theme,
   loggingOut,
+  photoVerified,
+  idVerified,
   onEdit,
   onLogout
 }: {
@@ -555,6 +564,8 @@ function ProfileHub({
   initial: string;
   theme: AppTheme;
   loggingOut: boolean;
+  photoVerified: boolean;
+  idVerified: boolean;
   onEdit: () => void;
   onLogout: () => void;
 }) {
@@ -588,7 +599,16 @@ function ProfileHub({
               <Text style={styles.initial}>{initial}</Text>
             )}
           </View>
-          <Text style={styles.name}>{displayName}{age ? `, ${age}` : ''}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{displayName}{age ? `, ${age}` : ''}</Text>
+            <VerificationBadge
+              displayName={displayName}
+              size={18}
+              photoVerified={photoVerified}
+              ageVerified={idVerified}
+              idVerified={idVerified}
+            />
+          </View>
           <Text style={styles.handle}>{profile.city ?? 'Sanjari member'}</Text>
         </View>
 
@@ -784,7 +804,8 @@ function createHubStyles({ colors, radius, spacing, typography }: AppTheme) {
     identity: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
     avatar: { width: 104, height: 104, borderWidth: 3, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
     initial: { color: colors.accentAlt, fontSize: 42, fontWeight: '800' },
-    name: { color: colors.textPrimary, fontSize: typography.h2.fontSize, fontWeight: '800', marginTop: spacing.sm },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
+    name: { color: colors.textPrimary, fontSize: typography.h2.fontSize, fontWeight: '800' },
     handle: { color: colors.textSecondary, fontSize: typography.bodyMedium.fontSize },
     menu: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
     row: {
