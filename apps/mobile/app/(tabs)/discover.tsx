@@ -505,6 +505,7 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
             <VerificationBadge
               displayName={candidate.displayName ?? 'This member'}
               tone="overlay"
+              size={28}
               {...candidate.verification}
             />
           </View>

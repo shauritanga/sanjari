@@ -302,7 +302,7 @@ export default function ProfileDetailScreen() {
               <VerificationBadge
                 displayName={profile.displayName ?? 'This member'}
                 tone="overlay"
-                size={20}
+                size={30}
                 {...profile.verification}
               />
             </View>
