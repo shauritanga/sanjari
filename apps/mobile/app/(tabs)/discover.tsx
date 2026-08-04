@@ -31,6 +31,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { AppButton } from '../../src/components/AppButton';
+import { InfoChip } from '../../src/components/InfoChip';
 import { LocationBadge } from '../../src/components/LocationBadge';
 import { VerificationBadge, type VerificationFlags } from '../../src/components/VerificationBadge';
 import { AppIcon } from '../../src/components/AppIcon';
@@ -45,6 +46,7 @@ interface Candidate {
   city: string | null;
   countryCode: string | null;
   countryName: string | null;
+  occupationCategory: string | null;
   distanceCategory: string;
   verificationStatus: string;
   verification: VerificationFlags;
@@ -512,6 +514,14 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
               .filter(Boolean)
               .join(', ')}
           />
+          {candidate.countryName || candidate.occupationCategory ? (
+            <View style={styles.chipRow}>
+              {candidate.countryName ? (
+                <InfoChip label={candidate.countryName} countryCode={candidate.countryCode} />
+              ) : null}
+              {candidate.occupationCategory ? <InfoChip label={candidate.occupationCategory} /> : null}
+            </View>
+          ) : null}
           <Text style={styles.compatibility}>
             {candidate.score}% compatibility based on your shared preferences.
           </Text>
@@ -547,6 +557,7 @@ const styles = StyleSheet.create({
   },
   cardInfo: { position: 'absolute', bottom: 0, left: 0, right: 0 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   name: { fontSize: 26, fontWeight: '700', color: '#FFFFFF' },
   compatibility: { color: 'rgba(255,255,255,0.85)', lineHeight: 19 },
   stamp: {

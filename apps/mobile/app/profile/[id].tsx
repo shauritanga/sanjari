@@ -27,6 +27,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useEffect } from 'react';
 import { AppButton } from '../../src/components/AppButton';
 import { AppIcon } from '../../src/components/AppIcon';
+import { InfoChip } from '../../src/components/InfoChip';
 import { LocationBadge } from '../../src/components/LocationBadge';
 import { VerificationBadge, type VerificationFlags } from '../../src/components/VerificationBadge';
 import { api } from '../../src/api';
@@ -45,6 +46,7 @@ interface ProfileDetail {
   city: string | null;
   countryCode: string | null;
   countryName: string | null;
+  occupationCategory: string | null;
   biography: string | null;
   verificationStatus: string;
   verification: VerificationFlags;
@@ -310,6 +312,14 @@ export default function ProfileDetailScreen() {
                 .filter(Boolean)
                 .join(', ')}
             />
+            {profile.countryName || profile.occupationCategory ? (
+              <View style={styles.chipRow}>
+                {profile.countryName ? (
+                  <InfoChip label={profile.countryName} countryCode={profile.countryCode} />
+                ) : null}
+                {profile.occupationCategory ? <InfoChip label={profile.occupationCategory} /> : null}
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -534,7 +544,8 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       gap: 6
     },
     dot: { width: 6, height: 6, borderRadius: 3 },
-    heroNamePlate: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg, gap: 2 },
+    heroNamePlate: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg, gap: spacing.sm },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     heroName: { fontSize: typography.display.fontSize, fontWeight: '800', color: '#FFFFFF' },
     heroMeta: { fontSize: typography.bodyLarge.fontSize, color: 'rgba(255,255,255,0.9)', fontWeight: '600' },

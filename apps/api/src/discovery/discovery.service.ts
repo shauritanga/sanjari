@@ -196,6 +196,7 @@ export class DiscoveryService {
         city: candidate.profile!.city,
         countryCode: candidate.profile!.country?.code ?? null,
         countryName: candidate.profile!.country?.name ?? null,
+        occupationCategory: candidate.profile!.occupationCategory,
         distanceCategory: this.distanceCategory(distanceMap.get(candidate.id)),
         verificationStatus: candidate.profile!.verificationStatus,
         verification: verificationFlags.get(candidate.id) ?? {
@@ -629,6 +630,7 @@ export class DiscoveryService {
       city: target.profile.city,
       countryCode: target.profile.country?.code ?? null,
       countryName: target.profile.country?.name ?? null,
+      occupationCategory: target.profile.occupationCategory,
       biography: target.profile.biography,
       verificationStatus: target.profile.verificationStatus,
       verification: verificationFlags.get(target.id) ?? {
