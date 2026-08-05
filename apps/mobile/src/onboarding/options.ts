@@ -19,7 +19,7 @@ export const INTENTION_OPTIONS: SelectOption[] = [
   { value: 'marriage', label: '💍 Marriage' },
   { value: 'serious_dating', label: '😊 Serious dating' },
   { value: 'casual_dating', label: '💕 Casual dating' },
-  { value: 'casual_fun', label: '🔥 Casual fun / hookups' },
+  { value: 'casual_fun', label: '🔥 Hookups' },
   { value: 'friends_first', label: '🤝 Friends first' },
   { value: 'new_friends', label: '👥 New friends' },
   { value: 'travel_companion', label: '🌍 Travel companion' },

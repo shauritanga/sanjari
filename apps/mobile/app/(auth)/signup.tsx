@@ -1,7 +1,8 @@
 import logo from '../../assets/icon.png';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text } from 'react-native';
+import { Image, StyleSheet, Text } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
@@ -46,7 +47,11 @@ export default function SignupScreen() {
   }
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.content}
+        bottomOffset={24}
+        keyboardShouldPersistTaps="handled"
+      >
         <Image source={logo} style={styles.logo} />
         <Text style={styles.title}>Create your account</Text>
         <Text style={styles.copy}>
@@ -76,13 +81,13 @@ export default function SignupScreen() {
           variant="secondary"
           onPress={() => router.push('/(auth)/login')}
         />
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.colors.warmWhite, padding: theme.spacing.lg },
-  content: { flexGrow: 1, justifyContent: 'center', gap: theme.spacing.md },
+  screen: { flex: 1, backgroundColor: theme.colors.warmWhite },
+  content: { flexGrow: 1, justifyContent: 'center', gap: theme.spacing.md, padding: theme.spacing.lg },
   logo: { width: 96, height: 96, borderRadius: 24, alignSelf: 'center', marginBottom: theme.spacing.sm },
   title: { color: theme.colors.deepPlum, fontSize: 32, fontWeight: '700', textAlign: 'center' },
   copy: { color: theme.colors.secondaryText, fontSize: 16, lineHeight: 24, textAlign: 'center' },
