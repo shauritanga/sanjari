@@ -10,6 +10,7 @@ import {
   Text,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from './AppButton';
 import { AppIcon } from './AppIcon';
 import { ProgressBar } from './ProgressBar';
@@ -43,71 +44,70 @@ export function OnboardingScreen(props: OnboardingScreenProps) {
       : { contentContainerStyle: styles.scrollContent, keyboardShouldPersistTaps: 'handled' as const };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.screen, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={[styles.header, { paddingHorizontal: spacing.lg, gap: spacing.sm }]}>
-        <View style={styles.headerRow}>
-          {props.hideBack ? (
-            <View style={styles.backButton} />
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-              onPress={props.onBack ?? (() => router.back())}
-              style={styles.backButton}
-              hitSlop={12}
-            >
-              <AppIcon icon={ArrowLeft01Icon} color={colors.textPrimary} size={22} />
-            </Pressable>
-          )}
-          <View style={styles.progressWrap}>
-            <ProgressBar current={props.step} total={TOTAL_ONBOARDING_STEPS} />
-          </View>
-          {props.onSkip ? (
-            <Pressable accessibilityRole="button" onPress={props.onSkip} hitSlop={12}>
-              <Text style={[styles.skip, { color: colors.textSecondary }]}>Skip</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.skipPlaceholder} />
-          )}
-        </View>
-      </View>
-
-      <Content {...contentProps}>
-        <View style={{ paddingHorizontal: spacing.lg, gap: spacing.lg, flexGrow: 1 }}>
-          {props.title ? (
-            <View style={{ gap: spacing.xs }}>
-              <Text style={[styles.title, { color: colors.accentAlt }]}>{props.title}</Text>
-              {props.subtitle ? (
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{props.subtitle}</Text>
-              ) : null}
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={[styles.header, { paddingHorizontal: spacing.lg, gap: spacing.sm }]}>
+          <View style={styles.headerRow}>
+            {props.hideBack ? (
+              <View style={styles.backButton} />
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                onPress={props.onBack ?? (() => router.back())}
+                style={styles.backButton}
+                hitSlop={12}
+              >
+                <AppIcon icon={ArrowLeft01Icon} color={colors.textPrimary} size={22} />
+              </Pressable>
+            )}
+            <View style={styles.progressWrap}>
+              <ProgressBar current={props.step} total={TOTAL_ONBOARDING_STEPS} />
             </View>
-          ) : null}
-          {props.children}
+            {props.onSkip ? (
+              <Pressable accessibilityRole="button" onPress={props.onSkip} hitSlop={12}>
+                <Text style={[styles.skip, { color: colors.textSecondary }]}>Skip</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.skipPlaceholder} />
+            )}
+          </View>
         </View>
-      </Content>
 
-      <View style={[styles.footer, { paddingHorizontal: spacing.lg, gap: spacing.sm, borderTopColor: colors.border }]}>
-        {props.footerNote ? (
-          <Text style={[styles.footerNote, { color: colors.textSecondary }]}>{props.footerNote}</Text>
-        ) : null}
-        <AppButton
-          label={props.primaryLabel}
-          onPress={props.onPrimaryPress}
-          disabled={props.primaryDisabled ?? false}
-          loading={props.primaryLoading ?? false}
-        />
-        {props.secondaryLabel ? (
+        <Content {...contentProps}>
+          <View style={{ paddingHorizontal: spacing.lg, gap: spacing.lg, flexGrow: 1 }}>
+            {props.title ? (
+              <View style={{ gap: spacing.xs }}>
+                <Text style={[styles.title, { color: colors.accentAlt }]}>{props.title}</Text>
+                {props.subtitle ? (
+                  <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{props.subtitle}</Text>
+                ) : null}
+              </View>
+            ) : null}
+            {props.children}
+          </View>
+        </Content>
+
+        <View style={[styles.footer, { paddingHorizontal: spacing.lg, gap: spacing.sm, borderTopColor: colors.border }]}>
+          {props.footerNote ? (
+            <Text style={[styles.footerNote, { color: colors.textSecondary }]}>{props.footerNote}</Text>
+          ) : null}
           <AppButton
-            label={props.secondaryLabel}
-            variant="ghost"
-            onPress={props.onSecondaryPress ?? (() => {})}
+            label={props.primaryLabel}
+            onPress={props.onPrimaryPress}
+            disabled={props.primaryDisabled ?? false}
+            loading={props.primaryLoading ?? false}
           />
-        ) : null}
-      </View>
-    </KeyboardAvoidingView>
+          {props.secondaryLabel ? (
+            <AppButton
+              label={props.secondaryLabel}
+              variant="ghost"
+              onPress={props.onSecondaryPress ?? (() => {})}
+            />
+          ) : null}
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -123,6 +123,6 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingTop: 12, paddingBottom: 24 },
   title: { fontSize: 26, fontWeight: '800' },
   subtitle: { fontSize: 15, lineHeight: 21 },
-  footer: { paddingTop: 12, paddingBottom: 20, borderTopWidth: StyleSheet.hairlineWidth, gap: 8 },
+  footer: { paddingTop: 12, paddingBottom: 12, borderTopWidth: StyleSheet.hairlineWidth, gap: 8 },
   footerNote: { fontSize: 12, textAlign: 'center' }
 });
