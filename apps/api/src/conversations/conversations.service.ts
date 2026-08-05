@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
-import { readVisibility } from '../discovery/discovery.service';
+import { readVisibility } from '../common/visibility';
 import { EmailService } from '../auth/email.service';
 import { AttachmentStorageService } from './attachment-storage.service';
 import { AttachmentScanService } from './attachment-scan.service';

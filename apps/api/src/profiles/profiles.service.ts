@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../common/database/prisma.service';
-import { readVisibility } from '../discovery/discovery.service';
+import { readVisibility } from '../common/visibility';
 import { DiscoveryPreferenceDto, OnboardingUpdateDto, PromptAnswerDto } from './dto';
 import { PhotoPresignDto } from './dto';
 import { PhotoScanService } from './photo-scan.service';
