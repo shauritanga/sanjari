@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from '../auth/access-token.guard';
 import { NotificationPreferenceDto, PushTokenDto } from './dto';
 import { NotificationsService } from './notifications.service';
@@ -7,6 +7,11 @@ import { NotificationsService } from './notifications.service';
 @Controller({ path: 'notifications', version: '1' })
 export class NotificationsController {
   constructor(private readonly notifications: NotificationsService) {}
+
+  @Get('preferences')
+  async preferences(@Req() request: AuthenticatedRequest) {
+    return { data: await this.notifications.getPreferences(request.user!.sub) };
+  }
 
   @Post('push-token')
   async pushToken(@Req() request: AuthenticatedRequest, @Body() dto: PushTokenDto) {

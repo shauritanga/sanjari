@@ -679,19 +679,21 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
             }}
           />
         </Section>
-
-        <AppButton label="Log out" variant="ghost" loading={loggingOut} onPress={confirmLogout} />
       </ScrollView>
 
       <View style={styles.footer}>
-        <AppButton label={saving ? 'Saving...' : 'Save changes'} loading={saving} onPress={() => void save()} />
+        <View style={styles.footerButton}>
+          <AppButton label={saving ? 'Saving...' : 'Save changes'} loading={saving} onPress={() => void save()} />
+        </View>
         {onboardingStatus !== 'published' ? (
-          <AppButton
-            label={publishing ? 'Publishing...' : 'Publish profile'}
-            variant="secondary"
-            loading={publishing}
-            onPress={() => void publish()}
-          />
+          <View style={styles.footerButton}>
+            <AppButton
+              label={publishing ? 'Publishing...' : 'Publish profile'}
+              variant="secondary"
+              loading={publishing}
+              onPress={() => void publish()}
+            />
+          </View>
         ) : null}
       </View>
     </SafeAreaView>
@@ -1040,7 +1042,8 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: colors.border,
       backgroundColor: colors.background
-    }
+    },
+    footerButton: { flex: 1 }
   });
 }
 
