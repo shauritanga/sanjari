@@ -1,4 +1,6 @@
 import {
+  ArrowDown01Icon,
+  ArrowLeft01Icon,
   Calendar03Icon,
   CheckmarkBadge01Icon,
   CigaretteIcon,
@@ -23,6 +25,7 @@ import { AppTextInput } from '../../src/components/AppTextInput';
 import { ChipGroup } from '../../src/components/ChipGroup';
 import { PhotoGrid, type PhotoItem } from '../../src/components/PhotoGrid';
 import { ProgressBar } from '../../src/components/ProgressBar';
+import { SearchableSelect } from '../../src/components/SearchableSelect';
 import { SelectableCard } from '../../src/components/SelectableCard';
 import { VerificationBadge } from '../../src/components/VerificationBadge';
 import { ToggleRow } from '../../src/components/ToggleRow';
@@ -148,8 +151,8 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
   const [requesting, setRequesting] = useState<VerificationType | null>(null);
   const [onboardingStatus, setOnboardingStatus] = useState('not_started');
   const [countries, setCountries] = useState<CountryOption[]>([]);
-  const [countryQuery, setCountryQuery] = useState('');
-  const [cityQuery, setCityQuery] = useState('');
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const { edit } = useLocalSearchParams<{ edit?: string }>();
   const editing = forceEdit || edit === '1';
 
@@ -180,17 +183,14 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
     () => countries.find((item) => item.code === profile.countryCode) ?? null,
     [countries, profile.countryCode]
   );
-  const filteredCountries = useMemo(() => {
-    const normalized = countryQuery.trim().toLowerCase();
-    if (!normalized) return countries;
-    return countries.filter((item) => item.name.toLowerCase().includes(normalized));
-  }, [countries, countryQuery]);
-  const filteredCities = useMemo(() => {
-    const normalized = cityQuery.trim().toLowerCase();
-    const cities = selectedCountry?.cities ?? [];
-    if (!normalized) return cities;
-    return cities.filter((item) => item.name.toLowerCase().includes(normalized));
-  }, [selectedCountry, cityQuery]);
+  const countryOptions = useMemo(
+    () => countries.map((country) => ({ value: country.code, label: country.name })),
+    [countries]
+  );
+  const cityOptions = useMemo(
+    () => (selectedCountry?.cities ?? []).map((city) => ({ value: city.id, label: city.name })),
+    [selectedCountry]
+  );
 
   function latestVerificationFor(type: VerificationType) {
     return verificationCases.find((item) => item.type === type);
@@ -324,11 +324,14 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
     ]);
   }
 
-  function selectCountry(country: CountryOption) {
-    setProfile((current) => ({ ...current, countryCode: country.code, cityId: null, cityName: null, city: null }));
-    setCityQuery('');
+  function selectCountry(countryCode: string) {
+    setSaved(false);
+    setProfile((current) => ({ ...current, countryCode, cityId: null, cityName: null, city: null }));
   }
-  function selectCity(city: { id: string; name: string }) {
+  function selectCity(cityId: string) {
+    const city = selectedCountry?.cities.find((item) => item.id === cityId);
+    if (!city) return;
+    setSaved(false);
     setProfile((current) => ({ ...current, cityId: city.id, cityName: city.name, city: city.name }));
   }
 
@@ -361,8 +364,14 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topRow}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Back to profile" onPress={() => router.back()}>
-            <Text style={styles.backLabel}>‹ Back</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back to profile"
+            onPress={() => router.back()}
+            style={[styles.backButton, { backgroundColor: colors.surfaceAlt }]}
+            hitSlop={8}
+          >
+            <AppIcon icon={ArrowLeft01Icon} color={colors.textPrimary} size={20} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -408,7 +417,9 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
 
         <View style={[styles.progressCard, styles.card]}>
           <View style={styles.progressRow}>
-            <ProgressBar current={score} total={100} />
+            <View style={styles.progressBarWrap}>
+              <ProgressBar current={score} total={100} />
+            </View>
             <Text style={styles.progressLabel}>{score}%</Text>
           </View>
           <Text style={styles.progressHint}>
@@ -535,39 +546,31 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
         </Section>
 
         <Section title="Location" icon={Location01Icon} hint="Choose a broad area. Your exact address is never required." theme={theme}>
-          <View style={styles.locationSummary}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Choose your country"
+            onPress={() => setCountryPickerOpen(true)}
+            style={[styles.dropdownField, { borderColor: colors.border, borderRadius: theme.radius.md }]}
+          >
             <AppIcon icon={Location01Icon} color={colors.accent} size={18} />
-            <Text style={styles.locationSummaryText}>
-              {profile.cityName ?? profile.city ?? 'Choose a country, then a city'}
+            <Text style={styles.dropdownFieldText} numberOfLines={1}>
+              {selectedCountry?.name ?? 'Choose a country'}
             </Text>
-          </View>
-          <AppTextInput label="Search countries" value={countryQuery} onChangeText={setCountryQuery} placeholder="Type a country name" />
-          <View style={styles.choiceGrid}>
-            {filteredCountries.map((country) => (
-              <Choice
-                key={country.code}
-                label={country.name}
-                active={country.code === profile.countryCode}
-                onPress={() => selectCountry(country)}
-                theme={theme}
-              />
-            ))}
-          </View>
+            <AppIcon icon={ArrowDown01Icon} color={colors.textSecondary} size={16} />
+          </Pressable>
           {selectedCountry ? (
-            <>
-              <AppTextInput label="Search cities" value={cityQuery} onChangeText={setCityQuery} placeholder="Type a city name" />
-              <View style={styles.choiceGrid}>
-                {filteredCities.map((city) => (
-                  <Choice
-                    key={city.id}
-                    label={city.name}
-                    active={city.id === profile.cityId}
-                    onPress={() => selectCity(city)}
-                    theme={theme}
-                  />
-                ))}
-              </View>
-            </>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Choose your city"
+              onPress={() => setCityPickerOpen(true)}
+              style={[styles.dropdownField, { borderColor: colors.border, borderRadius: theme.radius.md }]}
+            >
+              <AppIcon icon={Location01Icon} color={colors.accent} size={18} />
+              <Text style={styles.dropdownFieldText} numberOfLines={1}>
+                {profile.cityName ?? profile.city ?? 'Choose a city'}
+              </Text>
+              <AppIcon icon={ArrowDown01Icon} color={colors.textSecondary} size={16} />
+            </Pressable>
           ) : null}
         </Section>
 
@@ -696,6 +699,27 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
           </View>
         ) : null}
       </View>
+
+      <SearchableSelect
+        visible={countryPickerOpen}
+        title="Choose your country"
+        placeholder="Search countries"
+        options={countryOptions}
+        selectedValue={profile.countryCode ?? null}
+        onSelect={selectCountry}
+        onClose={() => setCountryPickerOpen(false)}
+        emptyLabel="No countries match your search."
+      />
+      <SearchableSelect
+        visible={cityPickerOpen}
+        title="Choose your city"
+        placeholder="Search cities"
+        options={cityOptions}
+        selectedValue={profile.cityId ?? null}
+        onSelect={selectCity}
+        onClose={() => setCityPickerOpen(false)}
+        emptyLabel="No cities match your search."
+      />
     </SafeAreaView>
   );
 }
@@ -779,7 +803,9 @@ function ProfileHub({
           ) : null}
 
           <View style={styles.completionRow}>
-            <ProgressBar current={score} total={100} />
+            <View style={styles.progressBarWrap}>
+              <ProgressBar current={score} total={100} />
+            </View>
             <Text style={styles.completionLabel}>{score}% complete</Text>
           </View>
 
@@ -920,36 +946,10 @@ function Labeled({
   );
 }
 
-function Choice({ label, active, onPress, theme }: { label: string; active: boolean; onPress: () => void; theme: AppTheme }) {
-  const { colors, radius, spacing } = theme;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      style={[
-        sectionStyles.choice,
-        {
-          borderRadius: radius.pill,
-          borderColor: active ? colors.accent : colors.border,
-          backgroundColor: active ? colors.surfaceAlt : colors.surface,
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.xs
-        }
-      ]}
-    >
-      <Text style={{ color: active ? colors.accentAlt : colors.textPrimary, fontWeight: active ? '700' : '500', fontSize: 13 }}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const sectionStyles = StyleSheet.create({
   section: { borderWidth: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  titleIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  choice: { borderWidth: 1 }
+  titleIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }
 });
 
 const cardShadow = {
@@ -971,7 +971,13 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       fontWeight: '800',
       color: colors.textPrimary
     },
-    backLabel: { color: colors.accent, fontWeight: '700', fontSize: 15 },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
     previewChip: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1018,15 +1024,22 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       gap: spacing.xs
     },
     progressRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    progressBarWrap: { flex: 1 },
     progressLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', minWidth: 34, textAlign: 'right' },
     progressHint: { color: colors.textSecondary, fontSize: 12 },
     error: { color: colors.error, fontWeight: '600' },
     saved: { color: colors.success, fontWeight: '600' },
     fieldRow: { flexDirection: 'row', gap: spacing.sm },
     fieldHalf: { flex: 1, minWidth: 0 },
-    locationSummary: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    locationSummaryText: { color: colors.textSecondary },
-    choiceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    dropdownField: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 52,
+      paddingHorizontal: spacing.md,
+      borderWidth: 1
+    },
+    dropdownFieldText: { flex: 1, color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
     pauseAction: {
       minHeight: 48,
       alignItems: 'center',
@@ -1070,6 +1083,7 @@ function createHubStyles({ colors, radius, spacing, typography }: AppTheme) {
     memberSinceRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
     memberSinceText: { color: colors.textSecondary, fontSize: 12 },
     completionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, width: '100%', marginTop: spacing.md },
+    progressBarWrap: { flex: 1 },
     completionLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', minWidth: 34, textAlign: 'right' },
     identityActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md, width: '100%' },
     identityButton: {
@@ -1104,7 +1118,6 @@ function createHubStyles({ colors, radius, spacing, typography }: AppTheme) {
     accountNote: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, borderWidth: 1, padding: spacing.md },
     noteTitle: { color: colors.textPrimary, fontWeight: '800' },
     noteBody: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
-    backLabel: { color: colors.accent, fontWeight: '700', fontSize: 15 },
     logoutRow: { paddingTop: spacing.sm }
   });
 }

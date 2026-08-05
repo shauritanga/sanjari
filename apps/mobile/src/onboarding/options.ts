@@ -5,12 +5,15 @@ export interface SelectOption {
 
 export const GENDER_OPTIONS: SelectOption[] = [
   { value: 'woman', label: 'Woman' },
-  { value: 'man', label: 'Man' }
+  { value: 'man', label: 'Man' },
+  { value: 'non_binary', label: 'Non-binary' },
+  { value: 'other', label: 'Other' }
 ];
 
 export const WHO_TO_MEET_OPTIONS: SelectOption[] = [
   { value: 'woman', label: 'Women' },
   { value: 'man', label: 'Men' },
+  { value: 'non_binary', label: 'Non-binary people' },
   { value: 'everyone', label: 'Everyone' }
 ];
 
