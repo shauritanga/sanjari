@@ -12,13 +12,20 @@ export default function WhoToMeetScreen() {
   const { spacing } = useAppTheme();
   const storedInterestedIn = useOnboardingStore((state) => state.interestedIn);
   const saveOnboarding = useOnboardingStore((state) => state.saveOnboarding);
+  const setDiscoveryPreference = useOnboardingStore((state) => state.setDiscoveryPreference);
   const [selected, setSelected] = useState<string[]>(storedInterestedIn);
   const [saving, setSaving] = useState(false);
 
   async function handlePrimary() {
     setSaving(true);
     try {
-      await saveOnboarding({ interestedIn: selected }, stepNumber('who-to-meet'));
+      // "Everyone" (or nothing specific) means no gender filter; otherwise
+      // restrict Discover to the selected genders.
+      const genders = selected.includes('everyone') ? [] : selected;
+      await Promise.all([
+        saveOnboarding({ interestedIn: selected }, stepNumber('who-to-meet')),
+        setDiscoveryPreference({ genders }),
+      ]);
       router.push('/onboarding/intentions');
     } finally {
       setSaving(false);
