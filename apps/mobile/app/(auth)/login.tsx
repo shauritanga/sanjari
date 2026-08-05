@@ -1,7 +1,8 @@
+import logo from '../../assets/icon.png';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
@@ -59,6 +60,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.content}>
+        <Image source={logo} style={styles.logo} />
         <Text style={styles.title}>Welcome back</Text>
         <Text style={styles.copy}>Log in to continue your journey.</Text>
         <AppTextInput label="Email" value={email} onChangeText={setEmail} />
@@ -98,6 +100,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.warmWhite, padding: theme.spacing.lg },
   content: { flex: 1, justifyContent: 'center', gap: theme.spacing.md },
-  title: { color: theme.colors.deepPlum, fontSize: 32, fontWeight: '700' },
-  copy: { color: theme.colors.secondaryText, fontSize: 16 },
+  logo: { width: 96, height: 96, borderRadius: 24, alignSelf: 'center', marginBottom: theme.spacing.sm },
+  title: { color: theme.colors.deepPlum, fontSize: 32, fontWeight: '700', textAlign: 'center' },
+  copy: { color: theme.colors.secondaryText, fontSize: 16, textAlign: 'center' },
 });
