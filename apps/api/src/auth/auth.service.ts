@@ -420,14 +420,22 @@ export class AuthService {
     deviceId = `registration-${userId}`,
   ): Promise<IssuedTokens> {
     const tokens = await this.createTokens(userId, email);
-    await this.prisma.userSession.create({
-      data: {
-        userId,
-        deviceId,
-        refreshTokenHash: hashToken(tokens.refreshToken),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      },
-    });
+    await this.prisma.$transaction([
+      // Logging in again from the same device replaces its prior session
+      // rather than accumulating a new row every time.
+      this.prisma.userSession.updateMany({
+        where: { userId, deviceId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+      this.prisma.userSession.create({
+        data: {
+          userId,
+          deviceId,
+          refreshTokenHash: hashToken(tokens.refreshToken),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      }),
+    ]);
     return tokens;
   }
 

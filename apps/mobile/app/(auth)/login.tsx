@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { API_URL } from '../../src/config';
+import { getDeviceId } from '../../src/lib/deviceId';
 import { theme } from '../../src/theme/theme';
 import { resumeOnboardingPath } from '../../src/onboarding/steps';
 type ApiResponse = {
@@ -26,10 +27,11 @@ export default function LoginScreen() {
     setBusy(true);
     setError('');
     try {
+      const deviceId = await getDeviceId();
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, deviceId: 'mobile-device-local' }),
+        body: JSON.stringify({ email, password, deviceId }),
       });
       const body = await readApiResponse(response);
       if (!response.ok) throw new Error(body.message ?? body.error?.message ?? 'Unable to log in.');

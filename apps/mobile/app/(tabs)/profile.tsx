@@ -9,6 +9,7 @@ import {
   FavouriteIcon,
   IdVerifiedIcon,
   Location01Icon,
+  Settings02Icon,
   Shield01Icon,
   SmileIcon,
   UserIcon,
@@ -772,7 +773,7 @@ function ProfileHub({
             onPress={() => router.push('/settings')}
             style={[styles.settingsButton, { borderRadius: radius.pill, backgroundColor: colors.surfaceAlt }]}
           >
-            <AppIcon icon={Shield01Icon} color={colors.accentAlt} size={21} />
+            <AppIcon icon={Settings02Icon} color={colors.accentAlt} size={21} />
           </Pressable>
         </View>
 
@@ -829,8 +830,8 @@ function ProfileHub({
         </View>
 
         <View style={styles.menu}>
-          <HubRow icon={Shield01Icon} title="Settings" description="Privacy, notifications and active devices" onPress={() => router.push('/settings')} theme={theme} />
-          <HubRow icon={CheckmarkBadge01Icon} title="Safety and data" description="Deactivate, request your data, or delete your account" onPress={() => router.push('/safety')} theme={theme} />
+          <HubRow icon={Settings02Icon} title="Settings" description="Privacy, notifications and active devices" onPress={() => router.push('/settings')} theme={theme} />
+          <HubRow icon={Shield01Icon} title="Safety and data" description="Deactivate, request your data, or delete your account" onPress={() => router.push('/safety')} theme={theme} />
         </View>
 
         <View style={[styles.accountNote, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>

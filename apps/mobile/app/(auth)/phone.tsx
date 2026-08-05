@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from '../../src/components/AppButton';
 import { AppTextInput } from '../../src/components/AppTextInput';
 import { api } from '../../src/api';
+import { getDeviceId } from '../../src/lib/deviceId';
 import { theme } from '../../src/theme/theme';
 import { resumeOnboardingPath } from '../../src/onboarding/steps';
 
@@ -24,9 +25,10 @@ export default function PhoneAuthScreen() {
   }
   async function verifyCode() {
     try {
+      const deviceId = await getDeviceId();
       const result = await api.post<{ accessToken: string; refreshToken: string }>(
         '/auth/phone/login/verify',
-        { phoneNumber, code, deviceId: 'mobile-phone-device' },
+        { phoneNumber, code, deviceId },
       );
       const tokens = result.data;
       if (!tokens) throw new Error('Login response was incomplete.');
