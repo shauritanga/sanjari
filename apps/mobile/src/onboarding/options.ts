@@ -15,11 +15,16 @@ export const WHO_TO_MEET_OPTIONS: SelectOption[] = [
 ];
 
 export const INTENTION_OPTIONS: SelectOption[] = [
-  { value: 'long_term', label: 'Long-term relationship' },
-  { value: 'short_term', label: 'Short-term fun' },
-  { value: 'casual', label: 'Casual dating' },
-  { value: 'friendship', label: 'New friends' },
-  { value: 'not_sure', label: 'Still figuring it out' }
+  { value: 'long_term', label: '❤️ Long-term relationship' },
+  { value: 'marriage', label: '💍 Marriage' },
+  { value: 'serious_dating', label: '😊 Serious dating' },
+  { value: 'casual_dating', label: '💕 Casual dating' },
+  { value: 'casual_fun', label: '🔥 Casual fun / hookups' },
+  { value: 'friends_first', label: '🤝 Friends first' },
+  { value: 'new_friends', label: '👥 New friends' },
+  { value: 'travel_companion', label: '🌍 Travel companion' },
+  { value: 'chatting', label: '💬 Chatting' },
+  { value: 'open_to_anything', label: '💖 Open to anything' }
 ];
 
 export const INTEREST_OPTIONS: SelectOption[] = [
