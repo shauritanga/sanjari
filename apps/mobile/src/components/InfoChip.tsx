@@ -29,9 +29,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: 44,
-    borderRadius: 22,
-    paddingHorizontal: 16,
+    height: 36,
+    borderRadius: 20,
+    paddingHorizontal: 12,
     backgroundColor: 'rgba(0,0,0,0.45)'
   },
   flag: { fontSize: 16 },

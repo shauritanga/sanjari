@@ -1,11 +1,14 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
+import { readVisibility } from '../discovery/discovery.service';
 import { AttachmentStorageService } from './attachment-storage.service';
 import { AttachmentScanService } from './attachment-scan.service';
 
 function hasSuspiciousLink(body: string): boolean {
   return /(?:https?:\/\/|www\.)[^\s]+/i.test(body);
 }
+
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 
 @Injectable()
 export class ConversationsService {
@@ -56,8 +59,20 @@ export class ConversationsService {
     const matches = await this.prisma.match.findMany({
       where: { status: 'active', OR: [{ userAId: userId }, { userBId: userId }] },
       include: {
-        userA: { select: { id: true, profile: { select: { displayName: true } } } },
-        userB: { select: { id: true, profile: { select: { displayName: true } } } },
+        userA: {
+          select: {
+            id: true,
+            lastActiveAt: true,
+            profile: { select: { displayName: true, visibilitySettings: true } },
+          },
+        },
+        userB: {
+          select: {
+            id: true,
+            lastActiveAt: true,
+            profile: { select: { displayName: true, visibilitySettings: true } },
+          },
+        },
         conversation: {
           include: {
             members: true,
@@ -98,10 +113,18 @@ export class ConversationsService {
             ...(self?.lastReadAt ? { createdAt: { gt: self.lastReadAt } } : {}),
           },
         });
+        const otherHidesOnlineStatus = readVisibility(other.profile?.visibilitySettings).hideOnlineStatus;
         return {
           id: conversation.id,
           matchId: match.id,
-          otherUser: { id: other.id, displayName: other.profile?.displayName ?? null },
+          otherUser: {
+            id: other.id,
+            displayName: other.profile?.displayName ?? null,
+            online: otherHidesOnlineStatus
+              ? false
+              : other.lastActiveAt != null && Date.now() - other.lastActiveAt.getTime() < ONLINE_THRESHOLD_MS,
+            lastActiveAt: otherHidesOnlineStatus ? null : other.lastActiveAt,
+          },
           lastMessage: conversation.messages[0] ?? null,
           unreadCount,
         };
@@ -127,12 +150,36 @@ export class ConversationsService {
         replyTo: { select: { id: true, senderId: true, body: true } },
         attachments: {
           where: { status: 'approved' },
-          select: { id: true, storageKey: true, mimeType: true, sizeBytes: true },
+          select: {
+            id: true,
+            storageKey: true,
+            mimeType: true,
+            sizeBytes: true,
+            waveform: true,
+            durationSeconds: true,
+          },
         },
         reactions: { select: { userId: true, reaction: true } },
-        receipts: { where: { type: 'read' }, select: { userId: true, createdAt: true } },
+        receipts: { select: { userId: true, type: true, createdAt: true } },
       },
     });
+    // Fetching this history is itself proof of delivery — mark any of the other
+    // participant's messages we don't already have a delivered receipt for.
+    const undelivered = messages.filter(
+      (message) =>
+        message.senderId !== userId &&
+        !message.receipts.some((receipt) => receipt.userId === userId && receipt.type === 'delivered'),
+    );
+    if (undelivered.length > 0) {
+      await this.markDelivered(
+        userId,
+        conversationId,
+        undelivered.map((message) => message.id),
+      );
+      for (const message of undelivered) {
+        message.receipts.push({ userId, type: 'delivered', createdAt: new Date() });
+      }
+    }
     const withAttachmentUrls = await Promise.all(
       messages.map(async (message) => ({
         ...message,
@@ -144,7 +191,11 @@ export class ConversationsService {
         ),
       })),
     );
-    return { data: withAttachmentUrls, nextCursor: messages.length === 30 ? String(skip + 30) : null };
+    return {
+      data: withAttachmentUrls,
+      nextCursor: messages.length === 30 ? String(skip + 30) : null,
+      newlyDelivered: undelivered.map((message) => message.id),
+    };
   }
 
   async send(userId: string, conversationId: string, body: string, replyToMessageId?: string) {
@@ -213,6 +264,28 @@ export class ConversationsService {
     return message;
   }
 
+  async markDelivered(userId: string, conversationId: string, messageIds: string[]) {
+    await this.authorize(userId, conversationId);
+    const messages = await this.prisma.message.findMany({
+      where: { id: { in: messageIds }, conversationId, senderId: { not: userId } },
+      select: { id: true },
+    });
+    if (messages.length === 0) return { delivered: [] as string[] };
+    await this.prisma.messageReceipt.createMany({
+      data: messages.map((message) => ({ messageId: message.id, userId, type: 'delivered' })),
+      skipDuplicates: true,
+    });
+    return { delivered: messages.map((message) => message.id) };
+  }
+
+  async hidesOnlineStatus(userId: string): Promise<boolean> {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { visibilitySettings: true },
+    });
+    return Boolean(readVisibility(profile?.visibilitySettings).hideOnlineStatus);
+  }
+
   async markRead(userId: string, conversationId: string, messageId: string) {
     await this.authorize(userId, conversationId);
     const message = await this.prisma.message.findFirst({
@@ -221,16 +294,26 @@ export class ConversationsService {
     });
     if (!message)
       throw new NotFoundException({ code: 'MESSAGE_NOT_FOUND', message: 'Message not found.' });
-    await this.prisma.messageReceipt.upsert({
-      where: { messageId_userId_type: { messageId, userId, type: 'read' } },
-      create: { messageId, userId, type: 'read' },
-      update: {},
+    // Someone who has turned off read receipts doesn't send them either —
+    // we still track lastReadAt for their own unread counts, just skip the
+    // visible receipt the other participant would otherwise see.
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { visibilitySettings: true },
     });
+    const sendsReadReceipts = !readVisibility(profile?.visibilitySettings).hideReadReceipts;
+    if (sendsReadReceipts) {
+      await this.prisma.messageReceipt.upsert({
+        where: { messageId_userId_type: { messageId, userId, type: 'read' } },
+        create: { messageId, userId, type: 'read' },
+        update: {},
+      });
+    }
     await this.prisma.conversationMember.update({
       where: { conversationId_userId: { conversationId, userId } },
       data: { lastReadAt: new Date() },
     });
-    return { read: true };
+    return { read: sendsReadReceipts };
   }
 
   async deleteOwnMessage(userId: string, messageId: string) {
@@ -300,6 +383,8 @@ export class ConversationsService {
     storageKey: string,
     mimeType: string,
     sizeBytes: number,
+    waveform?: number[],
+    durationSeconds?: number,
   ) {
     await this.authorize(userId, conversationId);
     if (
@@ -323,8 +408,16 @@ export class ConversationsService {
         message: 'Attachments can only be added to your own message.',
       });
     const attachment = await this.prisma.messageAttachment.create({
-      data: { messageId, storageKey, mimeType, sizeBytes, status: 'pending_scan' },
-      select: { id: true, status: true, mimeType: true, sizeBytes: true },
+      data: {
+        messageId,
+        storageKey,
+        mimeType,
+        sizeBytes,
+        status: 'pending_scan',
+        ...(waveform !== undefined && { waveform }),
+        ...(durationSeconds !== undefined && { durationSeconds }),
+      },
+      select: { id: true, status: true, mimeType: true, sizeBytes: true, waveform: true, durationSeconds: true },
     });
     await this.attachmentScan.enqueue(attachment.id);
     return { ...attachment, messageId, url: await this.attachmentStorage.presignDownload(storageKey) };

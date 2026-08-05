@@ -459,14 +459,17 @@ model Message {
 }
 
 model MessageAttachment {
-  id         String   @id @default(uuid()) @db.Uuid
-  messageId  String   @db.Uuid
-  storageKey String
-  mimeType   String
-  sizeBytes  Int
-  status     String   @default("pending_scan")
-  createdAt  DateTime @default(now())
-  message    Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  id              String   @id @default(uuid()) @db.Uuid
+  messageId       String   @db.Uuid
+  storageKey      String
+  mimeType        String
+  sizeBytes       Int
+  status          String   @default("pending_scan")
+  /// Normalized (0-1) amplitude samples captured while recording a voice note, for waveform rendering.
+  waveform        Json?
+  durationSeconds Float?
+  createdAt       DateTime @default(now())
+  message         Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
 
 model MessageReaction {

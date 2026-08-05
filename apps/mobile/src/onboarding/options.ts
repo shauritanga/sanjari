@@ -50,6 +50,39 @@ export const INTEREST_OPTIONS: SelectOption[] = [
   { value: 'faith', label: 'Faith' }
 ];
 
+export const DRINKING_OPTIONS: SelectOption[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'rarely', label: 'Rarely' },
+  { value: 'socially', label: 'Socially' },
+  { value: 'regularly', label: 'Regularly' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say' }
+];
+
+export const SMOKING_OPTIONS: SelectOption[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'occasionally', label: 'Occasionally' },
+  { value: 'regularly', label: 'Regularly' },
+  { value: 'trying_to_quit', label: 'Trying to quit' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say' }
+];
+
+export const EXERCISE_OPTIONS: SelectOption[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'sometimes', label: 'Sometimes' },
+  { value: 'often', label: 'Often' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say' }
+];
+
+export const CHILDREN_OPTIONS: SelectOption[] = [
+  { value: 'have_and_want_more', label: 'Have kids, want more' },
+  { value: 'have_and_dont_want_more', label: 'Have kids, done' },
+  { value: 'want_someday', label: 'Want kids someday' },
+  { value: 'dont_want', label: "Don't want kids" },
+  { value: 'not_sure', label: 'Not sure yet' },
+  { value: 'prefer_not_to_say', label: 'Prefer not to say' }
+];
+
 export const LANGUAGE_OPTIONS: SelectOption[] = [
   { value: 'en', label: 'English' },
   { value: 'sw', label: 'Swahili' },

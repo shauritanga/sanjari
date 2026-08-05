@@ -137,6 +137,22 @@ export class OnboardingUpdateDto {
   @IsOptional()
   @IsBoolean()
   hideReadReceipts?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hideCity?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hideOccupation?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hideEducation?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hideHeight?: boolean;
 }
 
 export class PhotoPresignDto {
@@ -151,6 +167,12 @@ export class PhotoPresignDto {
 }
 
 export class PhotoCompleteDto {
+  @IsString()
+  @MinLength(8)
+  storageKey!: string;
+}
+
+export class PhotoReplaceDto {
   @IsString()
   @MinLength(8)
   storageKey!: string;

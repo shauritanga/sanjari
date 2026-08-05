@@ -579,4 +579,28 @@ export class ModerationService {
     });
     return { id: request.id, status: request.status, executeAfter: request.executeAfter };
   }
+
+  /**
+   * Distinct from pause-discovery (still logged in, just hidden from new
+   * matches) and from permanent deletion. A deactivated account is excluded
+   * everywhere `status: 'active'` is checked, and is restored automatically
+   * the next time the user successfully logs back in.
+   */
+  async deactivateAccount(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } });
+    if (!user) throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'Account not found.' });
+    if (user.status !== 'active')
+      throw new BadRequestException({
+        code: 'ACCOUNT_NOT_ACTIVE',
+        message: 'Only an active account can be deactivated.',
+      });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: userId }, data: { status: 'deactivated' } });
+      await tx.userSession.deleteMany({ where: { userId } });
+      await tx.auditLog.create({
+        data: { userId, actorType: 'user', action: 'account.deactivated' },
+      });
+    });
+    return { status: 'deactivated' as const };
+  }
 }

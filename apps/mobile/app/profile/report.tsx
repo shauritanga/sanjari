@@ -19,14 +19,21 @@ export default function ReportProfileScreen() {
   const theme = useAppTheme();
   const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { userId, displayName, mode } = useLocalSearchParams<{
+  const { userId, mode, exitSteps = '1' } = useLocalSearchParams<{
     userId: string;
     displayName?: string;
     mode?: 'report' | 'block';
+    /** How many screens to pop on success, to land back on the screen that started this flow. */
+    exitSteps?: string;
   }>();
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  function exit() {
+    const steps = Number(exitSteps) || 1;
+    for (let i = 0; i < steps; i += 1) router.back();
+  }
 
   async function submit() {
     if (!userId || !selected || busy) return;
@@ -40,13 +47,8 @@ export default function ReportProfileScreen() {
       });
       if (mode === 'block') {
         await api.post(`/blocks/${userId}`, { reason: 'Reported and blocked from profile view.' });
-        // Stack here is [..., profile, block, report] — pop all three to leave the blocked profile.
-        router.back();
-        router.back();
-        router.back();
-      } else {
-        router.dismissTo(`/profile/${userId}`);
       }
+      exit();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to submit this report.');
       setBusy(false);
@@ -68,7 +70,7 @@ export default function ReportProfileScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close"
-          onPress={() => router.dismissTo(`/profile/${userId}`)}
+          onPress={() => router.back()}
           hitSlop={12}
         >
           <AppIcon icon={Cancel01Icon} color={colors.textPrimary} size={22} />

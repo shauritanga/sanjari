@@ -1,10 +1,16 @@
 import {
+  Calendar03Icon,
   CheckmarkBadge01Icon,
+  CigaretteIcon,
+  Dumbbell01Icon,
+  EyeIcon,
   FavouriteIcon,
   IdVerifiedIcon,
   Location01Icon,
   Shield01Icon,
-  UserIcon
+  SmileIcon,
+  UserIcon,
+  DrinkIcon
 } from '@hugeicons/core-free-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -22,14 +28,28 @@ import { VerificationBadge } from '../../src/components/VerificationBadge';
 import { ToggleRow } from '../../src/components/ToggleRow';
 import { api } from '../../src/api';
 import {
+  CHILDREN_OPTIONS,
+  DRINKING_OPTIONS,
+  EXERCISE_OPTIONS,
   GENDER_OPTIONS,
   INTENTION_OPTIONS,
   INTEREST_OPTIONS,
   LANGUAGE_OPTIONS,
+  SMOKING_OPTIONS,
   WHO_TO_MEET_OPTIONS
 } from '../../src/onboarding/options';
 import { useAppTheme, type AppTheme } from '../../src/theme/useAppTheme';
 import { captureAndSubmitVerification, type VerificationCase, type VerificationType } from '../../src/verification';
+
+type VisibilitySettings = {
+  hideAge?: boolean;
+  hideOnlineStatus?: boolean;
+  hideReadReceipts?: boolean;
+  hideCity?: boolean;
+  hideOccupation?: boolean;
+  hideEducation?: boolean;
+  hideHeight?: boolean;
+};
 
 type Profile = {
   displayName: string | null;
@@ -46,14 +66,22 @@ type Profile = {
   languages: string[];
   occupationCategory?: string | null;
   educationLevel?: string | null;
-  visibilitySettings?: {
-    hideAge?: boolean;
-    hideOnlineStatus?: boolean;
-    hideReadReceipts?: boolean;
-  };
+  heightCm?: number | null;
+  drinkingPreference?: string | null;
+  smokingPreference?: string | null;
+  exercisePreference?: string | null;
+  childrenPreference?: string | null;
+  culturalPreference?: string | null;
+  visibilitySettings?: VisibilitySettings;
   photos: PhotoItem[];
 };
-type Onboarding = { completionScore: number; onboardingStatus: string; age: number; profile: Profile };
+type Onboarding = {
+  completionScore: number;
+  onboardingStatus: string;
+  age: number;
+  memberSince?: string;
+  profile: Profile;
+};
 interface CountryOption {
   code: string;
   name: string;
@@ -85,6 +113,11 @@ function publishLabel(status: string) {
   }
 }
 
+function memberSinceLabel(iso?: string) {
+  if (!iso) return null;
+  return `Member since ${new Date(iso).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+}
+
 export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boolean }) {
   const theme = useAppTheme();
   const { colors } = theme;
@@ -103,6 +136,7 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
     photos: []
   });
   const [age, setAge] = useState<number | null>(null);
+  const [memberSince, setMemberSince] = useState<string | undefined>(undefined);
   const [score, setScore] = useState(0);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -128,6 +162,7 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
           setScore(result.data.completionScore);
           setOnboardingStatus(result.data.onboardingStatus);
           setAge(result.data.age);
+          setMemberSince(result.data.memberSince);
         }
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to load profile.'));
@@ -167,11 +202,20 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
     return colors.textSecondary;
   }
 
+  function setVisibility(patch: Partial<VisibilitySettings>) {
+    setSaved(false);
+    setProfile((current) => ({
+      ...current,
+      visibilitySettings: { ...current.visibilitySettings, ...patch }
+    }));
+  }
+
   async function save() {
     setError('');
     setSaved(false);
     setSaving(true);
     try {
+      const visibility = profile.visibilitySettings ?? {};
       const result = await api.put<{ completionScore: number }>('/onboarding', {
         step: 4,
         ...(profile.displayName !== null ? { displayName: profile.displayName } : {}),
@@ -191,9 +235,29 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
         ...(profile.city !== null ? { city: profile.city } : {}),
         ...(profile.countryCode ? { countryCode: profile.countryCode } : {}),
         ...(profile.cityId ? { cityId: profile.cityId } : {}),
-        hideAge: profile.visibilitySettings?.hideAge ?? false,
-        hideOnlineStatus: profile.visibilitySettings?.hideOnlineStatus ?? false,
-        hideReadReceipts: profile.visibilitySettings?.hideReadReceipts ?? false
+        ...(profile.heightCm !== undefined ? { heightCm: profile.heightCm } : {}),
+        ...(profile.drinkingPreference !== null && profile.drinkingPreference !== undefined
+          ? { drinkingPreference: profile.drinkingPreference }
+          : {}),
+        ...(profile.smokingPreference !== null && profile.smokingPreference !== undefined
+          ? { smokingPreference: profile.smokingPreference }
+          : {}),
+        ...(profile.exercisePreference !== null && profile.exercisePreference !== undefined
+          ? { exercisePreference: profile.exercisePreference }
+          : {}),
+        ...(profile.childrenPreference !== null && profile.childrenPreference !== undefined
+          ? { childrenPreference: profile.childrenPreference }
+          : {}),
+        ...(profile.culturalPreference !== null && profile.culturalPreference !== undefined
+          ? { culturalPreference: profile.culturalPreference }
+          : {}),
+        hideAge: visibility.hideAge ?? false,
+        hideOnlineStatus: visibility.hideOnlineStatus ?? false,
+        hideReadReceipts: visibility.hideReadReceipts ?? false,
+        hideCity: visibility.hideCity ?? false,
+        hideOccupation: visibility.hideOccupation ?? false,
+        hideEducation: visibility.hideEducation ?? false,
+        hideHeight: visibility.hideHeight ?? false
       });
       setScore(result.data?.completionScore ?? score);
       setOnboardingStatus((current) => (current === 'published' ? 'published' : 'in_progress'));
@@ -278,13 +342,16 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
       <ProfileHub
         profile={profile}
         age={age}
+        memberSince={memberSince}
         primaryPhoto={primaryPhoto}
         initial={initial}
         theme={theme}
         loggingOut={loggingOut}
+        score={score}
         photoVerified={selfieCase?.status === 'approved'}
         idVerified={idCase?.status === 'approved'}
         onEdit={() => router.push('/profile/edit')}
+        onPreview={() => router.push('/profile/preview')}
         onLogout={confirmLogout}
       />
     );
@@ -293,12 +360,23 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to profile" onPress={() => router.back()}>
-          <Text style={styles.backLabel}>Back to profile</Text>
-        </Pressable>
+        <View style={styles.topRow}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Back to profile" onPress={() => router.back()}>
+            <Text style={styles.backLabel}>‹ Back</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Preview my profile"
+            onPress={() => router.push('/profile/preview')}
+            style={[styles.previewChip, { backgroundColor: colors.surfaceAlt, borderRadius: theme.radius.pill }]}
+          >
+            <AppIcon icon={EyeIcon} color={colors.accentAlt} size={16} />
+            <Text style={styles.previewChipLabel}>Preview</Text>
+          </Pressable>
+        </View>
         <Text style={styles.pageTitle}>Edit profile</Text>
 
-        <View style={styles.hero}>
+        <View style={[styles.hero, styles.card]}>
           <View style={styles.heroAvatar}>
             {primaryPhoto?.url ? (
               <Image source={{ uri: primaryPhoto.url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
@@ -328,15 +406,20 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
           </View>
         </View>
 
-        <View style={styles.progressRow}>
-          <ProgressBar current={score} total={100} />
-          <Text style={styles.progressLabel}>{score}% complete</Text>
+        <View style={[styles.progressCard, styles.card]}>
+          <View style={styles.progressRow}>
+            <ProgressBar current={score} total={100} />
+            <Text style={styles.progressLabel}>{score}%</Text>
+          </View>
+          <Text style={styles.progressHint}>
+            {score >= 100 ? "Your profile is complete." : 'Fill in a few more details to stand out.'}
+          </Text>
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {saved ? <Text style={styles.saved}>Saved</Text> : null}
 
-        <Section title="Photos" hint="Lead with a clear photo that feels like you." theme={theme}>
+        <Section title="Photos" hint="Lead with a clear photo that feels like you. Tap a photo for more options." theme={theme}>
           <PhotoGrid
             photos={profile.photos}
             onChange={(photos) => setProfile((current) => ({ ...current, photos }))}
@@ -391,6 +474,64 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
               />
             </View>
           </View>
+        </Section>
+
+        <Section
+          title="Lifestyle"
+          icon={SmileIcon}
+          hint="All optional — share as much or as little as you'd like."
+          theme={theme}
+        >
+          <AppTextInput
+            label="Height (cm)"
+            value={profile.heightCm != null ? String(profile.heightCm) : ''}
+            onChangeText={(value) => {
+              const digits = value.replace(/[^0-9]/g, '').slice(0, 3);
+              setProfile((current) => ({ ...current, heightCm: digits ? Number(digits) : null }));
+            }}
+            keyboardType="number-pad"
+            placeholder="e.g. 170"
+            maxLength={3}
+          />
+          <Labeled label="Drinking" icon={DrinkIcon} theme={theme}>
+            <ChipGroup
+              options={DRINKING_OPTIONS}
+              selected={profile.drinkingPreference ? [profile.drinkingPreference] : []}
+              onChange={(next) => setProfile((current) => ({ ...current, drinkingPreference: next[0] ?? null }))}
+              multiple={false}
+            />
+          </Labeled>
+          <Labeled label="Smoking" icon={CigaretteIcon} theme={theme}>
+            <ChipGroup
+              options={SMOKING_OPTIONS}
+              selected={profile.smokingPreference ? [profile.smokingPreference] : []}
+              onChange={(next) => setProfile((current) => ({ ...current, smokingPreference: next[0] ?? null }))}
+              multiple={false}
+            />
+          </Labeled>
+          <Labeled label="Exercise" icon={Dumbbell01Icon} theme={theme}>
+            <ChipGroup
+              options={EXERCISE_OPTIONS}
+              selected={profile.exercisePreference ? [profile.exercisePreference] : []}
+              onChange={(next) => setProfile((current) => ({ ...current, exercisePreference: next[0] ?? null }))}
+              multiple={false}
+            />
+          </Labeled>
+          <Labeled label="Children" theme={theme}>
+            <ChipGroup
+              options={CHILDREN_OPTIONS}
+              selected={profile.childrenPreference ? [profile.childrenPreference] : []}
+              onChange={(next) => setProfile((current) => ({ ...current, childrenPreference: next[0] ?? null }))}
+              multiple={false}
+            />
+          </Labeled>
+          <AppTextInput
+            label="Religious or cultural preference (optional)"
+            value={profile.culturalPreference ?? ''}
+            onChangeText={(value) => setProfile((current) => ({ ...current, culturalPreference: value }))}
+            placeholder="Share only if you'd like to"
+            maxLength={80}
+          />
         </Section>
 
         <Section title="Location" icon={Location01Icon} hint="Choose a broad area. Your exact address is never required." theme={theme}>
@@ -464,37 +605,48 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
           </Labeled>
         </Section>
 
-        <Section title="Privacy" icon={Shield01Icon} hint="Choose what other people can see." theme={theme}>
-          <ToggleRow
-            title="Hide my age"
-            value={profile.visibilitySettings?.hideAge ?? false}
-            onChange={(value) =>
-              setProfile((current) => ({
-                ...current,
-                visibilitySettings: { ...current.visibilitySettings, hideAge: value }
-              }))
-            }
-          />
-          <ToggleRow
-            title="Hide online status"
-            value={profile.visibilitySettings?.hideOnlineStatus ?? false}
-            onChange={(value) =>
-              setProfile((current) => ({
-                ...current,
-                visibilitySettings: { ...current.visibilitySettings, hideOnlineStatus: value }
-              }))
-            }
-          />
-          <ToggleRow
-            title="Hide read receipts"
-            value={profile.visibilitySettings?.hideReadReceipts ?? false}
-            onChange={(value) =>
-              setProfile((current) => ({
-                ...current,
-                visibilitySettings: { ...current.visibilitySettings, hideReadReceipts: value }
-              }))
-            }
-          />
+        <Section title="Privacy" icon={Shield01Icon} hint="Choose what other members can see on your profile." theme={theme}>
+          <Labeled label="Hide from other members" theme={theme}>
+            <ToggleRow
+              title="Age"
+              value={profile.visibilitySettings?.hideAge ?? false}
+              onChange={(value) => setVisibility({ hideAge: value })}
+            />
+            <ToggleRow
+              title="City"
+              value={profile.visibilitySettings?.hideCity ?? false}
+              onChange={(value) => setVisibility({ hideCity: value })}
+            />
+            <ToggleRow
+              title="Occupation"
+              value={profile.visibilitySettings?.hideOccupation ?? false}
+              onChange={(value) => setVisibility({ hideOccupation: value })}
+            />
+            <ToggleRow
+              title="Education"
+              value={profile.visibilitySettings?.hideEducation ?? false}
+              onChange={(value) => setVisibility({ hideEducation: value })}
+            />
+            <ToggleRow
+              title="Height"
+              value={profile.visibilitySettings?.hideHeight ?? false}
+              onChange={(value) => setVisibility({ hideHeight: value })}
+            />
+          </Labeled>
+          <Labeled label="Activity visibility" theme={theme}>
+            <ToggleRow
+              title="Online status"
+              description="Hide the green dot and 'Online' label in chat."
+              value={profile.visibilitySettings?.hideOnlineStatus ?? false}
+              onChange={(value) => setVisibility({ hideOnlineStatus: value })}
+            />
+            <ToggleRow
+              title="Read receipts"
+              description="You also won't see when others have read your messages."
+              value={profile.visibilitySettings?.hideReadReceipts ?? false}
+              onChange={(value) => setVisibility({ hideReadReceipts: value })}
+            />
+          </Labeled>
           <Pressable style={styles.pauseAction} onPress={() => void togglePause()}>
             <Text style={styles.pauseActionText}>{paused ? 'Resume discovery' : 'Pause discovery'}</Text>
           </Pressable>
@@ -549,29 +701,36 @@ export default function ProfileScreen({ forceEdit = false }: { forceEdit?: boole
 function ProfileHub({
   profile,
   age,
+  memberSince,
   primaryPhoto,
   initial,
   theme,
   loggingOut,
+  score,
   photoVerified,
   idVerified,
   onEdit,
+  onPreview,
   onLogout
 }: {
   profile: Profile;
   age: number | null;
+  memberSince: string | undefined;
   primaryPhoto: PhotoItem | undefined;
   initial: string;
   theme: AppTheme;
   loggingOut: boolean;
+  score: number;
   photoVerified: boolean;
   idVerified: boolean;
   onEdit: () => void;
+  onPreview: () => void;
   onLogout: () => void;
 }) {
   const { colors, radius, spacing, typography } = theme;
   const styles = createHubStyles(theme);
   const displayName = profile.displayName || 'Your profile';
+  const since = memberSinceLabel(memberSince);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -591,7 +750,7 @@ function ProfileHub({
           </Pressable>
         </View>
 
-        <View style={styles.identity}>
+        <View style={[styles.identityCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl }]}>
           <View style={[styles.avatar, { borderRadius: radius.pill, backgroundColor: colors.surfaceAlt, borderColor: colors.accent }]}>
             {primaryPhoto?.url ? (
               <Image source={{ uri: primaryPhoto.url }} style={StyleSheet.absoluteFill} contentFit="cover" />
@@ -610,12 +769,40 @@ function ProfileHub({
             />
           </View>
           <Text style={styles.handle}>{profile.city ?? 'Sanjari member'}</Text>
+          {since ? (
+            <View style={styles.memberSinceRow}>
+              <AppIcon icon={Calendar03Icon} color={colors.textSecondary} size={13} />
+              <Text style={styles.memberSinceText}>{since}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.completionRow}>
+            <ProgressBar current={score} total={100} />
+            <Text style={styles.completionLabel}>{score}% complete</Text>
+          </View>
+
+          <View style={styles.identityActions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onEdit}
+              style={[styles.identityButton, styles.identityButtonPrimary, { backgroundColor: colors.accent, borderRadius: radius.pill }]}
+            >
+              <Text style={styles.identityButtonPrimaryLabel}>Edit profile</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onPreview}
+              style={[styles.identityButton, styles.identityButtonSecondary, { borderColor: colors.border, borderRadius: radius.pill }]}
+            >
+              <AppIcon icon={EyeIcon} color={colors.accentAlt} size={16} />
+              <Text style={styles.identityButtonSecondaryLabel}>Preview</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.menu}>
-          <HubRow icon={UserIcon} title="Edit profile" description="Update your photos, details, interests and preferences" onPress={onEdit} theme={theme} />
           <HubRow icon={Shield01Icon} title="Settings" description="Privacy, notifications and active devices" onPress={() => router.push('/settings')} theme={theme} />
-          <HubRow icon={CheckmarkBadge01Icon} title="Safety and data" description="Request your data or schedule account deletion" onPress={() => router.push('/safety')} theme={theme} />
+          <HubRow icon={CheckmarkBadge01Icon} title="Safety and data" description="Deactivate, request your data, or delete your account" onPress={() => router.push('/safety')} theme={theme} />
         </View>
 
         <View style={[styles.accountNote, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
@@ -626,7 +813,9 @@ function ProfileHub({
           </View>
         </View>
 
-        <AppButton label="Log out" variant="ghost" loading={loggingOut} onPress={onLogout} />
+        <View style={styles.logoutRow}>
+          <AppButton label="Log out" variant="ghost" loading={loggingOut} onPress={onLogout} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -645,11 +834,13 @@ function HubRow({
   onPress: () => void;
   theme: AppTheme;
 }) {
-  const { colors, spacing } = theme;
+  const { colors, radius, spacing } = theme;
   const styles = createHubStyles(theme);
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.row}>
-      <AppIcon icon={icon} color={colors.textPrimary} size={22} />
+      <View style={[styles.rowIcon, { backgroundColor: colors.surfaceAlt, borderRadius: radius.pill }]}>
+        <AppIcon icon={icon} color={colors.accentAlt} size={20} />
+      </View>
       <View style={{ flex: 1, gap: spacing.xs }}>
         <Text style={styles.rowTitle}>{title}</Text>
         <Text style={styles.rowDescription}>{description}</Text>
@@ -677,12 +868,22 @@ function Section({
     <View
       style={[
         sectionStyles.section,
-        { gap: spacing.md, padding: spacing.md, backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }
+        {
+          gap: spacing.md,
+          padding: spacing.md,
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderRadius: radius.lg
+        }
       ]}
     >
       <View style={{ gap: spacing.xs }}>
         <View style={sectionStyles.titleRow}>
-          {icon ? <AppIcon icon={icon} color={colors.accent} size={18} /> : null}
+          {icon ? (
+            <View style={[sectionStyles.titleIcon, { backgroundColor: colors.surfaceAlt, borderRadius: radius.pill }]}>
+              <AppIcon icon={icon} color={colors.accent} size={16} />
+            </View>
+          ) : null}
           <Text style={{ color: colors.accentAlt, fontSize: 17, fontWeight: '800' }}>{title}</Text>
         </View>
         <Text style={{ color: colors.textSecondary, lineHeight: 19 }}>{hint}</Text>
@@ -692,13 +893,26 @@ function Section({
   );
 }
 
-function Labeled({ label, theme, children }: { label: string; theme: AppTheme; children: React.ReactNode }) {
+function Labeled({
+  label,
+  icon,
+  theme,
+  children
+}: {
+  label: string;
+  icon?: Parameters<typeof AppIcon>[0]['icon'];
+  theme: AppTheme;
+  children: React.ReactNode;
+}) {
   const { colors, spacing } = theme;
   return (
     <View style={{ gap: spacing.sm }}>
-      <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.4 }}>
-        {label}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {icon ? <AppIcon icon={icon} color={colors.textSecondary} size={14} /> : null}
+        <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+          {label}
+        </Text>
+      </View>
       {children}
     </View>
   );
@@ -731,14 +945,24 @@ function Choice({ label, active, onPress, theme }: { label: string; active: bool
 
 const sectionStyles = StyleSheet.create({
   section: { borderWidth: 1 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  titleIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   choice: { borderWidth: 1 }
 });
+
+const cardShadow = {
+  shadowColor: '#000000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 8,
+  elevation: 2
+} as const;
 
 function createStyles({ colors, radius, spacing, typography }: AppTheme) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
+    topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     pageTitle: {
       fontSize: typography.h1.fontSize,
       lineHeight: typography.h1.lineHeight,
@@ -746,7 +970,25 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       color: colors.textPrimary
     },
     backLabel: { color: colors.accent, fontWeight: '700', fontSize: 15 },
-    hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    previewChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: spacing.md,
+      height: 34
+    },
+    previewChipLabel: { color: colors.accentAlt, fontWeight: '700', fontSize: 13 },
+    card: { ...cardShadow },
+    hero: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border
+    },
     heroAvatar: {
       width: 84,
       height: 84,
@@ -765,8 +1007,17 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
     statusPillDraft: { backgroundColor: colors.surfaceAlt },
     statusPillTextLive: { color: colors.success, fontSize: 12, fontWeight: '800' },
     statusPillTextDraft: { color: colors.textSecondary, fontSize: 12, fontWeight: '800' },
-    progressRow: { gap: spacing.xs },
-    progressLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+    progressCard: {
+      padding: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.xs
+    },
+    progressRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    progressLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', minWidth: 34, textAlign: 'right' },
+    progressHint: { color: colors.textSecondary, fontSize: 12 },
     error: { color: colors.error, fontWeight: '600' },
     saved: { color: colors.success, fontWeight: '600' },
     fieldRow: { flexDirection: 'row', gap: spacing.sm },
@@ -801,28 +1052,56 @@ function createHubStyles({ colors, radius, spacing, typography }: AppTheme) {
     kicker: { color: colors.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1.2 },
     title: { color: colors.textPrimary, fontWeight: '800' },
     settingsButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-    identity: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
+    identityCard: {
+      alignItems: 'center',
+      gap: spacing.xs,
+      padding: spacing.lg,
+      borderWidth: 1,
+      ...cardShadow
+    },
     avatar: { width: 104, height: 104, borderWidth: 3, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
     initial: { color: colors.accentAlt, fontSize: 42, fontWeight: '800' },
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
     name: { color: colors.textPrimary, fontSize: typography.h2.fontSize, fontWeight: '800' },
     handle: { color: colors.textSecondary, fontSize: typography.bodyMedium.fontSize },
-    menu: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+    memberSinceRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+    memberSinceText: { color: colors.textSecondary, fontSize: 12 },
+    completionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, width: '100%', marginTop: spacing.md },
+    completionLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', minWidth: 34, textAlign: 'right' },
+    identityActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md, width: '100%' },
+    identityButton: {
+      flex: 1,
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6
+    },
+    identityButtonPrimary: {},
+    identityButtonPrimaryLabel: { color: colors.onAccent, fontWeight: '700', fontSize: 15 },
+    identityButtonSecondary: { borderWidth: 1 },
+    identityButtonSecondaryLabel: { color: colors.accentAlt, fontWeight: '700', fontSize: 15 },
+    menu: { gap: spacing.sm },
     row: {
       minHeight: 76,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
-      paddingVertical: spacing.md,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border
     },
+    rowIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
     rowTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
     rowDescription: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
     chevron: { color: colors.textSecondary, fontSize: 28, fontWeight: '300' },
     accountNote: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, borderWidth: 1, padding: spacing.md },
     noteTitle: { color: colors.textPrimary, fontWeight: '800' },
     noteBody: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
-    backLabel: { color: colors.accent, fontWeight: '700', fontSize: 15 }
+    backLabel: { color: colors.accent, fontWeight: '700', fontSize: 15 },
+    logoutRow: { paddingTop: spacing.sm }
   });
 }

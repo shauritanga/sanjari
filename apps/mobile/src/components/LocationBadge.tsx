@@ -30,8 +30,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    height: 28,
-    backgroundColor: 'rgba(0,0,0,0.45)'
+    height: 28
   },
   flag: { fontSize: 14 },
   label: { color: '#FFFFFF', fontSize: 12, fontWeight: '800', letterSpacing: 0.4 }

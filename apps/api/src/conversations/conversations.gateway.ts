@@ -79,8 +79,15 @@ export class ConversationsGateway {
   }
 
   @SubscribeMessage('presence.update')
-  presence(client: Client, payload: { state: 'online' | 'away' | 'offline' }) {
-    const event = { state: payload.state, userId: this.userId(client) };
+  async presence(client: Client, payload: { state: 'online' | 'away' | 'offline' }) {
+    const userId = this.userId(client);
+    // Broadcasting 'offline' is always allowed (it's the privacy-safe direction);
+    // 'online' is suppressed server-side for anyone who has hidden their status,
+    // so a compromised client can't bypass the setting.
+    if (payload.state === 'online' && (await this.conversations.hidesOnlineStatus(userId))) {
+      return { state: 'offline' as const, userId };
+    }
+    const event = { state: payload.state, userId };
     for (const room of client.rooms) {
       if (room !== client.data.userId) client.to(room).emit('presence.update', event);
     }

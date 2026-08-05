@@ -22,15 +22,22 @@ export default function BlockProfileScreen() {
   const theme = useAppTheme();
   const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { userId, displayName, photoUrl } = useLocalSearchParams<{
+  const { userId, displayName, photoUrl, exitSteps = '1' } = useLocalSearchParams<{
     userId: string;
     displayName?: string;
     photoUrl?: string;
+    /** How many screens to pop on success, to land back on the screen that started this flow. */
+    exitSteps?: string;
   }>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const name = displayName || 'this member';
+
+  function exit() {
+    const steps = Number(exitSteps) || 1;
+    for (let i = 0; i < steps; i += 1) router.back();
+  }
 
   async function block() {
     if (!userId || busy) return;
@@ -38,8 +45,7 @@ export default function BlockProfileScreen() {
     setError('');
     try {
       await api.post(`/blocks/${userId}`, { reason: 'Blocked from profile view.' });
-      router.back();
-      router.back();
+      exit();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to block this member.');
       setBusy(false);
@@ -102,7 +108,7 @@ export default function BlockProfileScreen() {
           onPress={() =>
             router.push({
               pathname: '/profile/report',
-              params: { userId, displayName: name, mode: 'block' },
+              params: { userId, displayName: name, mode: 'block', exitSteps: String((Number(exitSteps) || 1) + 1) },
             })
           }
           style={({ pressed }) => [styles.reportBlockButton, { opacity: pressed ? 0.6 : 1 }]}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { AppButton } from '../src/components/AppButton';
@@ -76,6 +76,32 @@ export default function SafetyScreen() {
     }
   }
 
+  function confirmDeactivate() {
+    Alert.alert(
+      'Deactivate your account?',
+      'Your profile is hidden from Discover and Matches right away. Log back in any time to reactivate — nothing is deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Deactivate',
+          style: 'destructive',
+          onPress: () => void deactivate(),
+        },
+      ],
+    );
+  }
+
+  async function deactivate() {
+    try {
+      await api.post('/safety/account-deactivation', {});
+      await api.logout();
+    } catch (cause) {
+      setDataMessage(
+        cause instanceof Error ? cause.message : 'Unable to deactivate your account.',
+      );
+    }
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -95,12 +121,27 @@ export default function SafetyScreen() {
           <Text style={styles.sectionTitle}>Data controls</Text>
           <Text style={styles.body}>Request a copy of your data or schedule account deletion.</Text>
           <AppButton label="Request my data" onPress={() => void requestExport()} />
+          {dataMessage ? <Text style={styles.footer}>{dataMessage}</Text> : null}
+        </View>
+        <View style={styles.dataControls}>
+          <Text style={styles.sectionTitle}>Take a break</Text>
+          <Text style={styles.body}>
+            Deactivating hides your profile everywhere immediately, without deleting anything.
+            Log back in whenever you're ready and you're automatically reactivated.
+          </Text>
+          <AppButton label="Deactivate my account" variant="secondary" onPress={confirmDeactivate} />
+        </View>
+        <View style={styles.dataControls}>
+          <Text style={styles.sectionTitle}>Leave for good</Text>
+          <Text style={styles.body}>
+            Permanently deletes your account and data after a cooling-off period. This cannot be
+            undone.
+          </Text>
           <AppButton
             label="Schedule account deletion"
             variant="secondary"
             onPress={() => void requestDeletion()}
           />
-          {dataMessage ? <Text style={styles.footer}>{dataMessage}</Text> : null}
         </View>
         {appeals.map((item) => (
           <View key={item.id} style={styles.dataControls}>

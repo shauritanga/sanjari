@@ -20,6 +20,21 @@ export interface VerificationFlags {
   idVerified: boolean;
 }
 
+interface VisibilitySettings {
+  hideAge?: boolean;
+  hideOnlineStatus?: boolean;
+  hideReadReceipts?: boolean;
+  hideCity?: boolean;
+  hideOccupation?: boolean;
+  hideEducation?: boolean;
+  hideHeight?: boolean;
+}
+
+export function readVisibility(value: unknown): VisibilitySettings {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+  return value as VisibilitySettings;
+}
+
 function age(dateOfBirth: Date): number {
   const now = new Date();
   let value = now.getUTCFullYear() - dateOfBirth.getUTCFullYear();
@@ -189,14 +204,18 @@ export class DiscoveryService {
           components.verification,
       );
       const primaryPhoto = candidate.profile!.photos[0];
+      const visibility = readVisibility(candidate.profile!.visibilitySettings);
       return {
         id: candidate.id,
         displayName: candidate.profile!.displayName,
-        age: age(candidate.dateOfBirth),
-        city: candidate.profile!.city,
+        age: visibility.hideAge ? null : age(candidate.dateOfBirth),
+        city: visibility.hideCity ? null : candidate.profile!.city,
         countryCode: candidate.profile!.country?.code ?? null,
         countryName: candidate.profile!.country?.name ?? null,
-        occupationCategory: candidate.profile!.occupationCategory,
+        occupationCategory: visibility.hideOccupation ? null : candidate.profile!.occupationCategory,
+        educationLevel: visibility.hideEducation ? null : candidate.profile!.educationLevel,
+        heightCm: visibility.hideHeight ? null : candidate.profile!.heightCm,
+        memberSince: candidate.createdAt,
         distanceCategory: this.distanceCategory(distanceMap.get(candidate.id)),
         verificationStatus: candidate.profile!.verificationStatus,
         verification: verificationFlags.get(candidate.id) ?? {
@@ -623,14 +642,18 @@ export class DiscoveryService {
       })),
     );
     const verificationFlags = await this.verificationFlagsFor([target.id]);
+    const visibility = readVisibility(target.profile.visibilitySettings);
     return {
       id: target.id,
       displayName: target.profile.displayName,
-      age: age(target.dateOfBirth),
-      city: target.profile.city,
+      age: visibility.hideAge ? null : age(target.dateOfBirth),
+      city: visibility.hideCity ? null : target.profile.city,
       countryCode: target.profile.country?.code ?? null,
       countryName: target.profile.country?.name ?? null,
-      occupationCategory: target.profile.occupationCategory,
+      occupationCategory: visibility.hideOccupation ? null : target.profile.occupationCategory,
+      educationLevel: visibility.hideEducation ? null : target.profile.educationLevel,
+      heightCm: visibility.hideHeight ? null : target.profile.heightCm,
+      memberSince: target.createdAt,
       biography: target.profile.biography,
       verificationStatus: target.profile.verificationStatus,
       verification: verificationFlags.get(target.id) ?? {

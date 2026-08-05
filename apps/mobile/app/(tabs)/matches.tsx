@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from '../../src/components/AppButton';
@@ -23,6 +23,8 @@ export default function MatchesScreen() {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const awaitingSafetyActionRef = useRef(false);
+
   const load = useCallback(() => {
     setLoading(true);
     setError('');
@@ -36,6 +38,17 @@ export default function MatchesScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // The block screen is pushed on top of this one; once the user returns having
+  // blocked someone, refresh so the (now-excluded) match stops showing up.
+  useFocusEffect(
+    useCallback(() => {
+      if (awaitingSafetyActionRef.current) {
+        awaitingSafetyActionRef.current = false;
+        load();
+      }
+    }, [load])
+  );
 
   async function unmatch(match: Match) {
     setBusyId(match.id);
@@ -61,38 +74,28 @@ export default function MatchesScreen() {
     );
   }
 
-  async function block(match: Match) {
-    setBusyId(match.id);
-    setError('');
-    try {
-      await api.post(`/blocks/${match.user.id}`, { reason: 'Blocked from matches.' });
-      setMatches((current) => current.filter((entry) => entry.id !== match.id));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to block this member.');
-    } finally {
-      setBusyId(null);
-    }
+  function openBlock(match: Match) {
+    awaitingSafetyActionRef.current = true;
+    router.push({
+      pathname: '/profile/block',
+      params: {
+        userId: match.user.id,
+        displayName: match.user.profile?.displayName ?? '',
+        exitSteps: '1',
+      },
+    });
   }
 
-  async function report(match: Match) {
-    setError('');
-    try {
-      await api.post('/reports', {
-        reportedUserId: match.user.id,
-        category: 'other',
-        description: 'Reported from matches.',
-      });
-      setError('Report submitted for review.');
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to submit report.');
-    }
-  }
-
-  function confirmReport(match: Match) {
-    Alert.alert('Report match', 'Submit this match for safety review?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Report', onPress: () => void report(match) },
-    ]);
+  function openReport(match: Match) {
+    router.push({
+      pathname: '/profile/report',
+      params: {
+        userId: match.user.id,
+        displayName: match.user.profile?.displayName ?? '',
+        mode: 'report',
+        exitSteps: '1',
+      },
+    });
   }
 
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -146,15 +149,8 @@ export default function MatchesScreen() {
                       disabled={busyId === match.id}
                       onPress={() => confirmUnmatch(match)}
                     />
-                    <AppButton
-                      label="Block"
-                      variant="secondary"
-                      disabled={busyId === match.id}
-                      onPress={() => {
-                        void block(match);
-                      }}
-                    />
-                    <AppButton label="Report" variant="secondary" onPress={() => confirmReport(match)} />
+                    <AppButton label="Block" variant="secondary" onPress={() => openBlock(match)} />
+                    <AppButton label="Report" variant="secondary" onPress={() => openReport(match)} />
                   </View>
                 </View>
               );

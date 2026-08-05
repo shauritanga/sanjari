@@ -42,11 +42,14 @@ interface ProfilePhoto {
 interface ProfileDetail {
   id: string;
   displayName: string | null;
-  age: number;
+  age: number | null;
   city: string | null;
   countryCode: string | null;
   countryName: string | null;
   occupationCategory: string | null;
+  educationLevel: string | null;
+  heightCm: number | null;
+  memberSince: string | null;
   biography: string | null;
   verificationStatus: string;
   verification: VerificationFlags;
@@ -75,6 +78,11 @@ const DISTANCE_LABELS: Record<string, string> = {
   farther_away: 'Farther away',
 };
 
+function memberSinceLabel(iso: string | null) {
+  if (!iso) return null;
+  return `Member since ${new Date(iso).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+}
+
 function initialsFor(name: string | null) {
   const trimmed = (name ?? '').trim();
   if (!trimmed) return '?';
@@ -86,7 +94,8 @@ function initialsFor(name: string | null) {
 }
 
 const screenWidth = Dimensions.get('window').width;
-const heroHeight = Math.round(Dimensions.get('window').height * 0.58);
+const screenHeight = Dimensions.get('window').height;
+const heroHeight = Math.round(screenHeight * 0.58);
 
 function VoiceIntro({ uri, theme }: { uri: string; theme: AppTheme }) {
   const { colors, radius, spacing, typography } = theme;
@@ -139,6 +148,7 @@ export default function ProfileDetailScreen() {
   const [actionBusy, setActionBusy] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [photoAspectRatios, setPhotoAspectRatios] = useState<Record<string, number>>({});
   const photoViewerRef = useRef<FlatList<ProfilePhoto>>(null);
 
   useEffect(() => {
@@ -202,6 +212,8 @@ export default function ProfileDetailScreen() {
         userId: profile.id,
         displayName: profile.displayName ?? '',
         photoUrl: profile.photos.find((p) => p.isPrimary)?.url ?? profile.photos[0]?.url ?? '',
+        // Pop block (+ any report screen it leads to) and this profile, back to whatever opened it.
+        exitSteps: '2',
       },
     });
   }
@@ -297,7 +309,8 @@ export default function ProfileDetailScreen() {
           <View style={styles.heroNamePlate}>
             <View style={styles.nameRow}>
               <Text style={styles.heroName}>
-                {profile.displayName ?? 'Sanjari member'}, {profile.age}
+                {profile.displayName ?? 'Sanjari member'}
+                {profile.age != null ? `, ${profile.age}` : ''}
               </Text>
               <VerificationBadge
                 displayName={profile.displayName ?? 'This member'}
@@ -312,12 +325,14 @@ export default function ProfileDetailScreen() {
                 .filter(Boolean)
                 .join(', ')}
             />
-            {profile.countryName || profile.occupationCategory ? (
+            {profile.countryName || profile.occupationCategory || profile.educationLevel || profile.heightCm ? (
               <View style={styles.chipRow}>
                 {profile.countryName ? (
                   <InfoChip label={profile.countryName} countryCode={profile.countryCode} />
                 ) : null}
                 {profile.occupationCategory ? <InfoChip label={profile.occupationCategory} /> : null}
+                {profile.educationLevel ? <InfoChip label={profile.educationLevel} /> : null}
+                {profile.heightCm ? <InfoChip label={`${profile.heightCm} cm`} /> : null}
               </View>
             ) : null}
           </View>
@@ -327,6 +342,10 @@ export default function ProfileDetailScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           {profile.biography ? <Text style={styles.biography}>{profile.biography}</Text> : null}
+
+          {memberSinceLabel(profile.memberSince) ? (
+            <Text style={styles.memberSince}>{memberSinceLabel(profile.memberSince)}</Text>
+          ) : null}
 
           {profile.voiceIntroUrl ? <VoiceIntro uri={profile.voiceIntroUrl} theme={theme} /> : null}
 
@@ -427,32 +446,70 @@ export default function ProfileDetailScreen() {
         }}
       >
         <View style={styles.photoViewer}>
-          <FlatList
-            ref={photoViewerRef}
-            data={profile.photos}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(photo) => photo.id}
-            getItemLayout={(_, index) => ({ length: screenWidth, offset: screenWidth * index, index })}
-            onMomentumScrollEnd={(event) => {
-              setActivePhotoIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth));
-            }}
-            renderItem={({ item }) => (
-              <View style={styles.photoViewerPage}>
-                <Image source={{ uri: item.url }} style={styles.photoViewerImage} contentFit="contain" />
+          <View style={[styles.photoViewerToolbar, { paddingTop: insets.top + 8 }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close photo viewer"
+              onPress={() => setPhotoViewerOpen(false)}
+              hitSlop={10}
+            >
+              <AppIcon icon={Cancel01Icon} color="#FFFFFF" size={24} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Report this profile"
+              onPress={() => {
+                setPhotoViewerOpen(false);
+                openReport();
+              }}
+              hitSlop={10}
+            >
+              <AppIcon icon={Flag02Icon} color="#FFFFFF" size={22} />
+            </Pressable>
+          </View>
+          <View style={styles.photoViewerBody}>
+            <FlatList
+              ref={photoViewerRef}
+              style={styles.photoViewerFlatList}
+              data={profile.photos}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(photo) => photo.id}
+              getItemLayout={(_, index) => ({ length: screenWidth, offset: screenWidth * index, index })}
+              onMomentumScrollEnd={(event) => {
+                setActivePhotoIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth));
+              }}
+              renderItem={({ item }) => {
+                const aspectRatio = photoAspectRatios[item.id];
+                const imageHeight = aspectRatio ? screenWidth / aspectRatio : undefined;
+                return (
+                  <View style={styles.photoViewerPage}>
+                    <Image
+                      source={{ uri: item.url }}
+                      style={[styles.photoViewerImage, imageHeight ? { height: imageHeight } : { flex: 1 }]}
+                      contentFit="contain"
+                      onLoad={(event) => {
+                        const { width, height } = event.source;
+                        if (width > 0 && height > 0) {
+                          setPhotoAspectRatios((current) =>
+                            current[item.id] ? current : { ...current, [item.id]: width / height },
+                          );
+                        }
+                      }}
+                    />
+                  </View>
+                );
+              }}
+            />
+            {profile.photos.length > 1 ? (
+              <View style={styles.photoViewerCounter} pointerEvents="none">
+                <Text style={styles.photoViewerCounterText}>
+                  {activePhotoIndex + 1} / {profile.photos.length}
+                </Text>
               </View>
-            )}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close photo viewer"
-            onPress={() => setPhotoViewerOpen(false)}
-            style={[styles.photoViewerClose, { top: insets.top + 12 }]}
-            hitSlop={10}
-          >
-            <AppIcon icon={Cancel01Icon} color="#FFFFFF" size={24} />
-          </Pressable>
+            ) : null}
+          </View>
         </View>
       </Modal>
     </View>
@@ -524,7 +581,7 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       height: heroHeight * 0.4,
       // Flat translucent scrim (no gradient dependency in this project) — dark enough
       // that the white name/meta text stays legible over any photo.
-      backgroundColor: 'rgba(0,0,0,0.38)'
+      //backgroundColor: 'rgba(0,0,0,0.38)'
     },
     heroTopBar: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: spacing.lg },
     roundButton: {
@@ -559,6 +616,7 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
       gap: spacing.md
     },
     biography: { fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight, color: colors.textPrimary },
+    memberSince: { fontSize: typography.caption.fontSize, color: colors.textSecondary },
     section: { gap: spacing.sm },
     sectionLabel: {
       fontSize: typography.caption.fontSize,
@@ -588,17 +646,25 @@ function createStyles({ colors, radius, spacing, typography }: AppTheme) {
     },
     likeActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     photoViewer: { flex: 1, backgroundColor: '#000000' },
-    photoViewerPage: { width: screenWidth, height: Dimensions.get('window').height, justifyContent: 'center' },
-    photoViewerImage: { width: screenWidth, height: Dimensions.get('window').height },
-    photoViewerClose: {
-      position: 'absolute',
-      right: spacing.lg,
-      width: 44,
-      height: 44,
-      borderRadius: radius.pill,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.55)'
+    photoViewerToolbar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm
     },
+    photoViewerBody: { flex: 1 },
+    photoViewerFlatList: { flex: 1 },
+    photoViewerPage: { width: screenWidth, flex: 1, justifyContent: 'flex-start' },
+    photoViewerImage: { width: screenWidth },
+    photoViewerCounter: {
+      position: 'absolute',
+      top: spacing.sm,
+      right: spacing.lg,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: radius.pill
+    },
+    photoViewerCounterText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
   });
 }

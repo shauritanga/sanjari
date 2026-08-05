@@ -19,6 +19,7 @@ import {
   PhotoCompleteDto,
   PhotoPresignDto,
   PhotoReorderDto,
+  PhotoReplaceDto,
   PromptAnswersDto,
   VerificationPresignDto,
   VerificationSubmitDto,
@@ -64,6 +65,15 @@ export class ProfilesController {
   @Patch('photos/reorder')
   async reorderPhotos(@Req() request: AuthenticatedRequest, @Body() dto: PhotoReorderDto) {
     return { data: await this.profiles.reorderPhotos(request.user!.sub, dto.photoIds) };
+  }
+
+  @Post('photos/:photoId/replace')
+  async replacePhoto(
+    @Req() request: AuthenticatedRequest,
+    @Param('photoId') photoId: string,
+    @Body() dto: PhotoReplaceDto,
+  ) {
+    return { data: await this.profiles.replacePhoto(request.user!.sub, photoId, dto.storageKey) };
   }
 
   @Delete('photos/:photoId')

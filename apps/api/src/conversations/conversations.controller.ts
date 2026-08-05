@@ -5,6 +5,7 @@ import { ConversationsService } from './conversations.service';
 import {
   AttachmentCompleteDto,
   AttachmentPresignDto,
+  DeliveredReceiptDto,
   MessageHistoryQueryDto,
   ReactionDto,
   ReadReceiptDto,
@@ -30,7 +31,14 @@ export class ConversationsController {
     @Param('conversationId') conversationId: string,
     @Query() query: MessageHistoryQueryDto,
   ) {
-    return this.conversations.history(request.user!.sub, conversationId, query.cursor);
+    const result = await this.conversations.history(request.user!.sub, conversationId, query.cursor);
+    for (const messageId of result.newlyDelivered) {
+      this.gateway.notifyMessageUpdate(conversationId, 'message.delivered', {
+        messageId,
+        userId: request.user!.sub,
+      });
+    }
+    return result;
   }
 
   @Post(':conversationId/messages')
@@ -49,6 +57,22 @@ export class ConversationsController {
     return { data: message };
   }
 
+  @Post(':conversationId/delivered')
+  async delivered(
+    @Req() request: AuthenticatedRequest,
+    @Param('conversationId') conversationId: string,
+    @Body() dto: DeliveredReceiptDto,
+  ) {
+    const result = await this.conversations.markDelivered(request.user!.sub, conversationId, dto.messageIds);
+    for (const messageId of result.delivered) {
+      this.gateway.notifyMessageUpdate(conversationId, 'message.delivered', {
+        messageId,
+        userId: request.user!.sub,
+      });
+    }
+    return { data: result };
+  }
+
   @Post(':conversationId/read')
   async read(
     @Req() request: AuthenticatedRequest,
@@ -56,10 +80,12 @@ export class ConversationsController {
     @Body() dto: ReadReceiptDto,
   ) {
     const result = await this.conversations.markRead(request.user!.sub, conversationId, dto.messageId);
-    this.gateway.notifyMessageUpdate(conversationId, 'message.read', {
-      messageId: dto.messageId,
-      userId: request.user!.sub,
-    });
+    if (result.read) {
+      this.gateway.notifyMessageUpdate(conversationId, 'message.read', {
+        messageId: dto.messageId,
+        userId: request.user!.sub,
+      });
+    }
     return { data: result };
   }
 
@@ -112,6 +138,8 @@ export class ConversationsController {
         dto.storageKey,
         dto.mimeType,
         Number(dto.sizeBytes),
+        dto.waveform,
+        dto.durationSeconds,
       ),
     };
   }

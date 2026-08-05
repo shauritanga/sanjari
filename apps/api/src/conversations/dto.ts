@@ -1,4 +1,15 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class SendMessageDto {
   @IsString()
@@ -22,6 +33,14 @@ export class ReadReceiptDto {
   @IsString()
   @MinLength(1)
   messageId!: string;
+}
+
+export class DeliveredReceiptDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  messageIds!: string[];
 }
 
 export class ReactionDto {
@@ -57,4 +76,19 @@ export class AttachmentCompleteDto {
   @MinLength(1)
   @MaxLength(16)
   sizeBytes!: string;
+
+  /** Normalized (0-1) amplitude samples captured while recording a voice note. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200)
+  @IsNumber({}, { each: true })
+  @Min(0, { each: true })
+  @Max(1, { each: true })
+  waveform?: number[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(600)
+  durationSeconds?: number;
 }

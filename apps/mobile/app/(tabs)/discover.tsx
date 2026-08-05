@@ -8,11 +8,10 @@ import {
   UndoIcon
 } from '@hugeicons/core-free-icons';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -42,7 +41,7 @@ import { useAppTheme } from '../../src/theme/useAppTheme';
 interface Candidate {
   id: string;
   displayName: string | null;
-  age: number;
+  age: number | null;
   city: string | null;
   countryCode: string | null;
   countryName: string | null;
@@ -97,6 +96,7 @@ export default function DiscoverScreen() {
   const [undoing, setUndoing] = useState(false);
 
   const lastActionRef = useRef<{ candidate: Candidate; action: 'like' | 'pass' } | null>(null);
+  const awaitingSafetyActionRef = useRef(false);
 
   const loadDiscovery = useCallback(
     async (cursor: string | null) => {
@@ -132,6 +132,17 @@ export default function DiscoverScreen() {
       void loadDiscovery(nextCursor).catch(() => undefined);
     }
   }, [loading, queue.length, nextCursor, loadDiscovery]);
+
+  // The block screen is pushed on top of this one; once the user returns having
+  // blocked someone, refresh so the (now-excluded) candidate stops showing up.
+  useFocusEffect(
+    useCallback(() => {
+      if (awaitingSafetyActionRef.current) {
+        awaitingSafetyActionRef.current = false;
+        refresh();
+      }
+    }, [refresh])
+  );
 
   const current = queue[0] ?? null;
 
@@ -204,39 +215,24 @@ export default function DiscoverScreen() {
     }
   }
 
-  function block(candidate: Candidate) {
-    Alert.alert('Block this member?', 'You will no longer see each other in Sanjari.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Block',
-        style: 'destructive',
-        onPress: () => {
-          removeFromQueue(candidate.id);
-          void api
-            .post(`/blocks/${candidate.id}`, { reason: 'Blocked from discovery.' })
-            .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to block this member.'));
-        }
+  function openBlock(candidate: Candidate) {
+    awaitingSafetyActionRef.current = true;
+    router.push({
+      pathname: '/profile/block',
+      params: {
+        userId: candidate.id,
+        displayName: candidate.displayName ?? '',
+        photoUrl: candidate.primaryPhoto?.url ?? '',
+        exitSteps: '1'
       }
-    ]);
+    });
   }
 
-  function report(candidate: Candidate) {
-    Alert.alert('Report this profile?', 'Our safety team will review this profile.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Report',
-        onPress: () => {
-          void api
-            .post('/reports', {
-              reportedUserId: candidate.id,
-              category: 'other',
-              description: 'Reported from discovery.'
-            })
-            .then(() => setBanner('Report submitted for review.'))
-            .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to submit report.'));
-        }
-      }
-    ]);
+  function openReport(candidate: Candidate) {
+    router.push({
+      pathname: '/profile/report',
+      params: { userId: candidate.id, displayName: candidate.displayName ?? '', mode: 'report', exitSteps: '1' }
+    });
   }
 
   return (
@@ -348,10 +344,10 @@ export default function DiscoverScreen() {
             />
           </View>
           <View style={[styles.safetyRow, { gap: spacing.lg }]}>
-            <Pressable onPress={() => block(current)} hitSlop={8}>
+            <Pressable onPress={() => openBlock(current)} hitSlop={8}>
               <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600' }}>Block</Text>
             </Pressable>
-            <Pressable onPress={() => report(current)} hitSlop={8}>
+            <Pressable onPress={() => openReport(current)} hitSlop={8}>
               <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600' }}>Report</Text>
             </Pressable>
           </View>
@@ -496,11 +492,12 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
           <Text style={[styles.stampText, { color: colors.error }]}>PASS</Text>
         </Animated.View>
 
-        <View style={[styles.cardScrim, { borderRadius: radius.lg }]} pointerEvents="none" />
+        {/* <View style={[styles.cardScrim, { borderRadius: radius.lg }]} pointerEvents="none" /> */}
         <View style={[styles.cardInfo, { padding: spacing.lg, gap: spacing.sm }]}>
           <View style={styles.nameRow}>
             <Text style={styles.name}>
-              {candidate.displayName ?? 'Sanjari member'}, {candidate.age}
+              {candidate.displayName ?? 'Sanjari member'}
+              {candidate.age != null ? `, ${candidate.age}` : ''}
             </Text>
             <VerificationBadge
               displayName={candidate.displayName ?? 'This member'}
@@ -523,9 +520,9 @@ function SwipeCard({ candidate, onSwipeLeft, onSwipeRight, onTap }: SwipeCardPro
               {candidate.occupationCategory ? <InfoChip label={candidate.occupationCategory} /> : null}
             </View>
           ) : null}
-          <Text style={styles.compatibility}>
+          {/* <Text style={styles.compatibility}>
             {candidate.score}% compatibility based on your shared preferences.
-          </Text>
+          </Text> */}
         </View>
         </Animated.View>
       </Pressable>

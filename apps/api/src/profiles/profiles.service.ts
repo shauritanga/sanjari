@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
+import { readVisibility } from '../discovery/discovery.service';
 import { DiscoveryPreferenceDto, OnboardingUpdateDto, PromptAnswerDto } from './dto';
 import { PhotoPresignDto } from './dto';
 import { PhotoScanService } from './photo-scan.service';
@@ -124,6 +125,7 @@ export class ProfilesService {
       onboardingStep: profile.onboardingStep,
       completionScore: currentScore,
       age: calculateAge(user.dateOfBirth),
+      memberSince: user.createdAt,
         profile: {
           displayName: profile.displayName,
         pronouns: profile.pronouns,
@@ -214,7 +216,11 @@ export class ProfilesService {
         }),
         ...((input.hideAge !== undefined ||
           input.hideOnlineStatus !== undefined ||
-          input.hideReadReceipts !== undefined) && {
+          input.hideReadReceipts !== undefined ||
+          input.hideCity !== undefined ||
+          input.hideOccupation !== undefined ||
+          input.hideEducation !== undefined ||
+          input.hideHeight !== undefined) && {
           visibilitySettings: {
             ...(typeof current.visibilitySettings === 'object' &&
             current.visibilitySettings !== null &&
@@ -228,6 +234,10 @@ export class ProfilesService {
             ...(input.hideReadReceipts !== undefined && {
               hideReadReceipts: input.hideReadReceipts,
             }),
+            ...(input.hideCity !== undefined && { hideCity: input.hideCity }),
+            ...(input.hideOccupation !== undefined && { hideOccupation: input.hideOccupation }),
+            ...(input.hideEducation !== undefined && { hideEducation: input.hideEducation }),
+            ...(input.hideHeight !== undefined && { hideHeight: input.hideHeight }),
           },
         }),
         onboardingStep: Math.max(current.onboardingStep, input.step ?? current.onboardingStep),
@@ -326,8 +336,71 @@ export class ProfilesService {
     };
   }
 
+  /**
+   * Shapes the caller's own profile exactly the way another member would see
+   * it — same field set, same visibility-setting redactions — so "preview my
+   * profile" reflects reality instead of the always-full data `getOnboarding`
+   * returns for editing.
+   */
   async preview(userId: string) {
-    return this.getOnboarding(userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: {
+          include: {
+            photos: { orderBy: [{ isPrimary: 'desc' }, { position: 'asc' }] },
+            interests: { select: { interest: { select: { slug: true, labelEn: true } } } },
+            languages: { select: { language: { select: { code: true, labelEn: true } } } },
+            prompts: { select: { answer: true, prompt: { select: { prompt: true } } } },
+            country: { select: { code: true, name: true } },
+          },
+        },
+      },
+    });
+    if (!user?.profile)
+      throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+    const profile = user.profile;
+    const visibility = readVisibility(profile.visibilitySettings);
+    const [photos, voiceIntroUrl, verified] = await Promise.all([
+      Promise.all(
+        profile.photos.map(async (photo) => ({
+          id: photo.id,
+          isPrimary: photo.isPrimary,
+          url: await this.storage.presignDownload(photo.storageKey),
+        })),
+      ),
+      profile.voiceIntroKey ? this.storage.presignDownload(profile.voiceIntroKey) : Promise.resolve(null),
+      this.prisma.verificationCase.findMany({
+        where: { userId, status: 'approved' },
+        select: { type: true },
+      }),
+    ]);
+    const verifiedTypes = new Set(verified.map((item) => item.type));
+    return {
+      id: user.id,
+      displayName: profile.displayName,
+      age: visibility.hideAge ? null : calculateAge(user.dateOfBirth),
+      city: visibility.hideCity ? null : profile.city,
+      countryCode: profile.country?.code ?? null,
+      countryName: profile.country?.name ?? null,
+      occupationCategory: visibility.hideOccupation ? null : profile.occupationCategory,
+      educationLevel: visibility.hideEducation ? null : profile.educationLevel,
+      heightCm: visibility.hideHeight ? null : profile.heightCm,
+      memberSince: user.createdAt,
+      biography: profile.biography,
+      verificationStatus: profile.verificationStatus,
+      verification: {
+        photoVerified: verifiedTypes.has('selfie_liveness'),
+        ageVerified: verifiedTypes.has('identity_document'),
+        idVerified: verifiedTypes.has('identity_document'),
+      },
+      distanceCategory: 'not_shared',
+      photos,
+      interests: profile.interests.map((item) => item.interest),
+      languages: profile.languages.map((item) => item.language),
+      prompts: profile.prompts.map((item) => ({ prompt: item.prompt.prompt, answer: item.answer })),
+      voiceIntroUrl,
+    };
   }
 
   async presignPhoto(userId: string, input: PhotoPresignDto) {
@@ -376,6 +449,46 @@ export class ProfilesService {
         actorType: 'user',
         action: 'profile.photo_uploaded',
         metadata: { photoId: photo.id },
+      },
+    });
+    const { storageKey: key, ...rest } = photo;
+    return { ...rest, url: await this.storage.presignDownload(key) };
+  }
+
+  /** Swaps a new upload into an existing photo's slot — same position/primary flag, one action instead of delete-then-add. */
+  async replacePhoto(userId: string, photoId: string, storageKey: string) {
+    const profile = await this.prisma.profile.findUnique({ where: { userId }, select: { id: true } });
+    if (!profile || !storageKey.startsWith(`profiles/${userId}/`))
+      throw new BadRequestException({
+        code: 'INVALID_STORAGE_KEY',
+        message: 'The uploaded photo is invalid.',
+      });
+    const existing = await this.prisma.profilePhoto.findFirst({
+      where: { id: photoId, profileId: profile.id },
+      select: { id: true, position: true, isPrimary: true },
+    });
+    if (!existing) throw new NotFoundException({ code: 'PHOTO_NOT_FOUND', message: 'Photo not found.' });
+    const photo = await this.prisma.$transaction(async (tx) => {
+      await tx.profilePhoto.delete({ where: { id: existing.id } });
+      return tx.profilePhoto.create({
+        data: {
+          profileId: profile.id,
+          storageKey,
+          position: existing.position,
+          isPrimary: existing.isPrimary,
+          moderationStatus: 'pending',
+          processingStatus: 'pending_scan',
+        },
+        select: { id: true, position: true, isPrimary: true, moderationStatus: true, storageKey: true },
+      });
+    });
+    await this.photoScan.enqueue(photo.id);
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        actorType: 'user',
+        action: 'profile.photo_replaced',
+        metadata: { oldPhotoId: existing.id, newPhotoId: photo.id },
       },
     });
     const { storageKey: key, ...rest } = photo;

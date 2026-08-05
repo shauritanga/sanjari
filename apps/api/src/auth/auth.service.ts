@@ -180,7 +180,7 @@ export class AuthService {
     if (
       !credential?.secretHash ||
       !credential.verifiedAt ||
-      credential.user.status !== 'active' ||
+      !['active', 'deactivated'].includes(credential.user.status) ||
       !(await verify(credential.secretHash, parsed.data.password))
     ) {
       throw new UnauthorizedException({
@@ -188,6 +188,7 @@ export class AuthService {
         message: 'Email or password is incorrect.',
       });
     }
+    await this.reactivateIfNeeded(credential.user.id, credential.user.status);
 
     const session = {
       userId: credential.userId,
@@ -195,6 +196,15 @@ export class AuthService {
     };
     await this.recordLoginRisk(credential.userId, parsed.data.deviceId);
     return session;
+  }
+
+  /** Logging back in after a self-service deactivation restores the account automatically. */
+  private async reactivateIfNeeded(userId: string, status: string): Promise<void> {
+    if (status !== 'deactivated') return;
+    await this.prisma.user.update({ where: { id: userId }, data: { status: 'active' } });
+    await this.prisma.auditLog.create({
+      data: { userId, actorType: 'user', action: 'account.reactivated' },
+    });
   }
 
   async verifyEmail(email: string, code: string): Promise<{ userId: string }> {
@@ -236,12 +246,13 @@ export class AuthService {
   ): Promise<SessionResponse> {
     const { userId } = await this.phoneVerification.verifyForLogin(phoneNumber, code);
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.status !== 'active') {
+    if (!user || !['active', 'deactivated'].includes(user.status)) {
       throw new UnauthorizedException({
         code: 'INVALID_CREDENTIALS',
         message: 'Phone number or code is incorrect.',
       });
     }
+    await this.reactivateIfNeeded(user.id, user.status);
     return { userId, ...(await this.issueSession(userId, user.email, deviceId)) };
   }
 
