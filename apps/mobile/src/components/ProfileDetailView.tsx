@@ -1,0 +1,582 @@
+import {
+  ArrowLeft01Icon,
+  Cancel01Icon,
+  Flag02Icon,
+  FavouriteIcon,
+  PauseCircleIcon,
+  PlayCircleIcon,
+  Shield01Icon,
+  StarIcon,
+} from '@hugeicons/core-free-icons';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { Image } from 'expo-image';
+import { useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppIcon } from './AppIcon';
+import { InfoChip } from './InfoChip';
+import { LocationBadge } from './LocationBadge';
+import { VerificationBadge, type VerificationFlags } from './VerificationBadge';
+import { useAppTheme, type AppTheme } from '../theme/useAppTheme';
+
+export interface ProfilePhoto {
+  id: string;
+  isPrimary: boolean;
+  url: string;
+}
+
+export interface ProfileDetail {
+  id: string;
+  displayName: string | null;
+  age: number | null;
+  city: string | null;
+  countryCode: string | null;
+  countryName: string | null;
+  occupationCategory: string | null;
+  educationLevel: string | null;
+  heightCm: number | null;
+  memberSince: string | null;
+  biography: string | null;
+  verificationStatus: string;
+  verification: VerificationFlags;
+  distanceCategory: string;
+  photos: ProfilePhoto[];
+  interests: Array<{ slug: string; labelEn: string }>;
+  languages: Array<{ code: string; labelEn: string }>;
+  prompts: Array<{ prompt: string; answer: string }>;
+  voiceIntroUrl: string | null;
+}
+
+export const DISTANCE_LABELS: Record<string, string> = {
+  not_shared: 'Location private',
+  nearby: 'Nearby',
+  within_25km: 'Within 25 km',
+  within_50km: 'Within 50 km',
+  farther_away: 'Farther away',
+};
+
+export function memberSinceLabel(iso: string | null) {
+  if (!iso) return null;
+  return `Member since ${new Date(iso).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`;
+}
+
+function initialsFor(name: string | null) {
+  const trimmed = (name ?? '').trim();
+  if (!trimmed) return '?';
+  return trimmed
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+const screenWidth = Dimensions.get('window').width;
+const screenHeight = Dimensions.get('window').height;
+const heroHeight = Math.round(screenHeight * 0.58);
+
+function VoiceIntro({ uri, theme }: { uri: string; theme: AppTheme }) {
+  const { colors, radius, spacing, typography } = theme;
+  const player = useAudioPlayer(uri);
+  const playerStatus = useAudioPlayerStatus(player);
+
+  function togglePlayback() {
+    if (playerStatus.playing) {
+      player.pause();
+    } else {
+      player.play();
+    }
+  }
+
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Text style={{ fontSize: typography.caption.fontSize, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        Voice intro
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={playerStatus.playing ? 'Pause voice intro' : 'Play voice intro'}
+        onPress={togglePlayback}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          backgroundColor: colors.surfaceAlt,
+          borderRadius: radius.lg,
+          padding: spacing.md,
+        }}
+      >
+        <AppIcon icon={playerStatus.playing ? PauseCircleIcon : PlayCircleIcon} color={colors.accentAlt} size={36} />
+        <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>
+          {playerStatus.playing ? 'Playing…' : 'Play voice intro'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+export interface ProfileDetailActions {
+  busy: boolean;
+  onPass: () => void;
+  onSuperLike: () => void;
+  onLike: () => void;
+  onBlock: () => void;
+  onReport: () => void;
+}
+
+interface ProfileDetailViewProps {
+  profile: ProfileDetail;
+  onBack: () => void;
+  /** Present only when this is someone else's profile — renders the like/pass footer and safety row. Omit for self-preview. */
+  actions?: ProfileDetailActions;
+  /** Shown as a banner just below the header, e.g. "This is how other members see your profile." */
+  banner?: string;
+  error?: string;
+}
+
+export function ProfileDetailView({ profile, onBack, actions, banner, error }: ProfileDetailViewProps) {
+  const theme = useAppTheme();
+  const { colors } = theme;
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [photoAspectRatios, setPhotoAspectRatios] = useState<Record<string, number>>({});
+  const photoViewerRef = useRef<FlatList<ProfilePhoto>>(null);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  return (
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
+        <View style={styles.hero}>
+          {profile.photos.length > 0 ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) => {
+                const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+                setActivePhotoIndex(index);
+              }}
+            >
+              {profile.photos.map((photo) => (
+                <Pressable
+                  key={photo.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open photo ${profile.photos.indexOf(photo) + 1}`}
+                  onPress={() => setPhotoViewerOpen(true)}
+                  style={{ width: screenWidth, height: heroHeight }}
+                >
+                  <Image source={{ uri: photo.url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={[styles.heroPlaceholder, { height: heroHeight }]}>
+              <Text style={styles.initials}>{initialsFor(profile.displayName)}</Text>
+            </View>
+          )}
+          <View style={styles.heroScrim} pointerEvents="none" />
+
+          <View style={[styles.heroTopBar, { paddingTop: insets.top + 8 }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              onPress={onBack}
+              style={styles.roundButton}
+              hitSlop={12}
+            >
+              <AppIcon icon={ArrowLeft01Icon} color="#FFFFFF" size={22} />
+            </Pressable>
+          </View>
+
+          {profile.photos.length > 1 ? (
+            <View style={[styles.dotsRow, { top: insets.top + 8 + 40 + 10 }]}>
+              {profile.photos.map((photo, index) => (
+                <View
+                  key={photo.id}
+                  style={[styles.dot, { backgroundColor: index === activePhotoIndex ? '#FFFFFF' : 'rgba(255,255,255,0.45)' }]}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          <View style={styles.heroNamePlate}>
+            <View style={styles.nameRow}>
+              <Text style={styles.heroName}>
+                {profile.displayName ?? 'Sanjari member'}
+                {profile.age != null ? `, ${profile.age}` : ''}
+              </Text>
+              <VerificationBadge
+                displayName={profile.displayName ?? 'This member'}
+                tone="overlay"
+                size={30}
+                {...profile.verification}
+              />
+            </View>
+            <LocationBadge
+              countryCode={profile.countryCode}
+              label={[DISTANCE_LABELS[profile.distanceCategory] ?? 'Location private', profile.city, profile.countryName]
+                .filter(Boolean)
+                .join(', ')}
+            />
+            {profile.countryName || profile.occupationCategory || profile.educationLevel || profile.heightCm ? (
+              <View style={styles.chipRow}>
+                {profile.countryName ? (
+                  <InfoChip label={profile.countryName} countryCode={profile.countryCode} />
+                ) : null}
+                {profile.occupationCategory ? <InfoChip label={profile.occupationCategory} /> : null}
+                {profile.educationLevel ? <InfoChip label={profile.educationLevel} /> : null}
+                {profile.heightCm ? <InfoChip label={`${profile.heightCm} cm`} /> : null}
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={styles.panel}>
+          {banner ? (
+            <View style={styles.banner}>
+              <Text style={styles.bannerText}>{banner}</Text>
+            </View>
+          ) : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {profile.biography ? <Text style={styles.biography}>{profile.biography}</Text> : null}
+
+          {memberSinceLabel(profile.memberSince) ? (
+            <Text style={styles.memberSince}>{memberSinceLabel(profile.memberSince)}</Text>
+          ) : null}
+
+          {profile.voiceIntroUrl ? <VoiceIntro uri={profile.voiceIntroUrl} theme={theme} /> : null}
+
+          {profile.interests.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Interests</Text>
+              <View style={styles.chipWrap}>
+                {profile.interests.map((interest) => (
+                  <View key={interest.slug} style={styles.chip}>
+                    <Text style={styles.chipLabel}>{interest.labelEn}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {profile.languages.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Languages</Text>
+              <View style={styles.chipWrap}>
+                {profile.languages.map((language) => (
+                  <View key={language.code} style={styles.chip}>
+                    <Text style={styles.chipLabel}>{language.labelEn}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {profile.prompts.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Prompts</Text>
+              {profile.prompts.map((entry) => (
+                <View key={entry.prompt} style={styles.promptCard}>
+                  <Text style={styles.promptQuestion}>{entry.prompt}</Text>
+                  <Text style={styles.promptAnswer}>{entry.answer}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {actions ? (
+            <View style={styles.safetyRow}>
+              <Pressable accessibilityRole="button" onPress={actions.onBlock} style={styles.safetyAction} hitSlop={8}>
+                <AppIcon icon={Shield01Icon} color={colors.textSecondary} size={16} />
+                <Text style={styles.safetyLabel}>Block</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" onPress={actions.onReport} style={styles.safetyAction} hitSlop={8}>
+                <AppIcon icon={Flag02Icon} color={colors.textSecondary} size={16} />
+                <Text style={styles.safetyLabel}>Report</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      </ScrollView>
+
+      {actions ? (
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <ProfileActionButton
+            icon={Cancel01Icon}
+            label="Pass"
+            color={colors.error}
+            background={colors.surfaceAlt}
+            disabled={actions.busy}
+            onPress={actions.onPass}
+          />
+          <View style={styles.likeActions}>
+            <ProfileActionButton
+              icon={StarIcon}
+              label="Super Like"
+              color={colors.accentAlt}
+              background={colors.surfaceAlt}
+              disabled={actions.busy}
+              onPress={actions.onSuperLike}
+            />
+            <ProfileActionButton
+              icon={FavouriteIcon}
+              label="Like"
+              color={colors.onAccent}
+              background={colors.accent}
+              loading={actions.busy}
+              disabled={actions.busy}
+              onPress={actions.onLike}
+            />
+          </View>
+        </View>
+      ) : null}
+
+      <Modal
+        visible={photoViewerOpen}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setPhotoViewerOpen(false)}
+        onShow={() => {
+          photoViewerRef.current?.scrollToIndex({ index: activePhotoIndex, animated: false });
+        }}
+      >
+        <View style={styles.photoViewer}>
+          <View style={[styles.photoViewerToolbar, { paddingTop: insets.top + 8 }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close photo viewer"
+              onPress={() => setPhotoViewerOpen(false)}
+              hitSlop={10}
+            >
+              <AppIcon icon={Cancel01Icon} color="#FFFFFF" size={24} />
+            </Pressable>
+            {actions ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Report this profile"
+                onPress={() => {
+                  setPhotoViewerOpen(false);
+                  actions.onReport();
+                }}
+                hitSlop={10}
+              >
+                <AppIcon icon={Flag02Icon} color="#FFFFFF" size={22} />
+              </Pressable>
+            ) : (
+              <View style={{ width: 22 }} />
+            )}
+          </View>
+          <View style={styles.photoViewerBody}>
+            <FlatList
+              ref={photoViewerRef}
+              style={styles.photoViewerFlatList}
+              data={profile.photos}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(photo) => photo.id}
+              getItemLayout={(_, index) => ({ length: screenWidth, offset: screenWidth * index, index })}
+              onMomentumScrollEnd={(event) => {
+                setActivePhotoIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth));
+              }}
+              renderItem={({ item }) => {
+                const aspectRatio = photoAspectRatios[item.id];
+                const imageHeight = aspectRatio ? screenWidth / aspectRatio : undefined;
+                return (
+                  <View style={styles.photoViewerPage}>
+                    <Image
+                      source={{ uri: item.url }}
+                      style={[styles.photoViewerImage, imageHeight ? { height: imageHeight } : { flex: 1 }]}
+                      contentFit="contain"
+                      onLoad={(event) => {
+                        const { width, height } = event.source;
+                        if (width > 0 && height > 0) {
+                          setPhotoAspectRatios((current) =>
+                            current[item.id] ? current : { ...current, [item.id]: width / height },
+                          );
+                        }
+                      }}
+                    />
+                  </View>
+                );
+              }}
+            />
+            {profile.photos.length > 1 ? (
+              <View style={styles.photoViewerCounter} pointerEvents="none">
+                <Text style={styles.photoViewerCounterText}>
+                  {activePhotoIndex + 1} / {profile.photos.length}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+function ProfileActionButton({
+  icon,
+  label,
+  color,
+  background,
+  onPress,
+  disabled,
+  loading
+}: {
+  icon: Parameters<typeof AppIcon>[0]['icon'];
+  label: string;
+  color: string;
+  background: string;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+}) {
+  const { colors, radius } = useAppTheme();
+  const isDisabled = disabled || loading;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: isDisabled }}
+      disabled={isDisabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        {
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1,
+          borderColor: colors.border
+        },
+        {
+          width: label === 'Like' ? 60 : 52,
+          height: label === 'Like' ? 60 : 52,
+          borderRadius: radius.pill,
+          backgroundColor: background,
+          opacity: isDisabled ? 0.55 : pressed ? 0.8 : 1
+        }
+      ]}
+    >
+      {loading ? <ActivityIndicator color={color} /> : <AppIcon icon={icon} color={color} size={24} />}
+    </Pressable>
+  );
+}
+
+function createStyles({ colors, radius, spacing, typography }: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    scrollContent: { paddingBottom: spacing.xl },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
+    errorTitle: { fontSize: typography.h3.fontSize, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+    error: { color: colors.error, fontWeight: '600' },
+    banner: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.sm },
+    bannerText: { color: colors.accentAlt, fontWeight: '600', fontSize: 13, textAlign: 'center' },
+    hero: { height: heroHeight, backgroundColor: colors.surfaceAlt },
+    heroPlaceholder: { width: screenWidth, alignItems: 'center', justifyContent: 'center' },
+    initials: { fontSize: 72, fontWeight: '800', color: colors.accentAlt },
+    heroScrim: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: heroHeight * 0.4,
+      // Flat translucent scrim (no gradient dependency in this project) — dark enough
+      // that the white name/meta text stays legible over any photo.
+      //backgroundColor: 'rgba(0,0,0,0.38)'
+    },
+    heroTopBar: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: spacing.lg },
+    roundButton: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    dotsRow: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 6
+    },
+    dot: { width: 6, height: 6, borderRadius: 3 },
+    heroNamePlate: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg, gap: spacing.sm },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    heroName: { fontSize: typography.display.fontSize, fontWeight: '800', color: '#FFFFFF' },
+    heroMeta: { fontSize: typography.bodyLarge.fontSize, color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
+    panel: {
+      marginTop: spacing.md,
+      backgroundColor: colors.background,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      gap: spacing.md
+    },
+    biography: { fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight, color: colors.textPrimary },
+    memberSince: { fontSize: typography.caption.fontSize, color: colors.textSecondary },
+    section: { gap: spacing.sm },
+    sectionLabel: {
+      fontSize: typography.caption.fontSize,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    chip: { backgroundColor: colors.surfaceAlt, borderRadius: radius.pill, paddingHorizontal: spacing.md, height: 34, alignItems: 'center', justifyContent: 'center' },
+    chipLabel: { color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
+    promptCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: 4, marginBottom: spacing.sm },
+    promptQuestion: { fontSize: 13, fontWeight: '700', color: colors.accentAlt },
+    promptAnswer: { fontSize: 15, lineHeight: 21, color: colors.textPrimary },
+    safetyRow: { flexDirection: 'row', gap: spacing.lg, paddingTop: spacing.sm },
+    safetyAction: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    safetyLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      padding: spacing.lg,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      backgroundColor: colors.background
+    },
+    likeActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    photoViewer: { flex: 1, backgroundColor: '#000000' },
+    photoViewerToolbar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm
+    },
+    photoViewerBody: { flex: 1 },
+    photoViewerFlatList: { flex: 1 },
+    photoViewerPage: { width: screenWidth, flex: 1, justifyContent: 'flex-start' },
+    photoViewerImage: { width: screenWidth },
+    photoViewerCounter: {
+      position: 'absolute',
+      top: spacing.sm,
+      right: spacing.lg,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: radius.pill
+    },
+    photoViewerCounterText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
+  });
+}
