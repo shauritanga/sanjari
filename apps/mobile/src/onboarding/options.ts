@@ -11,7 +11,6 @@ export const GENDER_OPTIONS: SelectOption[] = [
 export const WHO_TO_MEET_OPTIONS: SelectOption[] = [
   { value: 'woman', label: 'Women' },
   { value: 'man', label: 'Men' },
-  { value: 'non_binary', label: 'Non-binary people' },
   { value: 'everyone', label: 'Everyone' }
 ];
 
