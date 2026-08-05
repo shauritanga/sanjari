@@ -80,6 +80,7 @@ export default function PromptsScreen() {
       step={stepNumber('prompts')}
       title="Answer a few prompts"
       subtitle="Pick 3 prompts and share your answer — this is prime real estate on your profile."
+      keyboardAware
       primaryLabel="Continue"
       primaryDisabled={!isComplete}
       primaryLoading={saving}
