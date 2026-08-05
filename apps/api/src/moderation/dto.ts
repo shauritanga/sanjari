@@ -28,6 +28,13 @@ export class BlockDto {
   reason?: string;
 }
 
+export class ContactsBlockDto {
+  @IsArray()
+  @ArrayMaxSize(2_500)
+  @IsString({ each: true })
+  hashes!: string[];
+}
+
 export class ReportEvidenceDto {
   @IsString()
   @IsIn(['message', 'profile', 'photo', 'voice', 'payment', 'other'])

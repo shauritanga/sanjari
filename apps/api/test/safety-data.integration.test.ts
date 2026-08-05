@@ -22,7 +22,7 @@ describe('safety data controls contract', () => {
         Promise.resolve(callback(tx)),
       ),
     };
-    const service = new ModerationService(prisma as never);
+    const service = new ModerationService(prisma as never, {} as never);
     expect(service.guidance('sw').sections.map((section) => section.key)).toContain('guidelines');
     const result = await service.requestAccountDeletion('user-1', { reason: 'I am leaving.' });
     expect(result).toMatchObject({ id: 'deletion-1', status: 'scheduled' });

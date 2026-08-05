@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from '../auth/access-token.guard';
-import { AppealDto, BlockDto, DataDeletionDto, ReportDto } from './dto';
+import { AppealDto, BlockDto, ContactsBlockDto, DataDeletionDto, ReportDto } from './dto';
 import { DataExportService } from './data-export.service';
 import { ModerationService } from './moderation.service';
 
@@ -62,6 +62,11 @@ export class ModerationController {
   @Delete('blocks/:userId')
   async unblock(@Req() request: AuthenticatedRequest, @Param('userId') userId: string) {
     return { data: await this.moderation.unblock(request.user!.sub, userId) };
+  }
+
+  @Post('contacts/block')
+  async blockByContacts(@Req() request: AuthenticatedRequest, @Body() dto: ContactsBlockDto) {
+    return { data: await this.moderation.blockByContacts(request.user!.sub, dto.hashes) };
   }
 
   @Post('reports')

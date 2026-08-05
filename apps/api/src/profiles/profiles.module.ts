@@ -25,6 +25,6 @@ const workerProviders = process.env.RUN_WORKERS === 'true' ? [PhotoScanWorker] :
   ],
   controllers: [ProfilesController],
   providers: [ProfilesService, StorageService, VerificationService, PhotoScanService, ...workerProviders],
-  exports: [StorageService, PhotoScanService],
+  exports: [ProfilesService, StorageService, PhotoScanService],
 })
 export class ProfilesModule {}

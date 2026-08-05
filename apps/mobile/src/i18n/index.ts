@@ -1,5 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
+
+const LANGUAGE_STORAGE_KEY = 'sanjari.language';
 
 export const i18n = i18next.use(initReactI18next).init({
   compatibilityJSON: 'v4',
@@ -21,4 +24,8 @@ export const i18n = i18next.use(initReactI18next).init({
       }
     }
   }
+});
+
+void AsyncStorage.getItem(LANGUAGE_STORAGE_KEY).then((saved) => {
+  if (saved) void i18next.changeLanguage(saved);
 });

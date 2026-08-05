@@ -215,6 +215,19 @@ export class AuthService {
     await this.emailVerification.resend(email);
   }
 
+  async requestEmailChange(userId: string, newEmail: string): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    await this.emailVerification.requestChange(userId, user.email, newEmail);
+  }
+
+  async confirmEmailChange(
+    userId: string,
+    newEmail: string,
+    code: string,
+  ): Promise<{ email: string }> {
+    return this.emailVerification.confirmChange(userId, newEmail, code);
+  }
+
   async requestPasswordReset(email: string): Promise<void> {
     await this.passwordReset.request(email);
   }

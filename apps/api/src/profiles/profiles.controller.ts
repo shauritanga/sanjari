@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { AccessTokenGuard, AuthenticatedRequest } from '../auth/access-token.guard';
 import {
+  ChaperoneContactDto,
   DiscoveryPauseDto,
   DiscoveryPreferenceDto,
   OnboardingUpdateDto,
@@ -23,6 +24,7 @@ import {
   PromptAnswersDto,
   VerificationPresignDto,
   VerificationSubmitDto,
+  VisibilityModeDto,
   VoiceIntroCompleteDto,
   VoiceIntroPresignDto,
 } from './dto';
@@ -84,6 +86,47 @@ export class ProfilesController {
   @Patch('discovery-pause')
   async pauseDiscovery(@Req() request: AuthenticatedRequest, @Body() dto: DiscoveryPauseDto) {
     return { data: await this.profiles.setDiscoveryPaused(request.user!.sub, dto.paused) };
+  }
+
+  @Get('visibility-mode')
+  async visibilityMode(@Req() request: AuthenticatedRequest) {
+    return { data: await this.profiles.getVisibilityMode(request.user!.sub) };
+  }
+
+  @Put('visibility-mode')
+  async setVisibilityMode(@Req() request: AuthenticatedRequest, @Body() dto: VisibilityModeDto) {
+    return { data: await this.profiles.setVisibilityMode(request.user!.sub, dto.mode) };
+  }
+
+  @Get('share-link')
+  async shareLink(@Req() request: AuthenticatedRequest) {
+    return { data: await this.profiles.getShareLink(request.user!.sub) };
+  }
+
+  @Post('share-link')
+  async generateShareLink(@Req() request: AuthenticatedRequest) {
+    return { data: await this.profiles.generateShareLink(request.user!.sub) };
+  }
+
+  @Delete('share-link')
+  async revokeShareLink(@Req() request: AuthenticatedRequest) {
+    return { data: await this.profiles.revokeShareLink(request.user!.sub) };
+  }
+
+  @Get('chaperone')
+  async chaperone(@Req() request: AuthenticatedRequest) {
+    return { data: await this.profiles.getChaperone(request.user!.sub) };
+  }
+
+  @Put('chaperone')
+  async setChaperone(@Req() request: AuthenticatedRequest, @Body() dto: ChaperoneContactDto) {
+    return { data: await this.profiles.upsertChaperone(request.user!.sub, dto) };
+  }
+
+  @Delete('chaperone')
+  async removeChaperone(@Req() request: AuthenticatedRequest) {
+    await this.profiles.deleteChaperone(request.user!.sub);
+    return { data: { removed: true } };
   }
 
   @Get('verification')

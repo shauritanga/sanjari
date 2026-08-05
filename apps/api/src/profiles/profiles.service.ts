@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../common/database/prisma.service';
 import { readVisibility } from '../discovery/discovery.service';
 import { DiscoveryPreferenceDto, OnboardingUpdateDto, PromptAnswerDto } from './dto';
@@ -126,6 +127,9 @@ export class ProfilesService {
       completionScore: currentScore,
       age: calculateAge(user.dateOfBirth),
       memberSince: user.createdAt,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      dateOfBirth: user.dateOfBirth,
         profile: {
           displayName: profile.displayName,
         pronouns: profile.pronouns,
@@ -556,6 +560,85 @@ export class ProfilesService {
       select: { discoveryPausedAt: true },
     });
     return { paused: profile.discoveryPausedAt !== null };
+  }
+
+  async getVisibilityMode(userId: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { visibleToLikedOnly: true, discoveryPausedAt: true },
+    });
+    if (!profile)
+      throw new NotFoundException({ code: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+    const mode = profile.discoveryPausedAt ? 'hidden' : profile.visibleToLikedOnly ? 'liked_only' : 'everyone';
+    return { mode };
+  }
+
+  async setVisibilityMode(userId: string, mode: 'everyone' | 'liked_only') {
+    await this.prisma.profile.update({
+      where: { userId },
+      data: { visibleToLikedOnly: mode === 'liked_only', discoveryPausedAt: null },
+    });
+    return { mode };
+  }
+
+  async getShareLink(userId: string): Promise<{ token: string | null }> {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+      select: { shareToken: true },
+    });
+    return { token: profile?.shareToken ?? null };
+  }
+
+  async generateShareLink(userId: string): Promise<{ token: string }> {
+    const token = randomBytes(16).toString('hex');
+    await this.prisma.profile.update({ where: { userId }, data: { shareToken: token } });
+    return { token };
+  }
+
+  async revokeShareLink(userId: string): Promise<{ token: null }> {
+    await this.prisma.profile.update({ where: { userId }, data: { shareToken: null } });
+    return { token: null };
+  }
+
+  /** Reuses `preview()`'s exact rendering — a shared link must show the same view as everywhere else. */
+  async getByShareToken(token: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { shareToken: token },
+      select: { userId: true },
+    });
+    if (!profile)
+      throw new NotFoundException({ code: 'SHARE_LINK_NOT_FOUND', message: 'This link is no longer valid.' });
+    return this.preview(profile.userId);
+  }
+
+  async getChaperone(userId: string) {
+    return this.prisma.chaperoneContact.findUnique({ where: { userId } });
+  }
+
+  async upsertChaperone(
+    userId: string,
+    input: { name: string; relationship: string; email: string; forwardEnabled?: boolean },
+  ) {
+    return this.prisma.chaperoneContact.upsert({
+      where: { userId },
+      create: {
+        userId,
+        name: input.name,
+        relationship: input.relationship,
+        email: input.email,
+        forwardEnabled: input.forwardEnabled ?? false,
+      },
+      update: {
+        name: input.name,
+        relationship: input.relationship,
+        email: input.email,
+        ...(input.forwardEnabled !== undefined && { forwardEnabled: input.forwardEnabled }),
+      },
+    });
+  }
+
+  async deleteChaperone(userId: string): Promise<void> {
+    await this.prisma.chaperoneContact.deleteMany({ where: { userId } });
   }
 
   async listPrompts(locale: string) {

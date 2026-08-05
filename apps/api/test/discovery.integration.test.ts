@@ -3,7 +3,7 @@ import { DiscoveryService } from '../src/discovery/discovery.service';
 
 describe('discovery and matching integration contracts', () => {
   it('rejects self-interactions before persistence', async () => {
-    const service = new DiscoveryService({} as never, {} as never, {} as never);
+    const service = new DiscoveryService({} as never, {} as never, {} as never, {} as never);
     await expect(service.like('user-1', 'user-1', {})).rejects.toMatchObject({
       response: { code: 'SELF_ACTION_NOT_ALLOWED' },
     });
@@ -32,7 +32,7 @@ describe('discovery and matching integration contracts', () => {
       },
       $transaction: vi.fn((callback: (value: typeof tx) => unknown) => callback(tx)),
     };
-    const result = await new DiscoveryService(prisma as never, {} as never, {} as never).like(
+    const result = await new DiscoveryService(prisma as never, {} as never, {} as never, {} as never).like(
       'user-1',
       'user-2',
       {},
@@ -62,7 +62,7 @@ describe('discovery and matching integration contracts', () => {
       discoveryAction: { findUnique: vi.fn().mockResolvedValue(null) },
       $transaction: vi.fn((callback: (value: typeof tx) => unknown) => callback(tx)),
     };
-    await new DiscoveryService(prisma as never, {} as never, {} as never).pass('user-1', 'user-2', 'pass-1');
+    await new DiscoveryService(prisma as never, {} as never, {} as never, {} as never).pass('user-1', 'user-2', 'pass-1');
     expect(upsert).toHaveBeenCalled();
   });
 
@@ -72,7 +72,7 @@ describe('discovery and matching integration contracts', () => {
       $transaction: vi.fn((callback: (value: typeof tx) => unknown) => callback(tx)),
     };
     await expect(
-      new DiscoveryService(prisma as never, {} as never, {} as never).pass('user-1', 'user-2'),
+      new DiscoveryService(prisma as never, {} as never, {} as never, {} as never).pass('user-1', 'user-2'),
     ).rejects.toMatchObject({ response: { code: 'DAILY_ACTION_LIMIT' } });
   });
 
@@ -94,6 +94,7 @@ describe('discovery and matching integration contracts', () => {
       prisma as never,
       { canUndo: vi.fn().mockResolvedValue(false) } as never,
       {} as never,
+      {} as never,
     );
     await expect(withoutEntitlement.undo('user-1')).rejects.toMatchObject({
       response: { code: 'UNDO_ENTITLEMENT_REQUIRED' },
@@ -101,6 +102,7 @@ describe('discovery and matching integration contracts', () => {
     const withEntitlement = new DiscoveryService(
       prisma as never,
       { canUndo: vi.fn().mockResolvedValue(true) } as never,
+      {} as never,
       {} as never,
     );
     await expect(withEntitlement.undo('user-1')).resolves.toMatchObject({

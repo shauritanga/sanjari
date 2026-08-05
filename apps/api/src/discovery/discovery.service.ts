@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/database/prisma.service';
+import { ProfilesService } from '../profiles/profiles.service';
 import { StorageService } from '../profiles/storage.service';
 import { DiscoveryEntitlementService } from './entitlement.service';
 import type { ProtectedLocationDto } from './dto';
@@ -52,7 +53,12 @@ export class DiscoveryService {
     private readonly prisma: PrismaService,
     private readonly entitlements: DiscoveryEntitlementService,
     private readonly storage: StorageService,
+    private readonly profiles: ProfilesService,
   ) {}
+
+  async getSharedProfile(token: string) {
+    return this.profiles.getByShareToken(token);
+  }
 
   private async verificationFlagsFor(userIds: string[]): Promise<Map<string, VerificationFlags>> {
     const map = new Map<string, VerificationFlags>();
@@ -114,6 +120,11 @@ export class DiscoveryService {
       Array<{ id: string }>
     >`SELECT "blockedId" AS id FROM "Block" WHERE "blockerId" = ${userId}::uuid UNION SELECT "blockerId" AS id FROM "Block" WHERE "blockedId" = ${userId}::uuid UNION SELECT "receiverId" AS id FROM "Like" WHERE "senderId" = ${userId}::uuid UNION SELECT "receiverId" AS id FROM "Pass" WHERE "senderId" = ${userId}::uuid AND ("expiresAt" IS NULL OR "expiresAt" > now())`;
     const excludedIds = new Set(excluded.map((item) => item.id));
+    const likedByCandidate = await this.prisma.like.findMany({
+      where: { receiverId: userId },
+      select: { senderId: true },
+    });
+    const likedByCandidateIds = likedByCandidate.map((item) => item.senderId);
     const recentlyActiveSince = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     const newMemberSince = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     const candidates = await this.prisma.user.findMany({
@@ -131,6 +142,12 @@ export class DiscoveryService {
             ...(preference?.genders?.length ? { gender: { in: preference.genders } } : {}),
           },
         },
+        // "Visible only to people I've liked" hides a candidate from discovery
+        // unless that candidate has already liked the viewer.
+        OR: [
+          { profile: { is: { visibleToLikedOnly: false } } },
+          { id: { in: likedByCandidateIds } },
+        ],
       },
       include: {
         profile: {

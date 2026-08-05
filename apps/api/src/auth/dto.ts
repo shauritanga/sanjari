@@ -95,3 +95,17 @@ export class PhoneLoginDto extends PhoneVerificationDto {
   @MinLength(8)
   deviceId!: string;
 }
+
+export class EmailChangeRequestDto {
+  @IsEmail()
+  newEmail!: string;
+}
+
+export class EmailChangeConfirmDto {
+  @IsEmail()
+  newEmail!: string;
+
+  @IsString()
+  @MinLength(6)
+  code!: string;
+}

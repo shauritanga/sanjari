@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
+import { StorageService } from '../profiles/storage.service';
 import { DataExportService } from './data-export.service';
 import {
   AppealDto,
@@ -44,6 +45,7 @@ function initialRisk(category: string, description?: string): { score: number; s
 export class ModerationService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
     @Optional() private readonly dataExport?: DataExportService,
   ) {}
 
@@ -254,11 +256,72 @@ export class ModerationService {
   }
 
   async listBlocks(userId: string) {
-    return this.prisma.block.findMany({
+    const blocks = await this.prisma.block.findMany({
       where: { blockerId: userId },
-      select: { id: true, blockedId: true, reason: true, createdAt: true },
+      select: {
+        id: true,
+        blockedId: true,
+        reason: true,
+        createdAt: true,
+        blocked: {
+          select: {
+            profile: {
+              select: {
+                displayName: true,
+                photos: {
+                  where: { isPrimary: true },
+                  select: { storageKey: true },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
+    return Promise.all(
+      blocks.map(async ({ blocked, ...block }) => {
+        const primaryPhoto = blocked.profile?.photos[0];
+        return {
+          ...block,
+          displayName: blocked.profile?.displayName ?? null,
+          photoUrl: primaryPhoto ? await this.storage.presignDownload(primaryPhoto.storageKey) : null,
+        };
+      }),
+    );
+  }
+
+  /**
+   * Privacy-preserving contact matching: the client only ever sends SHA-256
+   * hashes of normalized phone numbers, never the raw contact list.
+   */
+  async blockByContacts(userId: string, hashes: string[]) {
+    const uniqueHashes = [...new Set(hashes)].slice(0, 2_500);
+    if (uniqueHashes.length === 0) return { blockedCount: 0 };
+    const matches = await this.prisma.user.findMany({
+      where: { phoneNumberHash: { in: uniqueHashes }, id: { not: userId } },
+      select: { id: true },
+    });
+    if (matches.length === 0) return { blockedCount: 0 };
+    await this.prisma.$transaction([
+      ...matches.map((match) =>
+        this.prisma.block.upsert({
+          where: { blockerId_blockedId: { blockerId: userId, blockedId: match.id } },
+          create: { blockerId: userId, blockedId: match.id, reason: 'contacts_block' },
+          update: {},
+        }),
+      ),
+      this.prisma.auditLog.create({
+        data: {
+          userId,
+          actorType: 'user',
+          action: 'safety.contacts_block',
+          metadata: { blockedCount: matches.length },
+        },
+      }),
+    ]);
+    return { blockedCount: matches.length };
   }
 
   async report(reporterId: string, dto: ReportDto) {

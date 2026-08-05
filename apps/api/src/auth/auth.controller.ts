@@ -3,6 +3,8 @@ import { AccessTokenGuard, AuthenticatedRequest } from './access-token.guard';
 import { AuthService } from './auth.service';
 import {
   EmailAddressDto,
+  EmailChangeConfirmDto,
+  EmailChangeRequestDto,
   LoginDto,
   LogoutDto,
   RefreshTokenDto,
@@ -123,5 +125,29 @@ export class AuthController {
     return {
       data: await this.authService.verifyPhoneLogin(dto.phoneNumber, dto.code, dto.deviceId),
     };
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('email/change/request')
+  async requestEmailChange(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: EmailChangeRequestDto,
+  ): Promise<{ data: { accepted: true } }> {
+    await this.authService.requestEmailChange(request.user!.sub, dto.newEmail);
+    return { data: { accepted: true } };
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('email/change/confirm')
+  async confirmEmailChange(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: EmailChangeConfirmDto,
+  ): Promise<{ data: { email: string; changed: true } }> {
+    const result = await this.authService.confirmEmailChange(
+      request.user!.sub,
+      dto.newEmail,
+      dto.code,
+    );
+    return { data: { ...result, changed: true } };
   }
 }

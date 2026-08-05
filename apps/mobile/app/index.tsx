@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { api } from '../src/api';
+import { isPasscodeEnabled } from '../src/lib/passcode';
 import { useAppTheme } from '../src/theme/useAppTheme';
 import { resumeOnboardingPath } from '../src/onboarding/steps';
 
@@ -24,10 +25,14 @@ export default function SplashScreen() {
       try {
         const onboarding = await api.get<{ onboardingStatus?: string; onboardingStep?: number }>('/onboarding');
         if (cancelled) return;
-        if (onboarding.data?.onboardingStatus === 'published') {
-          router.replace('/(tabs)/discover');
+        const destination =
+          onboarding.data?.onboardingStatus === 'published'
+            ? '/(tabs)/discover'
+            : resumeOnboardingPath(onboarding.data?.onboardingStep ?? 1);
+        if (await isPasscodeEnabled()) {
+          router.replace({ pathname: '/lock', params: { next: destination } });
         } else {
-          router.replace(resumeOnboardingPath(onboarding.data?.onboardingStep ?? 1));
+          router.replace(destination);
         }
       } catch {
         if (!cancelled) router.replace('/onboarding/welcome');

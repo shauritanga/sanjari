@@ -23,6 +23,6 @@ import { SocialAuthService } from './social-auth.service';
     SmsService,
     SocialAuthService,
   ],
-  exports: [AccessTokenGuard, JwtModule],
+  exports: [AccessTokenGuard, JwtModule, EmailService],
 })
 export class AuthModule {}

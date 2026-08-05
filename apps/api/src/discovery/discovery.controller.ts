@@ -26,6 +26,11 @@ export class DiscoveryController {
     return { data: await this.discovery.profileDetail(request.user!.sub, userId) };
   }
 
+  @Get('share/:token')
+  async sharedProfile(@Param('token') token: string) {
+    return { data: await this.discovery.getSharedProfile(token) };
+  }
+
   @Post(':userId/like')
   async like(
     @Req() request: AuthenticatedRequest,

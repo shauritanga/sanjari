@@ -14,23 +14,62 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Sanjari uses the camera for profile photos and optional selfie verification.",
         "NSLocationWhenInUseUsageDescription": "Sanjari uses approximate location to recommend nearby compatible adults.",
-        "NSMicrophoneUsageDescription": "Sanjari uses the microphone for optional voice introductions."
+        "NSMicrophoneUsageDescription": "Sanjari uses the microphone for optional voice introductions.",
+        "NSContactsUsageDescription": "Sanjari can privately match your contacts against Sanjari members to help you avoid seeing people you know.",
+        "NSFaceIDUsageDescription": "Sanjari uses Face ID to unlock the app when passcode lock is enabled."
       }
     },
     "android": {
       "package": "com.sanjari.app",
       "usesCleartextTraffic": true,
-      "permissions": ["CAMERA", "ACCESS_COARSE_LOCATION", "RECORD_AUDIO", "POST_NOTIFICATIONS"]
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS",
+        "READ_CONTACTS",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-localization",
       "expo-notifications",
-      ["expo-audio", { "microphonePermission": "Sanjari uses the microphone for optional voice introductions." }],
-      ["expo-image-picker", { "photosPermission": "Sanjari uses your photo library to add profile photos.", "cameraPermission": "Sanjari uses the camera for profile photos and identity verification." }],
-      ["expo-location", { "locationWhenInUsePermission": "Sanjari uses approximate location to recommend nearby compatible adults." }],
-      "./plugins/withCleartextTraffic"
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Sanjari uses the microphone for optional voice introductions."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Sanjari uses your photo library to add profile photos.",
+          "cameraPermission": "Sanjari uses the camera for profile photos and identity verification."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Sanjari uses approximate location to recommend nearby compatible adults."
+        }
+      ],
+      "./plugins/withCleartextTraffic",
+      "expo-sharing",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Sanjari can privately match your contacts against Sanjari members to help you avoid seeing people you know."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Sanjari uses Face ID to unlock the app when passcode lock is enabled."
+        }
+      ]
     ],
     "updates": {
       "fallbackToCacheTimeout": 0

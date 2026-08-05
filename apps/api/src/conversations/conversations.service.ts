@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
 import { readVisibility } from '../discovery/discovery.service';
+import { EmailService } from '../auth/email.service';
 import { AttachmentStorageService } from './attachment-storage.service';
 import { AttachmentScanService } from './attachment-scan.service';
 
@@ -16,7 +17,51 @@ export class ConversationsService {
     private readonly prisma: PrismaService,
     private readonly attachmentStorage: AttachmentStorageService,
     private readonly attachmentScan: AttachmentScanService,
+    private readonly email: EmailService,
   ) {}
+
+  /**
+   * Best-effort chaperone forwarding: if either member of this conversation
+   * has an enabled chaperone contact, email them a copy of the new message.
+   * Never allowed to fail message delivery — errors are swallowed.
+   */
+  private async forwardToChaperones(
+    conversationId: string,
+    senderId: string,
+    body: string,
+  ): Promise<void> {
+    try {
+      const members = await this.prisma.conversationMember.findMany({
+        where: { conversationId },
+        select: { userId: true },
+      });
+      const memberIds = members.map((member) => member.userId);
+      const [chaperones, profiles] = await Promise.all([
+        this.prisma.chaperoneContact.findMany({
+          where: { userId: { in: memberIds }, forwardEnabled: true },
+        }),
+        this.prisma.profile.findMany({
+          where: { userId: { in: memberIds } },
+          select: { userId: true, displayName: true },
+        }),
+      ]);
+      if (chaperones.length === 0) return;
+      const nameByUserId = new Map(profiles.map((profile) => [profile.userId, profile.displayName ?? 'A member']));
+      const senderName = nameByUserId.get(senderId) ?? 'A member';
+      await Promise.all(
+        chaperones.map((chaperone) => {
+          const recipientId = memberIds.find((id) => id !== senderId) ?? senderId;
+          return this.email.sendConversationCopy(chaperone.email, {
+            senderName,
+            recipientName: nameByUserId.get(recipientId) ?? 'A member',
+            body,
+          });
+        }),
+      );
+    } catch {
+      // Chaperone forwarding is a courtesy notification; failures must not block messaging.
+    }
+  }
 
   async authorize(userId: string, conversationId: string) {
     const conversation = await this.prisma.conversation.findFirst({
@@ -242,6 +287,7 @@ export class ConversationsService {
           body: 'You have a new message.',
         },
       });
+    void this.forwardToChaperones(conversationId, userId, body);
     if (hasSuspiciousLink(body))
       await this.prisma.$transaction([
         this.prisma.auditLog.create({

@@ -13,9 +13,12 @@ describe('appeals client contract', () => {
           appeals: [],
         },
       ]);
-    const result = await new ModerationService({
-      moderationCase: { findMany },
-    } as never).appealableCases('user-2');
+    const result = await new ModerationService(
+      {
+        moderationCase: { findMany },
+      } as never,
+      {} as never,
+    ).appealableCases('user-2');
     expect(result).toHaveLength(1);
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -56,7 +56,7 @@ function prismaForModeration() {
 describe('safety and moderation integration contracts', () => {
   it('creates an auditable block that immediately applies to conversation authorization', async () => {
     const prisma = prismaForModeration();
-    const result = await new ModerationService(prisma as never).block('user-1', 'user-2', {});
+    const result = await new ModerationService(prisma as never, {} as never).block('user-1', 'user-2', {});
     expect(result).toEqual({ blockedUserId: 'user-2', blocked: true });
     expect(prisma.tx.block.upsert).toHaveBeenCalled();
     expect(prisma.tx.riskSignal.create).toHaveBeenCalled();
@@ -65,7 +65,7 @@ describe('safety and moderation integration contracts', () => {
 
   it('creates a moderation case, evidence references, and a high-risk signal for scam reports', async () => {
     const prisma = prismaForModeration();
-    const result = await new ModerationService(prisma as never).report('user-1', {
+    const result = await new ModerationService(prisma as never, {} as never).report('user-1', {
       reportedUserId: 'user-2',
       category: 'scam',
       description: 'They requested payment off-platform.',
@@ -83,12 +83,12 @@ describe('safety and moderation integration contracts', () => {
 
   it('allows only the reported user to submit an appeal', async () => {
     const prisma = prismaForModeration();
-    const result = await new ModerationService(prisma as never).appeal('user-2', 'case-1', {
+    const result = await new ModerationService(prisma as never, {} as never).appeal('user-2', 'case-1', {
       statement: 'I would like a human review of this moderation case.',
     });
     expect(result).toEqual({ id: 'appeal-1', caseId: 'case-1', status: 'submitted' });
     await expect(
-      new ModerationService(prisma as never).appeal('user-3', 'case-1', {
+      new ModerationService(prisma as never, {} as never).appeal('user-3', 'case-1', {
         statement: 'I would like a human review of this moderation case.',
       }),
     ).rejects.toMatchObject({ response: { code: 'APPEAL_NOT_ALLOWED' } });
@@ -96,7 +96,7 @@ describe('safety and moderation integration contracts', () => {
 
   it('requires moderation permission and human review before a permanent ban', async () => {
     const prisma = prismaForModeration();
-    const service = new ModerationService(prisma as never);
+    const service = new ModerationService(prisma as never, {} as never);
     expect(await service.queue('admin-1')).toEqual([]);
     await expect(
       service.action('admin-1', 'case-1', {
@@ -109,7 +109,7 @@ describe('safety and moderation integration contracts', () => {
 
   it('applies a human-reviewed suspension to the reported account transactionally', async () => {
     const prisma = prismaForModeration();
-    const result = await new ModerationService(prisma as never).action('admin-1', 'case-1', {
+    const result = await new ModerationService(prisma as never, {} as never).action('admin-1', 'case-1', {
       action: 'suspend',
       reason: 'Human review found an immediate safety risk.',
     });

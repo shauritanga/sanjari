@@ -10,6 +10,7 @@ model User {
   id                   String            @id @default(uuid()) @db.Uuid
   email                String            @unique @db.Citext
   phoneNumber          String?           @unique
+  phoneNumberHash      String?           @unique
   locale               String            @default("en")
   dateOfBirth          DateTime          @db.Date
   ageEligibilityStatus String            @default("pending")
@@ -117,6 +118,19 @@ model PhoneVerification {
   @@index([phoneNumber, verifiedAt])
 }
 
+model ChaperoneContact {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @db.Uuid
+  name            String
+  relationship    String
+  email           String
+  forwardEnabled  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, forwardEnabled])
+}
+
 model PasswordReset {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @db.Uuid
@@ -156,6 +170,8 @@ model Profile {
   completionScore        Int                  @default(0)
   publishedAt            DateTime?
   discoveryPausedAt      DateTime?
+  visibleToLikedOnly     Boolean              @default(false)
+  shareToken             String?              @unique
   visibilitySettings     Json?
   version                Int                  @default(1)
   createdAt              DateTime             @default(now())

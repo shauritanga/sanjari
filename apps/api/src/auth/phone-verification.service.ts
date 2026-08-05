@@ -1,9 +1,14 @@
 import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { hash, verify } from 'argon2';
-import { randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { PrismaService } from '../common/database/prisma.service';
 import { SmsService } from './sms.service';
+
+/** Same normalization + digest used by the mobile app's contacts-blocking upload, so hashes match without exposing raw numbers to the server. */
+export function hashPhoneNumber(phoneNumber: string): string {
+  return createHash('sha256').update(phoneNumber.trim()).digest('hex');
+}
 
 const phoneCodeLifetimeMs = 10 * 60 * 1000;
 const maximumPhoneAttempts = 5;
@@ -96,7 +101,10 @@ export class PhoneVerificationService {
   ): Promise<{ userId: string }> {
     await this.prisma.$transaction(async (tx) => {
       await tx.phoneVerification.update({ where: { id }, data: { verifiedAt: new Date(), testCode: null } });
-      await tx.user.update({ where: { id: userId }, data: { phoneNumber } });
+      await tx.user.update({
+        where: { id: userId },
+        data: { phoneNumber, phoneNumberHash: hashPhoneNumber(phoneNumber) },
+      });
       await tx.userCredential.upsert({
         where: { type_identifier: { type: 'phone', identifier: phoneNumber } },
         create: { userId, type: 'phone', identifier: phoneNumber, verifiedAt: new Date() },

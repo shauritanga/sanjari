@@ -1,17 +1,29 @@
 import {
   ArrowLeft01Icon,
+  Contact01Icon,
   CrownIcon,
+  EyeIcon,
+  File01Icon,
+  FileEditIcon,
   Location01Icon,
+  LockPasswordIcon,
   Logout01Icon,
+  Share08Icon,
   Shield01Icon,
   SmartPhone01Icon,
-  UserIcon
+  TranslateIcon,
+  UserBlock02Icon,
+  UserGroupIcon,
+  UserIcon,
 } from '@hugeicons/core-free-icons';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppIcon } from '../src/components/AppIcon';
+import { SearchableSelect, type SearchableSelectOption } from '../src/components/SearchableSelect';
 import { ToggleRow } from '../src/components/ToggleRow';
 import { api } from '../src/api';
 import { useAppTheme, type AppTheme } from '../src/theme/useAppTheme';
@@ -35,25 +47,48 @@ const CATEGORY_LABELS: Record<string, string> = {
   promotions: 'News and offers'
 };
 
+const LANGUAGE_OPTIONS: SearchableSelectOption[] = [
+  { value: 'en', label: 'English' },
+  { value: 'sw', label: 'Kiswahili' }
+];
+
+const VISIBILITY_OPTIONS: SearchableSelectOption[] = [
+  { value: 'everyone', label: 'Everyone', description: 'Your profile appears in Discover for all matching members.' },
+  {
+    value: 'liked_only',
+    label: 'People I’ve liked',
+    description: 'Only members you’ve already liked can see your profile in Discover.'
+  }
+];
+
+const LANGUAGE_STORAGE_KEY = 'sanjari.language';
+
 export default function SettingsScreen() {
   const theme = useAppTheme();
   const { colors } = theme;
+  const { i18n } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
+  const [visibilityMode, setVisibilityModeState] = useState<'everyone' | 'liked_only'>('everyone');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
+  const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
+  const [visibilityPickerOpen, setVisibilityPickerOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     Promise.all([
       api.get<Session[]>('/auth/sessions'),
-      api.get<NotificationPreference[]>('/notifications/preferences')
+      api.get<NotificationPreference[]>('/notifications/preferences'),
+      api.get<{ mode: 'everyone' | 'liked_only' | 'hidden' }>('/onboarding/visibility-mode')
     ])
-      .then(([sessionsResult, preferencesResult]) => {
+      .then(([sessionsResult, preferencesResult, visibilityResult]) => {
         setSessions(sessionsResult.data ?? []);
         setPreferences(preferencesResult.data ?? []);
+        if (visibilityResult.data?.mode === 'liked_only') setVisibilityModeState('liked_only');
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to load settings.'))
       .finally(() => setLoading(false));
@@ -76,6 +111,38 @@ export default function SettingsScreen() {
       await api.post('/notifications/preferences', { category, push: value });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to update notifications.');
+    }
+  }
+
+  async function selectLanguage(value: string) {
+    setLanguagePickerOpen(false);
+    await i18n.changeLanguage(value);
+    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, value);
+  }
+
+  async function selectVisibility(value: string) {
+    setVisibilityPickerOpen(false);
+    const mode = value === 'liked_only' ? 'liked_only' : 'everyone';
+    setVisibilityModeState(mode);
+    try {
+      await api.put('/onboarding/visibility-mode', { mode });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to update profile visibility.');
+    }
+  }
+
+  async function shareProfile() {
+    setSharing(true);
+    setError('');
+    try {
+      const result = await api.post<{ token: string }>('/onboarding/share-link', {});
+      const token = result.data?.token;
+      if (!token) throw new Error('Unable to create a share link.');
+      await Share.share({ message: `Check out my Sanjari profile: sanjari://profile/share/${token}` });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to share your profile.');
+    } finally {
+      setSharing(false);
     }
   }
 
@@ -111,19 +178,12 @@ export default function SettingsScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Section title="Account" theme={theme}>
+          <Section title="Personal information" theme={theme}>
             <SettingsRow
               icon={UserIcon}
-              title="Edit profile"
-              description="Photos, bio, interests and preferences"
-              onPress={() => router.push('/profile/edit')}
-              theme={theme}
-            />
-            <SettingsRow
-              icon={Location01Icon}
-              title="Discovery preferences"
-              description="Age range, distance and who you see"
-              onPress={() => router.push('/filters')}
+              title="Name, phone, email & birthday"
+              description="Manage the details that identify your account"
+              onPress={() => router.push('/settings/personal-info')}
               theme={theme}
             />
           </Section>
@@ -139,7 +199,59 @@ export default function SettingsScreen() {
             ))}
           </Section>
 
-          <Section title="Privacy and safety" theme={theme}>
+          <Section title="App settings" theme={theme}>
+            <SettingsRow
+              icon={TranslateIcon}
+              title="Language"
+              description={i18n.language === 'sw' ? 'Kiswahili' : 'English'}
+              onPress={() => setLanguagePickerOpen(true)}
+              theme={theme}
+            />
+            <SettingsRow
+              icon={LockPasswordIcon}
+              title="Passcode lock"
+              description="Require a passcode or biometrics to open Sanjari"
+              onPress={() => router.push('/settings/passcode')}
+              theme={theme}
+            />
+            <SettingsRow
+              icon={UserGroupIcon}
+              title="Chaperone"
+              description="Loop in a trusted contact on your conversations"
+              onPress={() => router.push('/settings/chaperone')}
+              theme={theme}
+            />
+          </Section>
+
+          <Section title="Privacy" theme={theme}>
+            <SettingsRow
+              icon={EyeIcon}
+              title="Who can see my profile"
+              description={visibilityMode === 'liked_only' ? 'People I’ve liked' : 'Everyone'}
+              onPress={() => setVisibilityPickerOpen(true)}
+              theme={theme}
+            />
+            <SettingsRow
+              icon={Share08Icon}
+              title={sharing ? 'Preparing link…' : 'Share my profile'}
+              description="Send a link to your profile outside Sanjari"
+              onPress={() => void shareProfile()}
+              theme={theme}
+            />
+            <SettingsRow
+              icon={UserBlock02Icon}
+              title="Blocked profiles"
+              description="Review and unblock members"
+              onPress={() => router.push('/settings/blocked')}
+              theme={theme}
+            />
+            <SettingsRow
+              icon={Contact01Icon}
+              title="Block my contacts"
+              description="Avoid matching people already in your phone"
+              onPress={() => router.push('/settings/contacts-block')}
+              theme={theme}
+            />
             <SettingsRow
               icon={Shield01Icon}
               title="Safety Centre"
@@ -149,12 +261,33 @@ export default function SettingsScreen() {
             />
           </Section>
 
-          <Section title="Membership" theme={theme}>
+          <Section title="Account" theme={theme}>
             <SettingsRow
               icon={CrownIcon}
-              title="Premium access"
+              title="Membership"
               description="See who likes you, undo swipes and more"
               onPress={() => router.push('/premium')}
+              theme={theme}
+            />
+            <SettingsRow
+              icon={Location01Icon}
+              title="Discovery preferences"
+              description="Age range, distance and who you see"
+              onPress={() => router.push('/filters')}
+              theme={theme}
+            />
+            <SettingsRow
+              icon={File01Icon}
+              title="Terms of Service"
+              description="How Sanjari expects members to behave"
+              onPress={() => router.push('/settings/legal/terms')}
+              theme={theme}
+            />
+            <SettingsRow
+              icon={FileEditIcon}
+              title="Privacy Policy"
+              description="How your data is collected and used"
+              onPress={() => router.push('/settings/legal/privacy-policy')}
               theme={theme}
             />
           </Section>
@@ -201,6 +334,23 @@ export default function SettingsScreen() {
           </Pressable>
         </ScrollView>
       )}
+
+      <SearchableSelect
+        visible={languagePickerOpen}
+        title="Language"
+        options={LANGUAGE_OPTIONS}
+        selectedValue={i18n.language}
+        onSelect={(value) => void selectLanguage(value)}
+        onClose={() => setLanguagePickerOpen(false)}
+      />
+      <SearchableSelect
+        visible={visibilityPickerOpen}
+        title="Who can see my profile"
+        options={VISIBILITY_OPTIONS}
+        selectedValue={visibilityMode}
+        onSelect={(value) => void selectVisibility(value)}
+        onClose={() => setVisibilityPickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }

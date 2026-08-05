@@ -23,6 +23,18 @@ export class EmailService {
     });
   }
 
+  async sendConversationCopy(
+    chaperoneEmail: string,
+    context: { senderName: string; recipientName: string; body: string },
+  ): Promise<void> {
+    await this.transporter.sendMail({
+      from: this.config.getOrThrow<string>('SMTP_FROM'),
+      to: chaperoneEmail,
+      subject: `Sanjari chaperone copy: ${context.senderName} & ${context.recipientName}`,
+      text: `As the chaperone for this conversation, here is a copy of a new message.\n\nFrom: ${context.senderName}\n\n${context.body}`,
+    });
+  }
+
   async sendPasswordReset(email: string, token: string): Promise<void> {
     const resetUrl = `${this.config.getOrThrow<string>('APP_PUBLIC_URL')}/reset-password?token=${encodeURIComponent(token)}`;
     await this.transporter.sendMail({

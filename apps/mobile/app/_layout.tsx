@@ -14,12 +14,14 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="profile/[id]" />
           <Stack.Screen name="profile/edit" />
+          <Stack.Screen name="profile/share/[token]" />
           <Stack.Screen name="profile/block" options={{ presentation: 'modal' }} />
           <Stack.Screen name="profile/report" options={{ presentation: 'modal' }} />
           <Stack.Screen name="conversation/[id]" />
           <Stack.Screen name="match-celebration" options={{ presentation: 'modal' }} />
           <Stack.Screen name="safety" />
           <Stack.Screen name="settings" />
+          <Stack.Screen name="lock" />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

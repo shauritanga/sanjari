@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   ArrayMaxSize,
+  IsEmail,
   IsInt,
   IsOptional,
   IsString,
@@ -296,4 +297,28 @@ export class VerificationSubmitDto {
   @IsString()
   @MinLength(8)
   storageKey!: string;
+}
+
+export class ChaperoneContactDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  name!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(40)
+  relationship!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  forwardEnabled?: boolean;
+}
+
+export class VisibilityModeDto {
+  @IsIn(['everyone', 'liked_only'])
+  mode!: 'everyone' | 'liked_only';
 }
