@@ -160,14 +160,10 @@ class _PhonePageState extends ConsumerState<PhonePage> {
               busy: _busy,
               onPressed: _sent ? _verify : _send,
             ),
-            if (!_sent)
+            if (!_sent && !_isSignup)
               TextButton(
-                onPressed: () => _isSignup
-                    ? context.go('/auth/login')
-                    : context.go('/auth/phone?from=signup'),
-                child: Text(
-                  tr(locale, _isSignup ? 'haveAccount' : 'needAccount'),
-                ),
+                onPressed: () => context.go('/auth/phone?from=signup'),
+                child: Text(tr(locale, 'needAccount')),
               ),
           ],
         ),

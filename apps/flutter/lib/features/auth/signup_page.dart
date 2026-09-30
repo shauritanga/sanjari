@@ -116,10 +116,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               busy: _busy,
               onPressed: _submit,
             ),
-            TextButton(
-              onPressed: () => context.go('/auth/login'),
-              child: Text(tr(locale, 'haveAccount')),
-            ),
           ],
         ),
       ),
