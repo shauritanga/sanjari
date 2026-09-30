@@ -13,6 +13,7 @@ import {
   VerifyEmailDto,
   PhoneLoginDto,
   PhoneNumberDto,
+  PhoneRegisterDto,
   PhoneVerificationDto,
 } from './dto';
 
@@ -68,7 +69,7 @@ export class AuthController {
   async verifyEmail(
     @Body() dto: VerifyEmailDto,
   ): Promise<{ data: { userId: string; verified: true } }> {
-    const result = await this.authService.verifyEmail(dto.email, dto.code);
+    const result = await this.authService.verifyEmail(dto.email, dto.code, dto.deviceId);
     return { data: { ...result, verified: true } };
   }
 
@@ -124,6 +125,22 @@ export class AuthController {
   ): Promise<{ data: Awaited<ReturnType<AuthService['verifyPhoneLogin']>> }> {
     return {
       data: await this.authService.verifyPhoneLogin(dto.phoneNumber, dto.code, dto.deviceId),
+    };
+  }
+
+  @Post('phone/register')
+  async registerPhone(
+    @Body() dto: PhoneRegisterDto,
+  ): Promise<{ data: Awaited<ReturnType<AuthService['registerPhone']>> }> {
+    return { data: await this.authService.registerPhone(dto) };
+  }
+
+  @Post('phone/register/verify')
+  async verifyPhoneRegistration(
+    @Body() dto: PhoneLoginDto,
+  ): Promise<{ data: Awaited<ReturnType<AuthService['verifyPhoneRegistration']>> }> {
+    return {
+      data: await this.authService.verifyPhoneRegistration(dto.phoneNumber, dto.code, dto.deviceId),
     };
   }
 

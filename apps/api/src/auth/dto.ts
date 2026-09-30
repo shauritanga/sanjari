@@ -3,6 +3,7 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
+  IsOptional,
   IsString,
   Matches,
   MinLength,
@@ -61,6 +62,12 @@ export class VerifyEmailDto {
   @IsString()
   @MinLength(6)
   code!: string;
+
+  /** Optional so existing clients can retain their verify-then-login flow. */
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  deviceId?: string;
 }
 
 export class EmailAddressDto {
@@ -88,6 +95,25 @@ export class PhoneVerificationDto extends PhoneNumberDto {
   @IsString()
   @MinLength(6)
   code!: string;
+}
+
+export class PhoneRegisterDto extends PhoneNumberDto {
+  @IsDateString()
+  dateOfBirth!: Date;
+
+  @IsString()
+  @MinLength(1)
+  acceptedTermsVersion!: string;
+
+  @IsString()
+  @MinLength(1)
+  acceptedPrivacyVersion!: string;
+
+  @IsBoolean()
+  confirmedAdult!: true;
+
+  @IsEnum(['en', 'sw'])
+  locale!: 'en' | 'sw';
 }
 
 export class PhoneLoginDto extends PhoneVerificationDto {

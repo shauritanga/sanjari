@@ -1,0 +1,43 @@
+name: sanjari
+description: Sanjari Flutter client. Phase 1 covers app shell, session/auth,
+  theming and English/Swahili strings against the existing NestJS API.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  audioplayers: ^6.1.0
+  crypto: ^3.0.0
+  dio: ^5.7.0
+  flutter_riverpod: ^2.5.1
+  firebase_messaging: ^15.1.0
+  flutter_contacts: ^1.1.7
+  flutter_secure_storage: ^9.2.2
+  geolocator: ^13.0.1
+  go_router: ^14.2.7
+  image_picker: ^1.1.0
+  intl: ^0.20.2
+  local_auth: ^2.1.0
+  permission_handler: ^11.0.0
+  record: ^5.1.0
+  # record_linux 0.7.2 is incompatible with the later 1.x interface releases.
+  record_platform_interface: 1.2.0
+  share_plus: ^11.0.0
+  shared_preferences: ^2.3.0
+  socket_io_client: ^2.0.3
+  uuid: ^4.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  test: ^1.25.0
+
+flutter:
+  uses-material-design: true

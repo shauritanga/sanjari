@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { PrismaService } from '../common/database/prisma.service';
 import { EmailVerificationService } from './email-verification.service';
 import { PasswordResetService } from './password-reset.service';
-import { PhoneVerificationService } from './phone-verification.service';
+import { hashPhoneNumber, PhoneVerificationService } from './phone-verification.service';
 
 const minimumAge = 18;
 
@@ -49,6 +49,27 @@ const registerSchema = z
   });
 
 type RegisterInput = z.infer<typeof registerSchema>;
+
+const phoneRegisterSchema = z
+  .object({
+    phoneNumber: z.string().trim(),
+    dateOfBirth: z.coerce.date(),
+    acceptedTermsVersion: z.string().min(1),
+    acceptedPrivacyVersion: z.string().min(1),
+    confirmedAdult: z.literal(true),
+    locale: z.enum(['en', 'sw']).default('en'),
+  })
+  .superRefine((value, ctx) => {
+    if (calculateAge(value.dateOfBirth) < minimumAge) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['dateOfBirth'],
+        message: 'You must be at least 18 years old to use Sanjari.',
+      });
+    }
+  });
+
+type PhoneRegisterInput = z.infer<typeof phoneRegisterSchema>;
 
 const loginSchema = z.object({
   email: z.email().trim().toLowerCase(),
@@ -162,6 +183,112 @@ export class AuthService {
     };
   }
 
+  /**
+   * Phone-only sign-up: creates a passwordless, emailless account and texts
+   * an OTP. Mirrors register()'s shape (pending_verification -> active on
+   * verify) but with no credential row — phone-registered accounts can only
+   * ever sign in via phone/login, matching the fact that they have no
+   * password. Reuses phoneVerification.issue(), the same code path an
+   * authenticated user hits when adding/changing their phone number.
+   */
+  async registerPhone(
+    input: PhoneRegisterInput,
+  ): Promise<{ userId: string; onboardingStatus: string; phoneVerificationRequired: true }> {
+    const parsed = phoneRegisterSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'Registration details are invalid.',
+        issues: parsed.error.flatten().fieldErrors,
+      });
+    }
+
+    let user: { id: string; profile: { onboardingStatus: string } | null };
+    try {
+      user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            phoneNumber: parsed.data.phoneNumber,
+            phoneNumberHash: hashPhoneNumber(parsed.data.phoneNumber),
+            locale: parsed.data.locale,
+            dateOfBirth: parsed.data.dateOfBirth,
+            ageEligibilityStatus: 'confirmed_adult',
+            status: 'pending_verification',
+            profile: {
+              create: {
+                moderationStatus: 'pending',
+                onboardingStatus: 'registration_started',
+              },
+            },
+            legalAcceptances: {
+              create: [
+                { documentType: 'terms', version: parsed.data.acceptedTermsVersion },
+                { documentType: 'privacy', version: parsed.data.acceptedPrivacyVersion },
+              ],
+            },
+            auditLogs: {
+              create: {
+                action: 'auth.register_phone',
+                actorType: 'user',
+                metadata: { ageEligibilityStatus: 'confirmed_adult' },
+              },
+            },
+          },
+          select: { id: true, profile: { select: { onboardingStatus: true } } },
+        });
+
+        return created;
+      });
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+        throw new ConflictException({
+          code: 'ACCOUNT_EXISTS',
+          message: 'An account already exists for this phone number. Try logging in instead.',
+        });
+      }
+      throw error;
+    }
+
+    await this.phoneVerification.issue(user.id, parsed.data.phoneNumber);
+
+    return {
+      userId: user.id,
+      onboardingStatus: user.profile?.onboardingStatus ?? 'registration_started',
+      phoneVerificationRequired: true,
+    };
+  }
+
+  /**
+   * Completes phone sign-up: verifies the OTP issued by registerPhone(),
+   * activates the account (mirrors EmailVerificationService.verify()'s
+   * pending_verification -> active flip), and issues the first session.
+   */
+  async verifyPhoneRegistration(
+    phoneNumber: string,
+    code: string,
+    deviceId: string,
+  ): Promise<SessionResponse> {
+    const { userId } = await this.phoneVerification.verifyForLogin(phoneNumber, code);
+    const existing = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    // Only a still-pending sign-up should be activated here; an
+    // already-active, deactivated, or banned account reaching this path
+    // (e.g. the code was for an earlier add-phone-to-account flow) must not
+    // be silently flipped to active.
+    const user =
+      existing.status === 'pending_verification'
+        ? await this.prisma.user.update({
+            where: { id: userId },
+            data: { status: 'active' },
+          })
+        : existing;
+    await this.prisma.auditLog.create({
+      data: { userId, actorType: 'user', action: 'auth.phone_registration_verified' },
+    });
+    const session = await this.issueSession(userId, user.email, deviceId);
+    await this.recordLoginRisk(userId, deviceId);
+    return { userId, ...session };
+  }
+
   async login(input: LoginInput): Promise<SessionResponse> {
     const parsed = loginSchema.safeParse(input);
     if (!parsed.success) {
@@ -207,8 +334,21 @@ export class AuthService {
     });
   }
 
-  async verifyEmail(email: string, code: string): Promise<{ userId: string }> {
-    return this.emailVerification.verify(email, code);
+  async verifyEmail(
+    email: string,
+    code: string,
+    deviceId?: string,
+  ): Promise<{ userId: string } | SessionResponse> {
+    const result = await this.emailVerification.verify(email, code);
+    if (!deviceId) return result;
+
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: result.userId },
+      select: { email: true },
+    });
+    const session = await this.issueSession(result.userId, user.email, deviceId);
+    await this.recordLoginRisk(result.userId, deviceId);
+    return { userId: result.userId, ...session };
   }
 
   async resendEmailVerification(email: string): Promise<void> {
@@ -416,7 +556,7 @@ export class AuthService {
 
   private async issueSession(
     userId: string,
-    email: string,
+    email: string | null,
     deviceId = `registration-${userId}`,
   ): Promise<IssuedTokens> {
     const tokens = await this.createTokens(userId, email);
@@ -462,7 +602,7 @@ export class AuthService {
       });
   }
 
-  private async createTokens(userId: string, email: string): Promise<IssuedTokens> {
+  private async createTokens(userId: string, email: string | null): Promise<IssuedTokens> {
     const expiresIn = 900;
     const accessToken = await this.jwt.signAsync(
       { sub: userId, email, type: 'access' },

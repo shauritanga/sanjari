@@ -98,17 +98,21 @@ export class EmailVerificationService {
   }
 
   async resend(email: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
-    });
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (user && user.status === 'pending_verification') {
-      await this.issue(user.id, user.email);
+      await this.issue(user.id, normalizedEmail);
     }
   }
 
-  async requestChange(userId: string, currentEmail: string, newEmail: string): Promise<void> {
+  /** currentEmail is null for a phone-registered account adding its first email. */
+  async requestChange(
+    userId: string,
+    currentEmail: string | null,
+    newEmail: string,
+  ): Promise<void> {
     const normalized = newEmail.trim().toLowerCase();
-    if (normalized === currentEmail.trim().toLowerCase()) {
+    if (currentEmail && normalized === currentEmail.trim().toLowerCase()) {
       throw new BadRequestException({
         code: 'SAME_EMAIL',
         message: 'This is already your email address.',
