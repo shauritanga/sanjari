@@ -1,6 +1,6 @@
 # Sanjari
 
-Sanjari is a production-oriented dating platform scaffold for adults aged 18 and above. It uses a pnpm/Turborepo monorepo with Expo mobile, NestJS API, Next.js admin, PostgreSQL/PostGIS, Redis, and S3-compatible storage.
+Sanjari is a production-oriented dating platform scaffold for adults aged 18 and above. It uses a pnpm/Turborepo monorepo with a Flutter mobile app, NestJS API, Next.js admin, PostgreSQL/PostGIS, Redis, and S3-compatible storage.
 
 ## Current Phase
 
@@ -11,7 +11,7 @@ Phase 1 foundation is implemented as a runnable scaffold with:
 - Docker Compose for PostgreSQL, Redis, MinIO, and Mailpit.
 - Initial Prisma schema covering the required domain entities.
 - NestJS module structure with branded configuration, validation, health, auth, profile, discovery, match, chat, moderation, and subscription boundaries.
-- Expo Router route structure and branded reusable UI primitives.
+- Flutter app with go_router route structure and branded reusable UI primitives.
 - Next.js admin route structure for moderation and platform operations.
 
 ## Setup
@@ -28,7 +28,7 @@ pnpm dev
 ## Applications
 
 - API: `apps/api`, local port `4000`, versioned routes under `/api/v1`.
-- Mobile: `apps/mobile`, Expo SDK 57.
+- Mobile: `apps/flutter`, Flutter app.
 - Admin: `apps/admin`, local port `3001`.
 
 ## Important Launch Notes

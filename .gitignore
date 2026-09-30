@@ -12,7 +12,10 @@ coverage
 *.tsbuildinfo
 tmp
 *.DS_Store
-apps/mobile/android/.gradle
-apps/mobile/android/app/build
-apps/mobile/android/app/.cxx
+.dart_tool
+.packages
+apps/flutter/build
+apps/flutter/.flutter-plugins
+apps/flutter/.flutter-plugins-dependencies
+apps/flutter/.pub-cache
 deploy-credential.json
