@@ -23,6 +23,7 @@ export class StorageService {
       endpoint: config.getOrThrow<string>('S3_ENDPOINT'),
       region: config.getOrThrow<string>('S3_REGION'),
       forcePathStyle: true,
+      requestChecksumCalculation: 'WHEN_REQUIRED',
       credentials: {
         accessKeyId: config.getOrThrow<string>('S3_ACCESS_KEY_ID'),
         secretAccessKey: config.getOrThrow<string>('S3_SECRET_ACCESS_KEY'),
@@ -32,6 +33,7 @@ export class StorageService {
       endpoint: config.getOrThrow<string>('S3_PUBLIC_ENDPOINT'),
       region: config.getOrThrow<string>('S3_REGION'),
       forcePathStyle: true,
+      requestChecksumCalculation: 'WHEN_REQUIRED',
       credentials: {
         accessKeyId: config.getOrThrow<string>('S3_ACCESS_KEY_ID'),
         secretAccessKey: config.getOrThrow<string>('S3_SECRET_ACCESS_KEY'),
