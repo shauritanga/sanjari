@@ -132,6 +132,7 @@ class OnboardingScreen extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         color: scheme.onSurfaceVariant,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                   ],
