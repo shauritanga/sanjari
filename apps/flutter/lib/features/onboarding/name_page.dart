@@ -47,7 +47,7 @@ class _NamePageState extends ConsumerState<NamePage> {
       );
       if (!mounted) return;
       if (ok) {
-        context.push(pathForStep('photos'));
+        context.push(pathForStep('gender'));
       } else {
         setState(() => _error = controller.error ?? 'unableToSave');
       }

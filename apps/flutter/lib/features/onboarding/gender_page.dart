@@ -49,7 +49,7 @@ class _GenderPageState extends ConsumerState<GenderPage> {
       );
       if (!mounted) return;
       if (ok) {
-        context.push(pathForStep('who-to-meet'));
+        context.push(pathForStep('birthday'));
       } else {
         setState(() {
           _error =

@@ -38,7 +38,7 @@ class _BirthdayPageState extends ConsumerState<BirthdayPage> {
       subtitle:
           'Your age is verified and will never be shown publicly — only your age range appears on your profile.',
       primaryLabel: 'Continue',
-      onPrimary: () => context.push(pathForStep('gender')),
+      onPrimary: () => context.push(pathForStep('intentions')),
       child: Container(
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(vertical: 32),
