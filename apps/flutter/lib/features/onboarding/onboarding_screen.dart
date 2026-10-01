@@ -125,7 +125,8 @@ class OnboardingScreen extends StatelessWidget {
                     Text(
                       footerNote!,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
                         color: scheme.onSurfaceVariant,
                       ),
                     ),

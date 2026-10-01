@@ -63,6 +63,7 @@ class _DateOfBirthPageState extends ConsumerState<DateOfBirthPage> {
     return OnboardingScreen(
         step: stepNumber('age'),
         title: 'When were you born?',
+        footerNote: years != null ? "You're $years years old" : null,
         primaryLabel: 'Continue',
         primaryDisabled: !valid,
         onPrimary: () {
@@ -96,11 +97,6 @@ class _DateOfBirthPageState extends ConsumerState<DateOfBirthPage> {
                   changed();
                 })),
               ])),
-          const SizedBox(height: 52),
-          if (years != null)
-            Text("You're $years years old",
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
         ]));
   }
 
