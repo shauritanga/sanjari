@@ -7,7 +7,7 @@ backend changes needed.
 
 ## Run against production
 
-`flutter run` and normal builds use `http://sanjari-api.zanua.co.tz:3400/api/v1`.
+`flutter run` and normal builds use `https://sanjari-api.zanua.co.tz/api/v1`.
 The mobile app does not read the repository root `.env` file.
 
 ## Run against the local API
