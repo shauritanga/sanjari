@@ -77,6 +77,7 @@ export class EmailVerificationService {
     ) {
       invalidCode();
     }
+    if (!verification.userId) invalidCode();
 
     let valid = false;
     try {
