@@ -72,9 +72,10 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
         await ref
             .read(sessionProvider)
             .verifyEmailRegistrationCode(widget.email, _code.text);
-        if (mounted)
+        if (mounted) {
           context.go(
-              '/auth/signup?email=${Uri.encodeComponent(widget.email)}&emailVerified=true');
+              '/onboarding/name?email=${Uri.encodeComponent(widget.email)}');
+        }
         return;
       }
       final result = await ref

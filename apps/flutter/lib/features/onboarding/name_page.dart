@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../widgets/app_text_field.dart';
+import '../../core/theme.dart';
 import 'onboarding_controller.dart';
 import 'onboarding_screen.dart';
 import 'onboarding_steps.dart';
@@ -62,6 +62,19 @@ class _NamePageState extends ConsumerState<NamePage> {
     if (!_seeded) {
       _seeded = true;
       _name.text = draft.displayName;
+      final email = GoRouterState.of(context).uri.queryParameters['email'];
+      if (_name.text.isEmpty && email != null) {
+        final local =
+            email.split('@').first.replaceAll(RegExp(r'[._-]+'), ' ').trim();
+        if (local.isNotEmpty) {
+          _name.text = local
+              .split(' ')
+              .map((part) => part.isEmpty
+                  ? part
+                  : '${part[0].toUpperCase()}${part.substring(1)}')
+              .join(' ');
+        }
+      }
     }
     return OnboardingScreen(
       step: stepNumber('name'),
@@ -71,16 +84,33 @@ class _NamePageState extends ConsumerState<NamePage> {
       primaryDisabled: _name.text.trim().length < 2,
       primaryBusy: _saving,
       onPrimary: _save,
-      child: AppTextField(
-        label: 'First name',
-        controller: _name,
-        maxLength: 60,
-        textInputAction: TextInputAction.done,
-        onSubmitted: (_) {
-          if (_name.text.trim().length >= 2 && !_saving) _save();
-        },
-        error: _error,
-      ),
+      child: Column(children: [
+        const SizedBox(height: 12),
+        Icon(Icons.auto_stories_outlined,
+            size: 112, color: SanjariColors.coral),
+        const SizedBox(height: 28),
+        TextField(
+          controller: _name,
+          maxLength: 60,
+          textInputAction: TextInputAction.done,
+          onChanged: (_) => setState(() {}),
+          onSubmitted: (_) {
+            if (_name.text.trim().length >= 2 && !_saving) _save();
+          },
+          decoration: InputDecoration(
+            hintText: 'Your first name',
+            counterText: '',
+            suffixIcon: _name.text.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(_name.clear)),
+          ),
+        ),
+        if (_error != null)
+          Text(_error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error)),
+      ]),
     );
   }
 }
