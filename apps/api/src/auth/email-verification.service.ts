@@ -78,6 +78,7 @@ export class EmailVerificationService {
       invalidCode();
     }
     if (!verification.userId) invalidCode();
+    const userId = verification.userId;
 
     let valid = false;
     try {
@@ -100,23 +101,23 @@ export class EmailVerificationService {
         data: { verifiedAt: new Date(), testCode: null },
       });
       await tx.userCredential.updateMany({
-        where: { userId: verification.userId, type: 'password' },
+        where: { userId, type: 'password' },
         data: { verifiedAt: new Date() },
       });
       await tx.user.update({
-        where: { id: verification.userId },
+        where: { id: userId },
         data: { status: 'active' },
       });
       await tx.auditLog.create({
         data: {
-          userId: verification.userId,
+          userId,
           actorType: 'user',
           action: 'auth.email_verified',
         },
       });
     });
 
-    return { userId: verification.userId };
+    return { userId };
   }
 
   async resend(email: string): Promise<void> {
