@@ -62,11 +62,27 @@ class OnboardingScreen extends StatelessWidget {
                       onPressed: onBack ?? () => context.pop(),
                     ),
                   const Spacer(),
-                  if (onSkip != null)
-                    TextButton(onPressed: onSkip, child: const Text('Skip'))
-                  else
-                    const SizedBox(width: 48),
+                  IconButton(
+                    tooltip: 'Help',
+                    icon: const Icon(HugeIcons.strokeRoundedHelpCircle),
+                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Need help? We are here for you.')),
+                    ),
+                  ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: (step / 23).clamp(0.0, 1.0),
+                  minHeight: 8,
+                  backgroundColor: Colors.grey.shade300,
+                  color: Colors.black,
+                ),
               ),
             ),
             Expanded(
@@ -77,10 +93,13 @@ class OnboardingScreen extends StatelessWidget {
                     Text(
                       title!,
                       style: TextStyle(
-                        fontSize: 28,
                         fontWeight: FontWeight.w800,
-                        color: scheme.primary,
+                        color: Colors.black,
+                        height: 1.15,
+                        letterSpacing: -0.6,
+                        fontSize: 30,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 4),
