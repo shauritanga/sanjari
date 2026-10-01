@@ -24,13 +24,9 @@ class DiscoveryPreferenceDraft {
       minAge: (json['minAge'] as num?)?.toInt() ?? 18,
       maxAge: (json['maxAge'] as num?)?.toInt() ?? 80,
       maxDistanceKm: (json['maxDistanceKm'] as num?)?.toInt() ?? 50,
-      genders: (json['genders'] as List?)
-              ?.whereType<String>()
-              .toList() ??
-          const [],
-      intentions: (json['intentions'] as List?)
-              ?.whereType<String>()
-              .toList() ??
+      genders:
+          (json['genders'] as List?)?.whereType<String>().toList() ?? const [],
+      intentions: (json['intentions'] as List?)?.whereType<String>().toList() ??
           const [],
       showDistance: json['showDistance'] as bool? ?? true,
     );
@@ -63,8 +59,7 @@ class PromptAnswerDraft {
     );
   }
 
-  Map<String, dynamic> toJson() =>
-      {'promptId': promptId, 'answer': answer};
+  Map<String, dynamic> toJson() => {'promptId': promptId, 'answer': answer};
 }
 
 class OnboardingPhoto {
@@ -142,8 +137,7 @@ class OnboardingDraft {
         languages = languages ?? const [],
         photos = photos ?? const [],
         promptAnswers = promptAnswers ?? const [],
-        discoveryPreference =
-            discoveryPreference ?? DiscoveryPreferenceDraft();
+        discoveryPreference = discoveryPreference ?? DiscoveryPreferenceDraft();
 
   bool hydrated;
   String onboardingStatus;
@@ -173,8 +167,7 @@ class OnboardingDraft {
 
   factory OnboardingDraft.hydrated(Map<String, dynamic> json) {
     final profile = json['profile'] as Map<String, dynamic>? ?? const {};
-    final visibility =
-        profile['visibilitySettings'] as Map<String, dynamic>?;
+    final visibility = profile['visibilitySettings'] as Map<String, dynamic>?;
     return OnboardingDraft(
       hydrated: true,
       onboardingStatus: json['onboardingStatus'] as String? ?? 'not_started',

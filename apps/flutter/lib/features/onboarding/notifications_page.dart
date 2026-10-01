@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -89,7 +90,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
               shape: BoxShape.circle,
               color: scheme.surfaceContainerHighest,
             ),
-            child: Icon(Icons.notifications_outlined,
+            child: Icon(HugeIcons.strokeRoundedNotification01,
                 color: scheme.primary, size: 56),
           ),
           if (_error != null) ...[

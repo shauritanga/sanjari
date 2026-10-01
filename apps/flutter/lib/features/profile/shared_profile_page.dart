@@ -50,7 +50,8 @@ class _SharedProfilePageState extends ConsumerState<SharedProfilePage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e is ApiException ? e.message : tr(locale, 'linkNoLongerValid');
+        _error =
+            e is ApiException ? e.message : tr(locale, 'linkNoLongerValid');
       });
     } finally {
       if (mounted) setState(() => _loading = false);

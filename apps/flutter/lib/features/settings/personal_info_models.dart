@@ -22,9 +22,8 @@ class PersonalInfo {
       displayName: profile is Map<String, dynamic>
           ? profile['displayName'] as String?
           : null,
-      gender: profile is Map<String, dynamic>
-          ? profile['gender'] as String?
-          : null,
+      gender:
+          profile is Map<String, dynamic> ? profile['gender'] as String? : null,
     );
   }
 

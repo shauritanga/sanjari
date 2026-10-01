@@ -67,9 +67,8 @@ class Candidate {
       verification: VerificationFlags.fromJson(
         json['verification'] as Map<String, dynamic>?,
       ),
-      primaryPhoto: photo is Map<String, dynamic>
-          ? CandidatePhoto.fromJson(photo)
-          : null,
+      primaryPhoto:
+          photo is Map<String, dynamic> ? CandidatePhoto.fromJson(photo) : null,
     );
   }
 
@@ -117,9 +116,8 @@ class MatchedUser {
     return MatchedUser(
       id: json['id'] as String? ?? '',
       displayName: json['displayName'] as String?,
-      primaryPhoto: photo is Map<String, dynamic>
-          ? CandidatePhoto.fromJson(photo)
-          : null,
+      primaryPhoto:
+          photo is Map<String, dynamic> ? CandidatePhoto.fromJson(photo) : null,
     );
   }
 
@@ -146,9 +144,8 @@ class LikeResult {
       matchId: json['matchId'] as String?,
       conversationId: json['conversationId'] as String?,
       likeId: json['likeId'] as String? ?? '',
-      matchedUser: user is Map<String, dynamic>
-          ? MatchedUser.fromJson(user)
-          : null,
+      matchedUser:
+          user is Map<String, dynamic> ? MatchedUser.fromJson(user) : null,
     );
   }
 

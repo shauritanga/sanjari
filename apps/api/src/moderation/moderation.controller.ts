@@ -40,6 +40,11 @@ export class ModerationController {
     return { data: await this.moderation.requestAccountDeletion(request.user!.sub, dto) };
   }
 
+  @Delete('safety/account-deletion')
+  async cancelAccountDeletion(@Req() request: AuthenticatedRequest) {
+    return { data: await this.moderation.cancelAccountDeletion(request.user!.sub) };
+  }
+
   @Post('safety/account-deactivation')
   async accountDeactivation(@Req() request: AuthenticatedRequest) {
     return { data: await this.moderation.deactivateAccount(request.user!.sub) };

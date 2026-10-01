@@ -24,6 +24,7 @@ class SafetyController extends ChangeNotifier {
   String? _exportError;
   String? _accountStatus;
   String? _accountError;
+  PendingDeletion? _pendingDeletion;
   bool _exporting = false;
   bool _deactivating = false;
   bool _deleting = false;
@@ -40,6 +41,7 @@ class SafetyController extends ChangeNotifier {
   bool get exporting => _exporting;
   bool get deactivating => _deactivating;
   bool get deleting => _deleting;
+  PendingDeletion? get pendingDeletion => _pendingDeletion;
 
   String statementFor(String caseId) => _statements[caseId] ?? '';
 
@@ -55,9 +57,11 @@ class SafetyController extends ChangeNotifier {
       final results = await Future.wait([
         _repository.fetchGuidance(locale),
         _repository.fetchAppeals(),
+        _repository.pendingDeletion(),
       ]);
       _guidance = results[0] as Guidance?;
       _appeals = results[1] as List<AppealCase>;
+      _pendingDeletion = results[2] as PendingDeletion?;
     } catch (e) {
       _error = e is ApiException ? e.message : 'unableToLoadGuidance';
     } finally {
@@ -77,8 +81,7 @@ class SafetyController extends ChangeNotifier {
       _statements.remove(caseId);
       notifyListeners();
     } catch (e) {
-      _accountError =
-          e is ApiException ? e.message : 'unableToSubmitAppeal';
+      _accountError = e is ApiException ? e.message : 'unableToSubmitAppeal';
       notifyListeners();
     }
   }
@@ -109,8 +112,7 @@ class SafetyController extends ChangeNotifier {
       await _repository.deactivate();
       return true;
     } catch (e) {
-      _accountError =
-          e is ApiException ? e.message : 'unableToDeactivate';
+      _accountError = e is ApiException ? e.message : 'unableToDeactivate';
       notifyListeners();
       return false;
     } finally {
@@ -126,9 +128,25 @@ class SafetyController extends ChangeNotifier {
     notifyListeners();
     try {
       _accountStatus = await _repository.requestDeletion();
+      _pendingDeletion = await _repository.pendingDeletion();
     } catch (e) {
-      _accountError =
-          e is ApiException ? e.message : 'unableToRequestDeletion';
+      _accountError = e is ApiException ? e.message : 'unableToRequestDeletion';
+    } finally {
+      _deleting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> cancelDeletion() async {
+    _deleting = true;
+    _accountStatus = null;
+    _accountError = null;
+    notifyListeners();
+    try {
+      await _repository.cancelDeletion();
+      _pendingDeletion = null;
+    } catch (e) {
+      _accountError = e is ApiException ? e.message : 'unableToCancelDeletion';
     } finally {
       _deleting = false;
       notifyListeners();

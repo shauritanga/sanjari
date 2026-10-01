@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/api_client.dart';
 import '../../core/devices.dart';
+import '../../core/permission_prompt.dart';
 import 'onboarding_models.dart';
 import 'media_repository.dart';
 import 'photo_order.dart';
@@ -42,11 +44,19 @@ class _PhotoGridState extends State<PhotoGrid> {
     );
   }
 
+  Future<void> _askForAccess() {
+    return showPhotoAccessDialog(
+      context: context,
+      onOpenSettings: widget.picker.openSettings,
+    );
+  }
+
   Future<void> _pickAndUpload(int position) async {
     PickedMedia? picked;
     try {
       if (!await widget.picker.ensureGalleryAccess()) {
-        _fail('Allow photo library access to manage profile photos.');
+        if (!mounted) return;
+        await _askForAccess();
         return;
       }
       picked = await widget.picker.pickImage();
@@ -74,7 +84,8 @@ class _PhotoGridState extends State<PhotoGrid> {
     PickedMedia? picked;
     try {
       if (!await widget.picker.ensureGalleryAccess()) {
-        _fail('Allow photo library access to manage profile photos.');
+        if (!mounted) return;
+        await _askForAccess();
         return;
       }
       picked = await widget.picker.pickImage();
@@ -95,7 +106,8 @@ class _PhotoGridState extends State<PhotoGrid> {
           if (item.id == photo.id) completed else item,
       ]);
     } catch (e) {
-      _fail(e is ApiException ? e.message : 'Replace failed. Please try again.');
+      _fail(
+          e is ApiException ? e.message : 'Replace failed. Please try again.');
     } finally {
       if (mounted) setState(() => _busyPhotoId = null);
     }
@@ -147,7 +159,7 @@ class _PhotoGridState extends State<PhotoGrid> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.swap_horiz_outlined),
+              leading: const Icon(HugeIcons.strokeRoundedArrowLeftRight),
               title: const Text('Replace photo'),
               onTap: () {
                 Navigator.of(context).pop();
@@ -155,7 +167,7 @@ class _PhotoGridState extends State<PhotoGrid> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.arrow_back_outlined),
+              leading: const Icon(HugeIcons.strokeRoundedArrowLeft01),
               title: const Text('Move earlier'),
               onTap: () {
                 Navigator.of(context).pop();
@@ -165,7 +177,7 @@ class _PhotoGridState extends State<PhotoGrid> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.arrow_forward_outlined),
+              leading: const Icon(HugeIcons.strokeRoundedArrowRight01),
               title: const Text('Move later'),
               onTap: () {
                 Navigator.of(context).pop();
@@ -176,7 +188,7 @@ class _PhotoGridState extends State<PhotoGrid> {
             ),
             if (!photo.isPrimary)
               ListTile(
-                leading: const Icon(Icons.star_outline),
+                leading: const Icon(HugeIcons.strokeRoundedStar),
                 title: const Text('Set as main photo'),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -209,12 +221,10 @@ class _PhotoGridState extends State<PhotoGrid> {
             uploading: _uploadingSlot == index,
             busy: cells[index] != null && _busyPhotoId == cells[index]!.id,
             onAdd: () => _pickAndUpload(index),
-            onOpen: cells[index] == null
-                ? null
-                : () => _showActions(cells[index]!),
-            onRemove: cells[index] == null
-                ? null
-                : () => _remove(cells[index]!),
+            onOpen:
+                cells[index] == null ? null : () => _showActions(cells[index]!),
+            onRemove:
+                cells[index] == null ? null : () => _remove(cells[index]!),
             scheme: scheme,
           ),
       ],
@@ -264,16 +274,18 @@ class _Cell extends StatelessWidget {
               : GestureDetector(
                   onTap: onAdd,
                   child: const Center(
-                    child: Icon(Icons.add_a_photo_outlined, size: 28),
+                    child: Icon(HugeIcons.strokeRoundedImageAdd01, size: 28),
                   ),
                 )
           : Stack(
               fit: StackFit.expand,
               children: [
-                GestureDetector(onTap: busy ? null : onOpen, child: _Thumb(
-                  photo: current,
-                  scheme: scheme,
-                )),
+                GestureDetector(
+                    onTap: busy ? null : onOpen,
+                    child: _Thumb(
+                      photo: current,
+                      scheme: scheme,
+                    )),
                 if (busy)
                   Container(
                     color: Colors.black45,
@@ -312,7 +324,8 @@ class _Cell extends StatelessWidget {
                   right: 2,
                   child: IconButton(
                     iconSize: 14,
-                    icon: const Icon(Icons.cancel, color: Colors.white),
+                    icon: const Icon(HugeIcons.strokeRoundedCancel01,
+                        color: Colors.white),
                     onPressed: busy ? null : onRemove,
                   ),
                 ),
@@ -327,7 +340,7 @@ class _Cell extends StatelessWidget {
                         color: scheme.primary,
                       ),
                       child: const Icon(
-                        Icons.star,
+                        HugeIcons.strokeRoundedStar,
                         color: Colors.white,
                         size: 11,
                       ),

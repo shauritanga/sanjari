@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -33,7 +34,7 @@ class _PremiumPageState extends ConsumerState<PremiumPage> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: tr(locale, 'back'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: Text(tr(locale, 'premiumTitle')),
@@ -58,8 +59,7 @@ class _PremiumPageState extends ConsumerState<PremiumPage> {
               const SizedBox(height: SanjariSpacing.md),
               if (controller.error != null)
                 Padding(
-                  padding:
-                      const EdgeInsets.only(bottom: SanjariSpacing.sm),
+                  padding: const EdgeInsets.only(bottom: SanjariSpacing.sm),
                   child: Text(
                     tr(locale, controller.error!),
                     style: TextStyle(
@@ -69,8 +69,7 @@ class _PremiumPageState extends ConsumerState<PremiumPage> {
                 ),
               if (controller.notice != null)
                 Padding(
-                  padding:
-                      const EdgeInsets.only(bottom: SanjariSpacing.sm),
+                  padding: const EdgeInsets.only(bottom: SanjariSpacing.sm),
                   child: Text(
                     tr(locale, controller.notice!),
                     style: TextStyle(

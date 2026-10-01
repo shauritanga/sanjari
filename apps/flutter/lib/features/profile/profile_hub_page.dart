@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -135,7 +136,7 @@ class _ProfileHubPageState extends ConsumerState<ProfileHubPage> {
                   ),
                   IconButton.filledTonal(
                     tooltip: tr(locale, 'settingsTitle'),
-                    icon: const Icon(Icons.settings_outlined),
+                    icon: const Icon(HugeIcons.strokeRoundedSettings01),
                     onPressed: () => context.push('/settings'),
                   ),
                 ],
@@ -148,10 +149,9 @@ class _ProfileHubPageState extends ConsumerState<ProfileHubPage> {
                     children: [
                       CircleAvatar(
                         radius: 44,
-                        backgroundImage:
-                            photo?.url?.isNotEmpty == true
-                                ? NetworkImage(photo!.url!)
-                                : null,
+                        backgroundImage: photo?.url?.isNotEmpty == true
+                            ? NetworkImage(photo!.url!)
+                            : null,
                         child: photo?.url?.isNotEmpty == true
                             ? null
                             : Text(
@@ -177,11 +177,12 @@ class _ProfileHubPageState extends ConsumerState<ProfileHubPage> {
                               ),
                             ),
                           ),
-                          if (controller.photoVerified ||
-                              controller.idVerified)
+                          if (controller.photoVerified || controller.idVerified)
                             const Padding(
                               padding: EdgeInsets.only(left: 6),
-                              child: Icon(Icons.verified, size: 20),
+                              child: Icon(
+                                  HugeIcons.strokeRoundedCheckmarkBadge01,
+                                  size: 20),
                             ),
                         ],
                       ),
@@ -193,7 +194,8 @@ class _ProfileHubPageState extends ConsumerState<ProfileHubPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.calendar_month, size: 13),
+                            const Icon(HugeIcons.strokeRoundedCalendar03,
+                                size: 13),
                             const SizedBox(width: 4),
                             Text(since),
                           ],
@@ -228,17 +230,16 @@ class _ProfileHubPageState extends ConsumerState<ProfileHubPage> {
                         children: [
                           Expanded(
                             child: FilledButton(
-                              onPressed: () =>
-                                  context.push('/profile/edit'),
+                              onPressed: () => context.push('/profile/edit'),
                               child: Text(tr(locale, 'editProfile')),
                             ),
                           ),
                           const SizedBox(width: SanjariSpacing.sm),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () =>
-                                  context.push('/profile/preview'),
-                              icon: const Icon(Icons.visibility, size: 16),
+                              onPressed: () => context.push('/profile/preview'),
+                              icon: const Icon(HugeIcons.strokeRoundedView,
+                                  size: 16),
                               label: Text(tr(locale, 'preview')),
                             ),
                           ),
@@ -250,13 +251,13 @@ class _ProfileHubPageState extends ConsumerState<ProfileHubPage> {
               ),
               const SizedBox(height: SanjariSpacing.md),
               _HubRow(
-                icon: Icons.settings_outlined,
+                icon: HugeIcons.strokeRoundedSettings01,
                 title: tr(locale, 'settingsTitle'),
                 description: tr(locale, 'settingsCopy'),
                 onTap: () => context.push('/settings'),
               ),
               _HubRow(
-                icon: Icons.shield_outlined,
+                icon: HugeIcons.strokeRoundedShield01,
                 title: tr(locale, 'safetyTitle'),
                 description: tr(locale, 'safetyCopy'),
                 onTap: () => context.push('/safety'),
@@ -268,7 +269,7 @@ class _ProfileHubPageState extends ConsumerState<ProfileHubPage> {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.badge_outlined,
+                        HugeIcons.strokeRoundedCheckmarkBadge01,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: SanjariSpacing.sm),
@@ -336,7 +337,7 @@ class _HubRow extends StatelessWidget {
         leading: Icon(icon),
         title: Text(title),
         subtitle: Text(description),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: const Icon(HugeIcons.strokeRoundedArrowRight01),
         onTap: onTap,
       ),
     );

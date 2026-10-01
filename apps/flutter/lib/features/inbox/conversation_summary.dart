@@ -61,9 +61,8 @@ class ConversationSummary {
       otherUser: other is Map<String, dynamic>
           ? InboxOtherUser.fromJson(other)
           : const InboxOtherUser(id: ''),
-      lastMessage: last is Map<String, dynamic>
-          ? InboxLastMessage.fromJson(last)
-          : null,
+      lastMessage:
+          last is Map<String, dynamic> ? InboxLastMessage.fromJson(last) : null,
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
     );
   }

@@ -26,6 +26,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Sanjari needs access to your photos to add profile pictures.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Sanjari needs camera access for verification selfies and profile photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Sanjari needs microphone access to record voice intros and voice notes.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Sanjari uses your location to show people near you.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Sanjari can check your contacts to block people you already know.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -43,8 +43,7 @@ class BlockedController extends ChangeNotifier {
     notifyListeners();
     try {
       await _repository.unblock(blockedId);
-      _blocked =
-          _blocked.where((item) => item.blockedId != blockedId).toList();
+      _blocked = _blocked.where((item) => item.blockedId != blockedId).toList();
     } catch (e) {
       _error = e is ApiException ? e.message : 'unableToUnblock';
     } finally {

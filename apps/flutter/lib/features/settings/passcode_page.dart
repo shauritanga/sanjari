@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -154,7 +155,7 @@ class _PasscodePageState extends ConsumerState<PasscodePage> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: tr(locale, 'back'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: Text(tr(locale, 'passcodeLock')),
@@ -169,7 +170,7 @@ class _PasscodePageState extends ConsumerState<PasscodePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.lock_outline, size: 28),
+                  const Icon(HugeIcons.strokeRoundedLockPassword, size: 28),
                   const SizedBox(height: 8),
                   Text(
                     tr(
@@ -188,8 +189,7 @@ class _PasscodePageState extends ConsumerState<PasscodePage> {
                     if (_enabled)
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          minimumSize:
-                              const Size.fromHeight(52),
+                          minimumSize: const Size.fromHeight(52),
                         ),
                         onPressed: _startDisable,
                         child: Text(
@@ -211,9 +211,7 @@ class _PasscodePageState extends ConsumerState<PasscodePage> {
             AppTextField(
               label: tr(
                 locale,
-                _step == _Step.create
-                    ? 'createPasscode'
-                    : 'confirmPasscode',
+                _step == _Step.create ? 'createPasscode' : 'confirmPasscode',
               ),
               controller: _pinInput,
               obscureText: true,
@@ -224,9 +222,8 @@ class _PasscodePageState extends ConsumerState<PasscodePage> {
             const SizedBox(height: SanjariSpacing.sm),
             AppButton(
               label: tr(locale, 'continueAction'),
-              onPressed: pinLongEnough(_pinInput.text)
-                  ? _submitCreateStep
-                  : null,
+              onPressed:
+                  pinLongEnough(_pinInput.text) ? _submitCreateStep : null,
             ),
           ],
           if (_step == _Step.disable) ...[
@@ -244,9 +241,7 @@ class _PasscodePageState extends ConsumerState<PasscodePage> {
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
               ),
-              onPressed: pinLongEnough(_pinInput.text)
-                  ? _submitDisable
-                  : null,
+              onPressed: pinLongEnough(_pinInput.text) ? _submitDisable : null,
               child: Text(tr(locale, 'turnOffPasscode')),
             ),
           ],
@@ -262,7 +257,7 @@ class _PasscodePageState extends ConsumerState<PasscodePage> {
                     Row(
                       children: [
                         const Icon(
-                          Icons.fingerprint,
+                          HugeIcons.strokeRoundedFingerPrint,
                           size: 20,
                         ),
                         const SizedBox(width: 8),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,8 +12,7 @@ import '../auth/session_provider.dart';
 import 'personal_info_models.dart';
 import 'personal_info_repository.dart';
 
-final personalInfoRepositoryProvider =
-    Provider<PersonalInfoRepository>((ref) {
+final personalInfoRepositoryProvider = Provider<PersonalInfoRepository>((ref) {
   return PersonalInfoRepository(ref.watch(sessionProvider).api);
 });
 
@@ -46,8 +46,12 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
   @override
   void initState() {
     super.initState();
-    for (final controller in
-        [_phoneInput, _phoneCode, _emailInput, _emailCode]) {
+    for (final controller in [
+      _phoneInput,
+      _phoneCode,
+      _emailInput,
+      _emailCode
+    ]) {
       controller.addListener(() => setState(() {}));
     }
     Future.microtask(_load);
@@ -65,8 +69,7 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
   Future<void> _load() async {
     final strings = ref.read(localeProvider);
     try {
-      final info =
-          await ref.read(personalInfoRepositoryProvider).fetchInfo();
+      final info = await ref.read(personalInfoRepositoryProvider).fetchInfo();
       if (!mounted) return;
       setState(() {
         _info = info;
@@ -170,12 +173,11 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
       _error = null;
     });
     try {
-      final email = await ref
-          .read(personalInfoRepositoryProvider)
-          .confirmEmailChange(
-            _emailInput.text.trim(),
-            _emailCode.text.trim(),
-          );
+      final email =
+          await ref.read(personalInfoRepositoryProvider).confirmEmailChange(
+                _emailInput.text.trim(),
+                _emailCode.text.trim(),
+              );
       if (!mounted) return;
       setState(() {
         _info = _info?.copyWith(email: email);
@@ -204,7 +206,7 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: tr(locale, 'back'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: Text(tr(locale, 'personalInfo')),
@@ -241,13 +243,12 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
                     ),
                   ),
                 _NavRow(
-                  icon: Icons.person_outline,
+                  icon: HugeIcons.strokeRoundedUser,
                   label: tr(locale, 'nameGender'),
                   value: info.displayName?.isNotEmpty == true
                       ? [
                           info.displayName!,
-                          if (info.gender?.isNotEmpty == true)
-                            info.gender,
+                          if (info.gender?.isNotEmpty == true) info.gender,
                         ].join(' · ')
                       : tr(locale, 'addYourDetails'),
                   onTap: () => context.push('/profile/edit'),
@@ -256,16 +257,14 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
                 _Card(
                   children: [
                     _HeaderRow(
-                      icon: Icons.phone_outlined,
+                      icon: HugeIcons.strokeRoundedCircle,
                       label: tr(locale, 'phoneNumber'),
-                      value: info.phoneNumber ??
-                          tr(locale, 'notSet'),
+                      value: info.phoneNumber ?? tr(locale, 'notSet'),
                     ),
                     if (_phoneFlow == _Flow.idle)
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          minimumSize:
-                              const Size.fromHeight(48),
+                          minimumSize: const Size.fromHeight(48),
                         ),
                         onPressed: () {
                           _phoneInput.clear();
@@ -294,11 +293,9 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
                       AppButton(
                         label: tr(locale, 'sendCode'),
                         busy: _busy,
-                        onPressed:
-                            phoneEntryValid(_phoneInput.text) &&
-                                    !_busy
-                                ? _requestPhoneChange
-                                : null,
+                        onPressed: phoneEntryValid(_phoneInput.text) && !_busy
+                            ? _requestPhoneChange
+                            : null,
                       ),
                     ],
                     if (_phoneFlow == _Flow.code) ...[
@@ -311,10 +308,9 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
                       AppButton(
                         label: tr(locale, 'confirmAction'),
                         busy: _busy,
-                        onPressed:
-                            codeValid(_phoneCode.text) && !_busy
-                                ? _confirmPhoneChange
-                                : null,
+                        onPressed: codeValid(_phoneCode.text) && !_busy
+                            ? _confirmPhoneChange
+                            : null,
                       ),
                     ],
                   ],
@@ -323,15 +319,14 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
                 _Card(
                   children: [
                     _HeaderRow(
-                      icon: Icons.mail_outline,
+                      icon: HugeIcons.strokeRoundedMail01,
                       label: tr(locale, 'emailAddress'),
                       value: info.email,
                     ),
                     if (_emailFlow == _Flow.idle)
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          minimumSize:
-                              const Size.fromHeight(48),
+                          minimumSize: const Size.fromHeight(48),
                         ),
                         onPressed: () {
                           _emailInput.clear();
@@ -341,25 +336,21 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
                             _notice = null;
                           });
                         },
-                        child:
-                            Text(tr(locale, 'changeEmail')),
+                        child: Text(tr(locale, 'changeEmail')),
                       ),
                     if (_emailFlow == _Flow.enter) ...[
                       AppTextField(
                         label: tr(locale, 'newEmail'),
                         controller: _emailInput,
-                        keyboardType:
-                            TextInputType.emailAddress,
+                        keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: SanjariSpacing.sm),
                       AppButton(
                         label: tr(locale, 'sendCode'),
                         busy: _busy,
-                        onPressed:
-                            emailEntryValid(_emailInput.text) &&
-                                    !_busy
-                                ? _requestEmailChange
-                                : null,
+                        onPressed: emailEntryValid(_emailInput.text) && !_busy
+                            ? _requestEmailChange
+                            : null,
                       ),
                     ],
                     if (_emailFlow == _Flow.code) ...[
@@ -372,10 +363,9 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
                       AppButton(
                         label: tr(locale, 'confirmAction'),
                         busy: _busy,
-                        onPressed:
-                            codeValid(_emailCode.text) && !_busy
-                                ? _confirmEmailChange
-                                : null,
+                        onPressed: codeValid(_emailCode.text) && !_busy
+                            ? _confirmEmailChange
+                            : null,
                       ),
                     ],
                   ],
@@ -384,16 +374,14 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
                 _Card(
                   children: [
                     _HeaderRow(
-                      icon: Icons.cake_outlined,
+                      icon: HugeIcons.strokeRoundedBirthdayCake,
                       label: tr(locale, 'dateOfBirthLabel'),
                       value: formatBirthDate(info.dateOfBirth),
                     ),
                     Text(
                       tr(locale, 'dobNote'),
                       style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
@@ -444,9 +432,8 @@ class _HeaderRow extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest,
+            backgroundColor:
+                Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Icon(icon, size: 18),
           ),
           const SizedBox(width: 12),
@@ -457,9 +444,7 @@ class _HeaderRow extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 12,
                   ),
                 ),
@@ -499,16 +484,14 @@ class _NavRow extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           radius: 18,
-          backgroundColor: Theme.of(context)
-              .colorScheme
-              .surfaceContainerHighest,
+          backgroundColor:
+              Theme.of(context).colorScheme.surfaceContainerHighest,
           child: Icon(icon, size: 18),
         ),
         title: Text(
           label,
           style: TextStyle(
-            color:
-                Theme.of(context).colorScheme.onSurfaceVariant,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 12,
           ),
         ),
@@ -519,7 +502,7 @@ class _NavRow extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: const Icon(HugeIcons.strokeRoundedArrowRight01),
         onTap: onTap,
       ),
     );

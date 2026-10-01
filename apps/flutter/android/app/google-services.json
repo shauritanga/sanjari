@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "965888341728",
+    "project_id": "sanjari-date",
+    "storage_bucket": "sanjari-date.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:965888341728:android:c23dd84bd0903693560285",
+        "android_client_info": {
+          "package_name": "com.sanjari.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_0vp829T6QxF0BKhXDM_LdpFLMQ70hBU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

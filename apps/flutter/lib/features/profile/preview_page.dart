@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -37,8 +38,7 @@ class _PreviewPageState extends ConsumerState<PreviewPage> {
   Future<void> _load() async {
     final strings = ref.read(localeProvider);
     try {
-      final profile =
-          await ref.read(previewRepositoryProvider).fetchPreview();
+      final profile = await ref.read(previewRepositoryProvider).fetchPreview();
       if (!mounted) return;
       setState(() {
         _profile = profile;
@@ -72,7 +72,7 @@ class _PreviewPageState extends ConsumerState<PreviewPage> {
       return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
             onPressed: () => context.pop(),
           ),
         ),

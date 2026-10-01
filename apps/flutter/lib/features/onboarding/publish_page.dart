@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -63,7 +64,7 @@ class _PublishPageState extends ConsumerState<PublishPage> {
               shape: BoxShape.circle,
               color: scheme.surfaceContainerHighest,
             ),
-            child: Icon(Icons.rocket_launch_outlined,
+            child: Icon(HugeIcons.strokeRoundedRocket,
                 color: scheme.primary, size: 56),
           ),
           const SizedBox(height: 24),

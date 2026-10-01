@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/devices.dart';
+import '../../core/permission_prompt.dart';
 import '../../core/theme.dart';
 import '../../l10n/locale_controller.dart';
 import 'chat_attachments.dart';
@@ -51,8 +53,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   void _onScroll() {
     if (!_scroll.hasClients) return;
-    if (_scroll.position.pixels >=
-        _scroll.position.maxScrollExtent - 300) {
+    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300) {
       _controller.loadOlder();
     }
   }
@@ -72,8 +73,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Future<void> _sendPhotos() async {
     try {
       await _controller.sendPhotosFlow();
-    } on DeviceDenied catch (e) {
-      _deny(e.message);
+    } on DeviceDenied {
+      if (!mounted) return;
+      await showPhotoAccessDialog(
+        context: context,
+        onOpenSettings: _controller.openSettings,
+      );
     }
   }
 
@@ -142,7 +147,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               ],
             ),
             ListTile(
-              leading: const Icon(Icons.reply),
+              leading: const Icon(HugeIcons.strokeRoundedMailReply01),
               title: Text(tr(locale, 'replyAction')),
               onTap: () {
                 Navigator.of(context).pop();
@@ -157,7 +162,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
             if (mine)
               ListTile(
-                leading: const Icon(Icons.delete_outline),
+                leading: const Icon(HugeIcons.strokeRoundedDelete01),
                 title: Text(tr(locale, 'deleteAction')),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -166,7 +171,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               )
             else
               ListTile(
-                leading: const Icon(Icons.flag_outlined),
+                leading: const Icon(HugeIcons.strokeRoundedFlag01),
                 title: Text(tr(locale, 'report')),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -182,8 +187,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final locale = ref.watch(localeProvider).value;
-    final controller =
-        ref.watch(chatControllerProvider(widget.conversationId));
+    final controller = ref.watch(chatControllerProvider(widget.conversationId));
     final name = controller.otherUserName.isNotEmpty
         ? controller.otherUserName
         : tr(locale, 'sanjariMember');
@@ -199,7 +203,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.go('/home/messages'),
         ),
         title: Row(
@@ -252,7 +256,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       child: Text(tr(locale, controller.notice!)),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 18),
+                      icon:
+                          const Icon(HugeIcons.strokeRoundedCancel01, size: 18),
                       onPressed: controller.clearNotice,
                     ),
                   ],
@@ -313,9 +318,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   horizontal: SanjariSpacing.md,
                   vertical: SanjariSpacing.xs,
                 ),
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 child: Row(
                   children: [
                     Expanded(
@@ -327,7 +330,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 18),
+                      icon:
+                          const Icon(HugeIcons.strokeRoundedCancel01, size: 18),
                       onPressed: () => controller.setReplyTo(null),
                     ),
                   ],
@@ -339,9 +343,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   horizontal: SanjariSpacing.md,
                   vertical: SanjariSpacing.xs,
                 ),
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 child: Row(
                   children: [
                     const SizedBox(
@@ -369,7 +371,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 children: [
                   IconButton(
                     tooltip: 'Add attachment',
-                    icon: const Icon(Icons.attach_file),
+                    icon: const Icon(HugeIcons.strokeRoundedAttachment01),
                     onPressed: _openAttachmentSheet,
                   ),
                   Expanded(
@@ -404,7 +406,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.send),
+                        : const Icon(HugeIcons.strokeRoundedSent),
                     onPressed: controller.sending ? null : _send,
                   ),
                 ],
@@ -475,8 +477,7 @@ class _MessageBubble extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: (mine ? Colors.white : scheme.primary)
                         .withValues(alpha: 0.15),
-                    borderRadius:
-                        BorderRadius.circular(SanjariRadius.sm),
+                    borderRadius: BorderRadius.circular(SanjariRadius.sm),
                   ),
                   child: Text(
                     message.replyTo!.body ?? '',
@@ -556,7 +557,9 @@ class _MessageBubble extends StatelessWidget {
                   if (mine) ...[
                     const SizedBox(width: 4),
                     Icon(
-                      delivered ? Icons.done_all : Icons.done,
+                      delivered
+                          ? HugeIcons.strokeRoundedCheckmarkCircle02
+                          : HugeIcons.strokeRoundedCheckmarkCircle01,
                       size: 14,
                       color: read
                           ? const Color(0xFF34B7F1)
@@ -617,17 +620,20 @@ class _AttachmentSheet extends StatelessWidget {
                       backgroundColor: scheme.error,
                     ),
                     onPressed: controller.stopAndSendVoiceNote,
-                    icon: const Icon(Icons.stop_circle_outlined, size: 20),
+                    icon:
+                        const Icon(HugeIcons.strokeRoundedStopCircle, size: 20),
                     label: const Text('Stop and send'),
                   )
                 else ...[
                   ListTile(
-                    leading: const Icon(Icons.image_outlined, size: 20),
+                    leading:
+                        const Icon(HugeIcons.strokeRoundedImage01, size: 20),
                     title: const Text('Photo'),
                     onTap: onPhoto,
                   ),
                   ListTile(
-                    leading: const Icon(Icons.mic_outlined, size: 20),
+                    leading:
+                        const Icon(HugeIcons.strokeRoundedCircle, size: 20),
                     title: const Text('Voice note'),
                     onTap: onVoice,
                   ),
@@ -746,7 +752,9 @@ class _VoiceNote extends StatelessWidget {
             iconSize: 28,
             color: tint,
             icon: Icon(
-              playing ? Icons.pause_circle : Icons.play_circle,
+              playing
+                  ? HugeIcons.strokeRoundedPauseCircle
+                  : HugeIcons.strokeRoundedPlayCircle,
             ),
             onPressed: onToggle,
           ),
@@ -824,7 +832,7 @@ class _PhotoViewerState extends State<_PhotoViewer> {
                   widget.photos[index].url,
                   fit: BoxFit.contain,
                   errorBuilder: (context, _, __) => const Icon(
-                    Icons.broken_image_outlined,
+                    HugeIcons.strokeRoundedCircle,
                     color: Colors.white54,
                     size: 48,
                   ),
@@ -837,7 +845,8 @@ class _PhotoViewerState extends State<_PhotoViewer> {
             right: 8,
             child: IconButton(
               tooltip: 'Close',
-              icon: const Icon(Icons.close, color: Colors.white),
+              icon: const Icon(HugeIcons.strokeRoundedCancel01,
+                  color: Colors.white),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),

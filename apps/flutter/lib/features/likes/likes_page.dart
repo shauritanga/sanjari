@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -96,8 +97,7 @@ class _LikesPageState extends ConsumerState<LikesPage> {
                       ),
                       const SizedBox(height: SanjariSpacing.sm),
                     ],
-                    if (controller.likes.isEmpty &&
-                        controller.error == null)
+                    if (controller.likes.isEmpty && controller.error == null)
                       Padding(
                         padding: const EdgeInsets.only(
                           top: SanjariSpacing.xxl,
@@ -190,21 +190,18 @@ class _LikeCard extends ConsumerWidget {
                             ),
                             if (item.verificationStatus == 'verified')
                               Icon(
-                                Icons.check_circle,
+                                HugeIcons.strokeRoundedCheckmarkCircle01,
                                 size: 18,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                           ],
                         ),
-                        if (item.city != null)
-                          Text(item.city!),
+                        if (item.city != null) Text(item.city!),
                         if (item.priority)
                           Row(
                             children: [
                               const Icon(
-                                Icons.star,
+                                HugeIcons.strokeRoundedStar,
                                 size: 14,
                                 color: SanjariColors.softGold,
                               ),
@@ -225,18 +222,14 @@ class _LikeCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: busy
-                        ? null
-                        : () => controller.pass(item),
+                    onPressed: busy ? null : () => controller.pass(item),
                     child: Text(tr(locale, 'pass')),
                   ),
                 ),
                 const SizedBox(width: SanjariSpacing.sm),
                 Expanded(
                   child: FilledButton(
-                    onPressed: busy
-                        ? null
-                        : () => controller.likeBack(item),
+                    onPressed: busy ? null : () => controller.likeBack(item),
                     child: busy
                         ? const SizedBox(
                             width: 18,

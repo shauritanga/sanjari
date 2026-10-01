@@ -2,12 +2,14 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  '@firebase/util': set this to true or false
   '@prisma/engines': true
   '@scarf/scarf': true
   argon2: true
   esbuild: true
   msgpackr-extract: true
   prisma: true
+  protobufjs: set this to true or false
   sharp: true
 minimumReleaseAgeExclude:
   - '@types/pg@8.20.1'

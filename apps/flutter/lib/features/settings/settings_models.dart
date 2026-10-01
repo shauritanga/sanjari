@@ -74,7 +74,9 @@ String categoryKey(String category) {
 }
 
 VisibilityMode visibilityModeFrom(String? mode) {
-  return mode == 'liked_only' ? VisibilityMode.likedOnly : VisibilityMode.everyone;
+  return mode == 'liked_only'
+      ? VisibilityMode.likedOnly
+      : VisibilityMode.everyone;
 }
 
 extension VisibilityModeData on VisibilityMode {

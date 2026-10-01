@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,7 +28,7 @@ class LegalPage extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           tooltip: tr(locale, 'back'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: Text(tr(locale, titleKey)),

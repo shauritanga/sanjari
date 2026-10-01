@@ -106,29 +106,32 @@ class _BlockProfilePageState extends ConsumerState<BlockProfilePage> {
                     children: [
                       CircleAvatar(
                         radius: 60,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceContainerHighest,
-                        backgroundImage:
-                            widget.photoUrl != null && widget.photoUrl!.isNotEmpty
-                                ? NetworkImage(widget.photoUrl!)
-                                : null,
-                        child: widget.photoUrl == null || widget.photoUrl!.isEmpty
-                            ? Text(
-                                _initials(),
-                                style: const TextStyle(
-                                  fontSize: 40,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              )
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        backgroundImage: widget.photoUrl != null &&
+                                widget.photoUrl!.isNotEmpty
+                            ? NetworkImage(widget.photoUrl!)
                             : null,
+                        child:
+                            widget.photoUrl == null || widget.photoUrl!.isEmpty
+                                ? Text(
+                                    _initials(),
+                                    style: const TextStyle(
+                                      fontSize: 40,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  )
+                                : null,
                       ),
                       const SizedBox(height: SanjariSpacing.md),
                       Text(
                         tr(locale, 'blockTitle').replaceAll('{name}', name),
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
                       ),
                       const SizedBox(height: SanjariSpacing.sm),
                       Text(

@@ -50,8 +50,9 @@ class _ProfileViewPageState extends ConsumerState<ProfileViewPage> {
       _error = null;
     });
     try {
-      final profile =
-          await ref.read(profileViewRepositoryProvider).fetchProfile(widget.userId);
+      final profile = await ref
+          .read(profileViewRepositoryProvider)
+          .fetchProfile(widget.userId);
       if (!mounted) return;
       setState(() {
         _profile = profile;
@@ -60,8 +61,9 @@ class _ProfileViewPageState extends ConsumerState<ProfileViewPage> {
     } catch (e) {
       if (!mounted) return;
       final locale = ref.read(localeProvider).value;
-      final message =
-          e is ApiException ? e.message : tr(locale, 'unableToLoadProfileDetail');
+      final message = e is ApiException
+          ? e.message
+          : tr(locale, 'unableToLoadProfileDetail');
       setState(() {
         if (RegExp('not found', caseSensitive: false).hasMatch(message)) {
           _notFound = true;
@@ -99,7 +101,9 @@ class _ProfileViewPageState extends ConsumerState<ProfileViewPage> {
       if (!mounted) return;
       final locale = ref.read(localeProvider).value;
       setState(() {
-        _error = e is ApiException ? e.message : tr(locale, 'unableToCompleteAction');
+        _error = e is ApiException
+            ? e.message
+            : tr(locale, 'unableToCompleteAction');
       });
     } finally {
       if (mounted) setState(() => _actionBusy = false);

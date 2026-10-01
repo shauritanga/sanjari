@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:go_router/go_router.dart';
 
 import 'onboarding_screen.dart';
@@ -56,7 +57,7 @@ class _TermsPageState extends State<TermsPage> {
                       color: scheme.surfaceContainerHighest,
                     ),
                     child: Icon(
-                      Icons.verified_user_outlined,
+                      HugeIcons.strokeRoundedUserShield01,
                       color: scheme.primary,
                       size: 18,
                     ),
@@ -79,9 +80,7 @@ class _TermsPageState extends State<TermsPage> {
                   width: 1.5,
                   color: _agreed ? scheme.primary : scheme.outline,
                 ),
-                color: _agreed
-                    ? scheme.primaryContainer
-                    : scheme.surface,
+                color: _agreed ? scheme.primaryContainer : scheme.surface,
               ),
               child: Row(
                 children: [

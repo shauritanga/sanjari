@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -47,8 +48,7 @@ class _BirthdayPageState extends ConsumerState<BirthdayPage> {
         ),
         child: Column(
           children: [
-            Icon(Icons.celebration_outlined,
-                color: scheme.primary, size: 36),
+            Icon(HugeIcons.strokeRoundedParty, color: scheme.primary, size: 36),
             Text(
               age,
               style: TextStyle(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -107,7 +108,7 @@ class _LockPageState extends ConsumerState<LockPage> {
                   color: scheme.surfaceContainerHighest,
                 ),
                 child: Icon(
-                  Icons.lock_outline,
+                  HugeIcons.strokeRoundedLockPassword,
                   color: scheme.primary,
                   size: 28,
                 ),
@@ -146,7 +147,7 @@ class _LockPageState extends ConsumerState<LockPage> {
                 child: TextButton.icon(
                   onPressed: _retryBiometric,
                   icon: Icon(
-                    Icons.fingerprint,
+                    HugeIcons.strokeRoundedFingerPrint,
                     color: scheme.primary,
                     size: 20,
                   ),

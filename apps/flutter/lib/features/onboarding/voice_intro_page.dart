@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -37,8 +38,8 @@ class _VoiceIntroPageState extends ConsumerState<VoiceIntroPage> {
   @override
   void initState() {
     super.initState();
-    _uploaded = ref.read(onboardingControllerProvider).draft.voiceIntroKey !=
-        null;
+    _uploaded =
+        ref.read(onboardingControllerProvider).draft.voiceIntroKey != null;
   }
 
   @override
@@ -50,8 +51,7 @@ class _VoiceIntroPageState extends ConsumerState<VoiceIntroPage> {
 
   void _watchRecorder() {
     _progressSub?.cancel();
-    _progressSub =
-        ref.read(voiceRecorderProvider).progress.listen((elapsed) {
+    _progressSub = ref.read(voiceRecorderProvider).progress.listen((elapsed) {
       if (!mounted) return;
       setState(() => _durationMs = elapsed.inMilliseconds);
       if (elapsed.inMilliseconds >= maxVoiceMillis && !_stopArmed) {
@@ -118,9 +118,8 @@ class _VoiceIntroPageState extends ConsumerState<VoiceIntroPage> {
       _error = null;
     });
     try {
-      final key = await ref
-          .read(mediaRepositoryProvider)
-          .uploadVoiceRecording(path);
+      final key =
+          await ref.read(mediaRepositoryProvider).uploadVoiceRecording(path);
       ref.read(onboardingControllerProvider).setVoiceIntroKey(key);
       if (!mounted) return;
       setState(() => _uploaded = true);
@@ -173,7 +172,8 @@ class _VoiceIntroPageState extends ConsumerState<VoiceIntroPage> {
     return OnboardingScreen(
       step: stepNumber('voice-intro'),
       title: 'Add a voice intro',
-      subtitle: 'Let your personality shine — optional but boosts your profile.',
+      subtitle:
+          'Let your personality shine — optional but boosts your profile.',
       primaryLabel: 'Continue',
       onPrimary: () => context.push(pathForStep('review')),
       secondaryLabel: 'Skip',
@@ -195,7 +195,9 @@ class _VoiceIntroPageState extends ConsumerState<VoiceIntroPage> {
                   color: _recording ? scheme.error : scheme.primary,
                 ),
                 child: Icon(
-                  _recording ? Icons.stop_circle_outlined : Icons.mic_outlined,
+                  _recording
+                      ? HugeIcons.strokeRoundedStopCircle
+                      : HugeIcons.strokeRoundedCircle,
                   color: scheme.onPrimary,
                   size: 44,
                 ),
@@ -228,8 +230,8 @@ class _VoiceIntroPageState extends ConsumerState<VoiceIntroPage> {
                   ),
                   child: Icon(
                     _playing
-                        ? Icons.pause_circle_outlined
-                        : Icons.play_circle_outlined,
+                        ? HugeIcons.strokeRoundedPauseCircle
+                        : HugeIcons.strokeRoundedPlayCircle,
                     color: scheme.onPrimary,
                     size: 44,
                   ),

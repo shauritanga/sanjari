@@ -37,9 +37,7 @@ class _PasswordResetPageState extends ConsumerState<PasswordResetPage> {
       _error = null;
     });
     try {
-      await ref
-          .read(sessionProvider)
-          .requestPasswordReset(_email.text.trim());
+      await ref.read(sessionProvider).requestPasswordReset(_email.text.trim());
       setState(() => _sent = true);
     } on ApiException catch (e) {
       setState(() => _error = e.message);

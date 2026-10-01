@@ -78,8 +78,7 @@ class OnboardingState {
     if (json == null) return const OnboardingState();
     return OnboardingState(
       completionScore: (json['completionScore'] as num?)?.toInt() ?? 0,
-      onboardingStatus:
-          json['onboardingStatus'] as String? ?? 'not_started',
+      onboardingStatus: json['onboardingStatus'] as String? ?? 'not_started',
       age: (json['age'] as num?)?.toInt(),
       memberSince: json['memberSince'] as String?,
       profile: HubProfile.fromJson(

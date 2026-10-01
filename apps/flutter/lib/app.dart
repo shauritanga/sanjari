@@ -12,6 +12,7 @@ import 'features/auth/lock_page.dart';
 import 'features/auth/login_page.dart';
 import 'features/auth/password_reset_page.dart';
 import 'features/auth/phone_page.dart';
+import 'features/auth/phone_verification_page.dart';
 import 'features/auth/signup_page.dart';
 import 'features/auth/verify_email_page.dart';
 import 'features/chat/chat_page.dart';
@@ -154,6 +155,13 @@ GoRouter buildRouter(SessionController session, LocaleController locales) {
       GoRoute(
         path: '/auth/verify-email',
         builder: (context, state) => const VerifyEmailPage(),
+      ),
+      GoRoute(
+        path: '/auth/verify-phone',
+        builder: (context, state) => PhoneVerificationPage(
+          phoneNumber: state.uri.queryParameters['phone'] ?? '',
+          from: state.uri.queryParameters['from'] ?? 'login',
+        ),
       ),
       GoRoute(
         path: '/auth/password-reset',

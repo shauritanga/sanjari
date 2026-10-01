@@ -46,8 +46,7 @@ class OnboardingRepository {
       final prefsBody = await _api.get('/onboarding/discovery-preferences');
       final prefs = prefsBody['data'];
       if (prefs is Map<String, dynamic>) {
-        draft.discoveryPreference =
-            DiscoveryPreferenceDraft.fromJson(prefs);
+        draft.discoveryPreference = DiscoveryPreferenceDraft.fromJson(prefs);
       }
     } on ApiException {
       // Discovery preferences are optional until the user reaches that step.

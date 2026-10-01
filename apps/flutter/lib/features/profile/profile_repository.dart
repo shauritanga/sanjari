@@ -26,11 +26,9 @@ class ProfileRepository {
     final map = data is Map<String, dynamic> ? data : null;
     final profile = map?['profile'];
     return EditorSnapshot(
-      profileJson:
-          profile is Map<String, dynamic> ? profile : const {},
+      profileJson: profile is Map<String, dynamic> ? profile : const {},
       completionScore: (map?['completionScore'] as num?)?.toInt() ?? 0,
-      onboardingStatus:
-          map?['onboardingStatus'] as String? ?? 'not_started',
+      onboardingStatus: map?['onboardingStatus'] as String? ?? 'not_started',
       age: (map?['age'] as num?)?.toInt(),
     );
   }

@@ -635,6 +635,7 @@ model NotificationPreference {
 model PushToken {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid
+  token     String
   tokenHash String   @unique
   provider  String
   createdAt DateTime @default(now())

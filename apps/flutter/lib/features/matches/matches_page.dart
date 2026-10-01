@@ -118,8 +118,7 @@ class _MatchesPageState extends ConsumerState<MatchesPage> {
                       ),
                       const SizedBox(height: SanjariSpacing.sm),
                     ],
-                    if (controller.matches.isEmpty &&
-                        controller.error == null)
+                    if (controller.matches.isEmpty && controller.error == null)
                       Padding(
                         padding: const EdgeInsets.only(
                           top: SanjariSpacing.xxl,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../widgets/app_button.dart';
-import 'onboarding_steps.dart';
 
 /// Shared onboarding scaffold. Port of OnboardingScreen.tsx: back affordance
 /// (hidden on the age gate), step progress bar, title/subtitle header,
@@ -58,15 +58,10 @@ class OnboardingScreen extends StatelessWidget {
                   else
                     IconButton(
                       tooltip: 'Go back',
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
                       onPressed: onBack ?? () => context.pop(),
                     ),
-                  Expanded(
-                    child: _ProgressBar(
-                      current: step,
-                      total: totalOnboardingSteps,
-                    ),
-                  ),
+                  const Spacer(),
                   if (onSkip != null)
                     TextButton(onPressed: onSkip, child: const Text('Skip'))
                   else
@@ -104,11 +99,6 @@ class OnboardingScreen extends StatelessWidget {
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: scheme.outlineVariant),
-                ),
-              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -138,32 +128,6 @@ class OnboardingScreen extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({required this.current, required this.total});
-
-  final int current;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final ratio = total > 0
-        ? (current / total).clamp(0.0, 1.0)
-        : 0.0;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: SizedBox(
-        height: 6,
-        child: LinearProgressIndicator(
-          value: ratio,
-          backgroundColor: scheme.outlineVariant,
-          color: scheme.primary,
         ),
       ),
     );

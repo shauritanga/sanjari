@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
@@ -88,8 +89,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _share() async {
-    final message =
-        await ref.read(settingsControllerProvider).shareMessage();
+    final message = await ref.read(settingsControllerProvider).shareMessage();
     if (message == null || !mounted) return;
     await SharePlus.instance.share(ShareParams(text: message));
   }
@@ -135,7 +135,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: tr(locale, 'back'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: Text(tr(locale, 'settings')),
@@ -150,8 +150,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: [
               if (controller.error != null)
                 Padding(
-                  padding:
-                      const EdgeInsets.only(bottom: SanjariSpacing.sm),
+                  padding: const EdgeInsets.only(bottom: SanjariSpacing.sm),
                   child: Text(
                     tr(locale, controller.error!),
                     style: TextStyle(
@@ -163,7 +162,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               _Section(
                 title: tr(locale, 'personalInfo'),
                 child: _Row(
-                  icon: Icons.person_outline,
+                  icon: HugeIcons.strokeRoundedUser,
                   title: tr(locale, 'personalInfoCopy'),
                   description: tr(locale, 'personalInfoHint'),
                   onTap: () => context.push('/settings/personal-info'),
@@ -191,22 +190,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 title: tr(locale, 'appSettings'),
                 children: [
                   _Row(
-                    icon: Icons.translate,
+                    icon: HugeIcons.strokeRoundedTranslate,
                     title: tr(locale, 'language'),
-                    description: ref
-                        .watch(localeProvider)
-                        .value
-                        .label,
+                    description: ref.watch(localeProvider).value.label,
                     onTap: _pickLanguage,
                   ),
                   _Row(
-                    icon: Icons.lock_outline,
+                    icon: HugeIcons.strokeRoundedLockPassword,
                     title: tr(locale, 'passcodeLock'),
                     description: tr(locale, 'passcodeLockCopy'),
                     onTap: () => context.push('/settings/passcode'),
                   ),
                   _Row(
-                    icon: Icons.group_outlined,
+                    icon: HugeIcons.strokeRoundedUserGroup,
                     title: tr(locale, 'chaperone'),
                     description: tr(locale, 'chaperoneCopy'),
                     onTap: () => context.push('/settings/chaperone'),
@@ -217,43 +213,39 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 title: tr(locale, 'privacy'),
                 children: [
                   _Row(
-                    icon: Icons.visibility_outlined,
+                    icon: HugeIcons.strokeRoundedView,
                     title: tr(locale, 'whoCanSeeMe'),
                     description: tr(
                       locale,
-                      controller.visibilityMode ==
-                              VisibilityMode.likedOnly
+                      controller.visibilityMode == VisibilityMode.likedOnly
                           ? 'visibilityLikedOnly'
                           : 'visibilityEveryone',
                     ),
                     onTap: _pickVisibility,
                   ),
                   _Row(
-                    icon: Icons.share_outlined,
+                    icon: HugeIcons.strokeRoundedShare01,
                     title: tr(
                       locale,
-                      controller.sharing
-                          ? 'preparingLink'
-                          : 'shareMyProfile',
+                      controller.sharing ? 'preparingLink' : 'shareMyProfile',
                     ),
                     description: tr(locale, 'shareMyProfileCopy'),
                     onTap: controller.sharing ? null : _share,
                   ),
                   _Row(
-                    icon: Icons.block_outlined,
+                    icon: HugeIcons.strokeRoundedBlocked,
                     title: tr(locale, 'blockedProfiles'),
                     description: tr(locale, 'blockedProfilesCopy'),
                     onTap: () => context.push('/settings/blocked'),
                   ),
                   _Row(
-                    icon: Icons.contacts_outlined,
+                    icon: HugeIcons.strokeRoundedContact01,
                     title: tr(locale, 'blockMyContacts'),
                     description: tr(locale, 'blockMyContactsCopy'),
-                    onTap: () =>
-                        context.push('/settings/contacts-block'),
+                    onTap: () => context.push('/settings/contacts-block'),
                   ),
                   _Row(
-                    icon: Icons.shield_outlined,
+                    icon: HugeIcons.strokeRoundedShield01,
                     title: tr(locale, 'safetyCentre'),
                     description: tr(locale, 'safetyCentreCopy'),
                     onTap: () => context.push('/safety'),
@@ -264,31 +256,36 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 title: tr(locale, 'accountSection'),
                 children: [
                   _Row(
-                    icon: Icons.workspace_premium_outlined,
+                    icon: HugeIcons.strokeRoundedAward01,
                     title: tr(locale, 'membership'),
                     description: tr(locale, 'membershipCopy'),
                     onTap: () => context.push('/premium'),
                   ),
                   _Row(
-                    icon: Icons.location_on_outlined,
+                    icon: HugeIcons.strokeRoundedLocation01,
                     title: tr(locale, 'discoveryPrefs'),
                     description: tr(locale, 'discoveryPrefsCopy'),
                     onTap: () => context.push('/filters'),
                   ),
                   _Row(
-                    icon: Icons.description_outlined,
+                    icon: HugeIcons.strokeRoundedFile01,
                     title: tr(locale, 'termsOfService'),
                     description: tr(locale, 'termsCopy'),
-                    onTap: () =>
-                        context.push('/settings/legal/terms'),
+                    onTap: () => context.push('/settings/legal/terms'),
                   ),
                   _Row(
-                    icon: Icons.privacy_tip_outlined,
+                    icon: HugeIcons.strokeRoundedSecurityCheck,
                     title: tr(locale, 'privacyPolicy'),
                     description: tr(locale, 'privacyPolicyCopy'),
                     onTap: () => context.push(
                       '/settings/legal/privacy-policy',
                     ),
+                  ),
+                  _Row(
+                    icon: HugeIcons.strokeRoundedDelete01,
+                    title: tr(locale, 'accountDeletionAccess'),
+                    description: tr(locale, 'accountDeletionAccessCopy'),
+                    onTap: () => context.push('/safety'),
                   ),
                 ],
               ),
@@ -302,7 +299,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     for (final session in controller.sessions)
                       Row(
                         children: [
-                          const Icon(Icons.smartphone, size: 18),
+                          const Icon(HugeIcons.strokeRoundedSmartPhone01,
+                              size: 18),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -319,9 +317,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                             child: Text(
                               tr(locale, 'signOutDevice'),
                               style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .error,
+                                color: Theme.of(context).colorScheme.error,
                               ),
                             ),
                           ),
@@ -332,15 +328,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               const SizedBox(height: SanjariSpacing.sm),
               OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor:
-                      Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.error,
                   side: BorderSide(
                     color: Theme.of(context).colorScheme.error,
                   ),
                   minimumSize: const Size.fromHeight(52),
                 ),
-                onPressed:
-                    controller.loggingOut ? null : _confirmLogout,
+                onPressed: controller.loggingOut ? null : _confirmLogout,
                 child: controller.loggingOut
                     ? const SizedBox(
                         width: 20,
@@ -420,7 +414,7 @@ class _Row extends StatelessWidget {
       leading: Icon(icon),
       title: Text(title),
       subtitle: Text(description),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: const Icon(HugeIcons.strokeRoundedArrowRight01),
       onTap: onTap,
     );
   }

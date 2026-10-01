@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 /// Labelled text field with inline error. Port of AppTextInput.tsx. When
 /// [obscureText] is set, renders a show/hide eye-icon toggle so every
@@ -63,7 +64,9 @@ class _AppTextFieldState extends State<AppTextField> {
                 ? IconButton(
                     tooltip: _visible ? 'Hide password' : 'Show password',
                     icon: Icon(
-                      _visible ? Icons.visibility_off : Icons.visibility,
+                      _visible
+                          ? HugeIcons.strokeRoundedViewOff
+                          : HugeIcons.strokeRoundedView,
                     ),
                     onPressed: () => setState(() => _visible = !_visible),
                   )

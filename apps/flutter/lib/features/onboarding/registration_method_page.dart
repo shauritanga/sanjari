@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../widgets/selectable_card.dart';
@@ -13,8 +14,7 @@ class RegistrationMethodPage extends StatefulWidget {
   const RegistrationMethodPage({super.key});
 
   @override
-  State<RegistrationMethodPage> createState() =>
-      _RegistrationMethodPageState();
+  State<RegistrationMethodPage> createState() => _RegistrationMethodPageState();
 }
 
 class _RegistrationMethodPageState extends State<RegistrationMethodPage> {
@@ -40,7 +40,7 @@ class _RegistrationMethodPageState extends State<RegistrationMethodPage> {
           SelectableCard(
             title: 'Continue with email',
             description: "We'll send you a verification link.",
-            icon: Icon(Icons.mail_outline,
+            icon: Icon(HugeIcons.strokeRoundedMail01,
                 color: scheme.primary, size: 22),
             selected: _selected == 'email',
             onTap: () {
@@ -52,7 +52,7 @@ class _RegistrationMethodPageState extends State<RegistrationMethodPage> {
           SelectableCard(
             title: 'Continue with phone',
             description: "We'll text you a one-time code.",
-            icon: Icon(Icons.smartphone_outlined,
+            icon: Icon(HugeIcons.strokeRoundedSmartPhone01,
                 color: scheme.primary, size: 22),
             selected: _selected == 'phone',
             onTap: () {

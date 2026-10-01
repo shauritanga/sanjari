@@ -24,9 +24,9 @@ class _PhotosPageState extends ConsumerState<PhotosPage> {
     setState(() => _saving = true);
     try {
       final ok = await ref.read(onboardingControllerProvider).save(
-            const {},
-            stepNumber('photos'),
-          );
+        const {},
+        stepNumber('photos'),
+      );
       if (!mounted || !ok) return;
       context.push(pathForStep('country'));
     } finally {

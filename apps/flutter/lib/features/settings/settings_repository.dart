@@ -44,8 +44,7 @@ class SettingsRepository {
   Future<VisibilityMode> fetchVisibilityMode() async {
     final body = await _api.get('/onboarding/visibility-mode');
     final data = body['data'];
-    final mode =
-        data is Map<String, dynamic> ? data['mode'] as String? : null;
+    final mode = data is Map<String, dynamic> ? data['mode'] as String? : null;
     return visibilityModeFrom(mode);
   }
 

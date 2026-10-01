@@ -114,9 +114,8 @@ class _PromptsPageState extends ConsumerState<PromptsPage> {
       }
     }
     final scheme = Theme.of(context).colorScheme;
-    final selectedPrompts = _prompts
-        .where((prompt) => _selectedIds.contains(prompt.id))
-        .toList();
+    final selectedPrompts =
+        _prompts.where((prompt) => _selectedIds.contains(prompt.id)).toList();
     return OnboardingScreen(
       step: stepNumber('prompts'),
       title: 'Answer a few prompts',

@@ -65,9 +65,7 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
       _error = null;
     });
     try {
-      await ref
-          .read(discoveryRepositoryProvider)
-          .savePreferences(_preference);
+      await ref.read(discoveryRepositoryProvider).savePreferences(_preference);
       if (!mounted) return;
       context.pop();
     } on ApiException catch (e) {
@@ -79,8 +77,7 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
     }
   }
 
-  void _update(DiscoveryPreference next) =>
-      setState(() => _preference = next);
+  void _update(DiscoveryPreference next) => setState(() => _preference = next);
 
   @override
   Widget build(BuildContext context) {
@@ -191,15 +188,13 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
                 SwitchListTile(
                   title: Text(tr(locale, 'recentlyActive')),
                   value: filters.recentlyActive,
-                  onChanged: ref
-                      .read(discoveryFiltersProvider)
-                      .setRecentlyActive,
+                  onChanged:
+                      ref.read(discoveryFiltersProvider).setRecentlyActive,
                 ),
                 SwitchListTile(
                   title: Text(tr(locale, 'newMembers')),
                   value: filters.newMembers,
-                  onChanged:
-                      ref.read(discoveryFiltersProvider).setNewMembers,
+                  onChanged: ref.read(discoveryFiltersProvider).setNewMembers,
                 ),
                 const SizedBox(height: SanjariSpacing.lg),
                 AppButton(

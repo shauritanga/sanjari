@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 /// Searchable option for [SearchableSelect].
 class SearchSelectOption {
@@ -98,7 +99,7 @@ class _SearchableSelectState extends State<SearchableSelect> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
                 Expanded(
@@ -121,11 +122,13 @@ class _SearchableSelectState extends State<SearchableSelect> {
               autocorrect: false,
               decoration: InputDecoration(
                 hintText: widget.placeholder,
-                prefixIcon: const Icon(Icons.search_outlined, size: 18),
+                prefixIcon:
+                    const Icon(HugeIcons.strokeRoundedSearch01, size: 18),
                 suffixIcon: _query.text.isEmpty
                     ? null
                     : IconButton(
-                        icon: const Icon(Icons.cancel_outlined, size: 16),
+                        icon: const Icon(HugeIcons.strokeRoundedCancel01,
+                            size: 16),
                         onPressed: _query.clear,
                       ),
                 border: const OutlineInputBorder(),
@@ -154,7 +157,7 @@ class _SearchableSelectState extends State<SearchableSelect> {
                             : Text(option.description!),
                         trailing: active
                             ? Icon(
-                                Icons.check_circle,
+                                HugeIcons.strokeRoundedCheckmarkCircle01,
                                 color: scheme.primary,
                                 size: 20,
                               )

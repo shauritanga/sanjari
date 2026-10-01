@@ -12,10 +12,7 @@ class MatchesRepository {
     final body = await _api.get('/matches');
     final data = body['data'];
     if (data is! List) return const [];
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(Match.fromJson)
-        .toList();
+    return data.whereType<Map<String, dynamic>>().map(Match.fromJson).toList();
   }
 
   /// Mirrors the unmatch call in matches.tsx, including its reason string.

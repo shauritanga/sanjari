@@ -61,13 +61,11 @@ class Match {
     return name.isEmpty ? 'Sanjari member' : name;
   }
 
-  bool get canOpen =>
-      conversationId != null && conversationId!.isNotEmpty;
+  bool get canOpen => conversationId != null && conversationId!.isNotEmpty;
 }
 
 /// Matches the 48-hour "New" window in matches.tsx. `now` is injectable so
 /// the boundary stays unit-testable.
 bool isNewMatch(DateTime createdAt, DateTime now) {
-  return now.difference(createdAt).inMilliseconds <
-      48 * 60 * 60 * 1000;
+  return now.difference(createdAt).inMilliseconds < 48 * 60 * 60 * 1000;
 }

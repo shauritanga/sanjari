@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/discover/candidate.dart';
@@ -53,8 +54,7 @@ class ProfileDetailView extends ConsumerStatefulWidget {
   final String? error;
 
   @override
-  ConsumerState<ProfileDetailView> createState() =>
-      _ProfileDetailViewState();
+  ConsumerState<ProfileDetailView> createState() => _ProfileDetailViewState();
 }
 
 class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
@@ -118,8 +118,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                           child: Image.network(
                             photo.url,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, _, __) =>
-                                _InitialsHero(
+                            errorBuilder: (context, _, __) => _InitialsHero(
                               profile: profile,
                             ),
                           ),
@@ -150,11 +149,10 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                         context,
                       ).backButtonTooltip,
                       style: IconButton.styleFrom(
-                        backgroundColor:
-                            Colors.black.withValues(alpha: 0.35),
+                        backgroundColor: Colors.black.withValues(alpha: 0.35),
                       ),
                       icon: const Icon(
-                        Icons.arrow_back,
+                        HugeIcons.strokeRoundedArrowLeft01,
                         color: Colors.white,
                       ),
                       onPressed: widget.onBack,
@@ -162,22 +160,17 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                   ),
                   if (profile.photos.length > 1)
                     Positioned(
-                      top:
-                          MediaQuery.paddingOf(context).top + 58,
+                      top: MediaQuery.paddingOf(context).top + 58,
                       left: 0,
                       right: 0,
                       child: Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          for (int i = 0;
-                              i < profile.photos.length;
-                              i++)
+                          for (int i = 0; i < profile.photos.length; i++)
                             Container(
                               width: 6,
                               height: 6,
-                              margin:
-                                  const EdgeInsets.symmetric(
+                              margin: const EdgeInsets.symmetric(
                                 horizontal: 3,
                               ),
                               decoration: BoxDecoration(
@@ -197,8 +190,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                     right: 16,
                     bottom: 16,
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
@@ -216,12 +208,9 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                             ),
                             VerificationBadge(
                               displayName: profile.safeName,
-                              photoVerified: profile
-                                  .verification.photoVerified,
-                              ageVerified: profile
-                                  .verification.ageVerified,
-                              idVerified: profile
-                                  .verification.idVerified,
+                              photoVerified: profile.verification.photoVerified,
+                              ageVerified: profile.verification.ageVerified,
+                              idVerified: profile.verification.idVerified,
                               tone: VerificationTone.overlay,
                               size: 30,
                             ),
@@ -236,8 +225,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                           ),
                         ),
                         if (profile.countryName != null ||
-                            profile.occupationCategory !=
-                                null ||
+                            profile.occupationCategory != null ||
                             profile.educationLevel != null ||
                             profile.heightCm != null) ...[
                           const SizedBox(height: 8),
@@ -247,8 +235,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                             children: [
                               if (profile.countryName != null)
                                 _Chip(profile.countryName!),
-                              if (profile.occupationCategory !=
-                                  null)
+                              if (profile.occupationCategory != null)
                                 _Chip(
                                   profile.occupationCategory!,
                                 ),
@@ -284,9 +271,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                       child: Text(
                         widget.error!,
                         style: TextStyle(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .error,
+                          color: Theme.of(context).colorScheme.error,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -294,18 +279,15 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                   if (profile.biography != null &&
                       profile.biography!.isNotEmpty)
                     Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
                         profile.biography!,
                         style: const TextStyle(fontSize: 16),
                       ),
                     ),
-                  if (memberSinceLabel(profile.memberSince) !=
-                      null)
+                  if (memberSinceLabel(profile.memberSince) != null)
                     Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
                         memberSinceLabel(profile.memberSince)!,
                       ),
@@ -313,8 +295,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                   if (profile.voiceIntroUrl != null &&
                       profile.voiceIntroUrl!.isNotEmpty)
                     Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.only(bottom: 16),
                       child: _VoiceIntro(
                         url: profile.voiceIntroUrl!,
                       ),
@@ -325,8 +306,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        for (final interest
-                            in profile.interests)
+                        for (final interest in profile.interests)
                           _Chip(interest.label),
                       ],
                     ),
@@ -338,8 +318,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        for (final language
-                            in profile.languages)
+                        for (final language in profile.languages)
                           _Chip(language.label),
                       ],
                     ),
@@ -353,8 +332,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 entry.prompt,
@@ -377,7 +355,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                         TextButton.icon(
                           onPressed: widget.actions!.onBlock,
                           icon: const Icon(
-                            Icons.shield_outlined,
+                            HugeIcons.strokeRoundedShield01,
                             size: 16,
                           ),
                           label: Text(tr(locale, 'block')),
@@ -386,7 +364,7 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                         TextButton.icon(
                           onPressed: widget.actions!.onReport,
                           icon: const Icon(
-                            Icons.flag_outlined,
+                            HugeIcons.strokeRoundedFlag01,
                             size: 16,
                           ),
                           label: Text(tr(locale, 'report')),
@@ -408,19 +386,19 @@ class _ProfileDetailViewState extends ConsumerState<ProfileDetailView> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _ProfileActionButton(
-                    icon: Icons.close,
+                    icon: HugeIcons.strokeRoundedCancel01,
                     color: Theme.of(context).colorScheme.error,
                     disabled: widget.actions!.busy,
                     onPressed: widget.actions!.onPass,
                   ),
                   _ProfileActionButton(
-                    icon: Icons.star,
+                    icon: HugeIcons.strokeRoundedStar,
                     color: Theme.of(context).colorScheme.secondary,
                     disabled: widget.actions!.busy,
                     onPressed: widget.actions!.onSuperLike,
                   ),
                   _ProfileActionButton(
-                    icon: Icons.favorite,
+                    icon: HugeIcons.strokeRoundedFavourite,
                     color: Colors.white,
                     background: Theme.of(context).colorScheme.primary,
                     busy: widget.actions!.busy,
@@ -473,8 +451,7 @@ class _ProfileActionButton extends StatelessWidget {
     }
     return IconButton(
       style: IconButton.styleFrom(
-        backgroundColor:
-            Theme.of(context).colorScheme.surfaceContainerHighest,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         fixedSize: const Size(56, 56),
       ),
       onPressed: disabled ? null : onPressed,
@@ -491,8 +468,7 @@ class _InitialsHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color:
-          Theme.of(context).colorScheme.surfaceContainerHighest,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       alignment: Alignment.center,
       child: Text(
         profile.initials(),
@@ -591,17 +567,15 @@ class _VoiceIntroState extends ConsumerState<_VoiceIntro> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
                 Icon(
                   _playing
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_fill,
+                      ? HugeIcons.strokeRoundedPauseCircle
+                      : HugeIcons.strokeRoundedPlayCircle,
                   size: 36,
                 ),
                 const SizedBox(width: 8),
@@ -662,8 +636,7 @@ class _PhotoViewerState extends State<_PhotoViewer> {
           PageView.builder(
             controller: _controller,
             itemCount: widget.profile.photos.length,
-            onPageChanged: (index) =>
-                setState(() => _index = index),
+            onPageChanged: (index) => setState(() => _index = index),
             itemBuilder: (context, index) {
               return Image.network(
                 widget.profile.photos[index].url,
@@ -676,7 +649,8 @@ class _PhotoViewerState extends State<_PhotoViewer> {
             top: MediaQuery.paddingOf(context).top + 8,
             left: 8,
             child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 24),
+              icon: const Icon(HugeIcons.strokeRoundedCancel01,
+                  color: Colors.white, size: 24),
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),

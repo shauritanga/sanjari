@@ -1,0 +1,24 @@
+name: smart_auth_example
+description: Demonstrates how to use the smart_auth plugin.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+environment:
+  sdk: ">=2.16.1 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  smart_auth:
+    path: ../
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^7.0.0
+
+
+flutter:
+  uses-material-design: true

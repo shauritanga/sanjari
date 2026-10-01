@@ -81,8 +81,7 @@ final conversationsRepositoryProvider =
   return ConversationsRepository(ref.watch(sessionProvider).api);
 });
 
-final inboxControllerProvider =
-    ChangeNotifierProvider<InboxController>((ref) {
+final inboxControllerProvider = ChangeNotifierProvider<InboxController>((ref) {
   return InboxController(ref.watch(conversationsRepositoryProvider));
 });
 

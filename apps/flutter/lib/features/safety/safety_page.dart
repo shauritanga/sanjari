@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,21 +13,21 @@ import 'safety_controller.dart';
 IconData guidanceIconFor(String key) {
   switch (key) {
     case 'scams':
-      return Icons.attach_money;
+      return HugeIcons.strokeRoundedMoney01;
     case 'privacy':
-      return Icons.visibility_off_outlined;
+      return HugeIcons.strokeRoundedViewOff;
     case 'meetings':
-      return Icons.location_on_outlined;
+      return HugeIcons.strokeRoundedLocation01;
     case 'guidelines':
-      return Icons.check_circle_outline;
+      return HugeIcons.strokeRoundedCheckmarkCircle01;
     case 'verification':
-      return Icons.verified_user_outlined;
+      return HugeIcons.strokeRoundedUserShield01;
     case 'emergency':
-      return Icons.warning_amber_outlined;
+      return HugeIcons.strokeRoundedAlert02;
     case 'data':
-      return Icons.storage_outlined;
+      return HugeIcons.strokeRoundedFolderFileStorage;
     default:
-      return Icons.warning_amber_outlined;
+      return HugeIcons.strokeRoundedAlert02;
   }
 }
 
@@ -54,9 +55,7 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
       localeProvider,
       (previous, next) {
         if (previous?.value != next.value) {
-          ref
-              .read(safetyControllerProvider)
-              .load(next.value.languageCode);
+          ref.read(safetyControllerProvider).load(next.value.languageCode);
         }
       },
     );
@@ -85,8 +84,7 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    final deactivated =
-        await ref.read(safetyControllerProvider).deactivate();
+    final deactivated = await ref.read(safetyControllerProvider).deactivate();
     if (deactivated && mounted) {
       await ref.read(sessionProvider).logout();
     }
@@ -98,7 +96,8 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(tr(locale, 'deleteTitle')),
-        content: Text(tr(locale, 'deleteCopy')),
+        content: Text(
+            '${tr(locale, 'deleteCopy')}\n\n${tr(locale, 'deleteCoolingOffCopy')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -114,9 +113,60 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
         ],
       ),
     );
-    if (confirmed == true && mounted) {
-      await ref.read(safetyControllerProvider).requestDeletion();
-    }
+    if (confirmed != true || !mounted) return;
+    final controller = ref.read(safetyControllerProvider);
+    final finalConfirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final input = TextEditingController();
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text(tr(locale, 'confirmDeletionTitle')),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(tr(locale, 'confirmDeletionCopy')),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: input,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration:
+                      InputDecoration(labelText: tr(locale, 'typeDelete')),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  tr(locale, 'deleteDataWarning'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(tr(locale, 'cancel'))),
+              FilledButton(
+                onPressed: input.text.trim().toUpperCase() == 'DELETE'
+                    ? () => Navigator.pop(context, true)
+                    : null,
+                style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error),
+                child: Text(tr(locale, 'deleteMyAccount')),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (finalConfirmed == true && mounted) await controller.requestDeletion();
+  }
+
+  String _deletionDate(DateTime? date) {
+    if (date == null) return '';
+    final local = date.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 
   @override
@@ -129,7 +179,7 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: tr(locale, 'back'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: Text(tr(locale, 'safetyTitle')),
@@ -144,8 +194,7 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
             children: [
               if (controller.error != null)
                 Padding(
-                  padding:
-                      const EdgeInsets.only(bottom: SanjariSpacing.sm),
+                  padding: const EdgeInsets.only(bottom: SanjariSpacing.sm),
                   child: Text(
                     tr(locale, controller.error!),
                     style: TextStyle(
@@ -160,7 +209,7 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.shield_outlined,
+                        HugeIcons.strokeRoundedShield01,
                         color: Theme.of(context).colorScheme.secondary,
                       ),
                       const SizedBox(width: SanjariSpacing.sm),
@@ -194,10 +243,9 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
                 children: [
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.download_outlined),
+                    leading: const Icon(HugeIcons.strokeRoundedDownload01),
                     title: Text(tr(locale, 'requestMyData')),
-                    subtitle:
-                        Text(tr(locale, 'requestMyDataCopy')),
+                    subtitle: Text(tr(locale, 'requestMyDataCopy')),
                   ),
                   AppButton(
                     label: tr(locale, 'requestMyData'),
@@ -247,8 +295,7 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
                         const SizedBox(height: 4),
                         AppButton(
                           label: tr(locale, 'submitAppeal'),
-                          onPressed: () =>
-                              controller.submitAppeal(item.id),
+                          onPressed: () => controller.submitAppeal(item.id),
                         ),
                       ],
                       const SizedBox(height: SanjariSpacing.sm),
@@ -266,9 +313,8 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
               ),
               const SizedBox(height: SanjariSpacing.sm),
               _DangerCard(
-                icon: Icons.pause_outlined,
-                iconColor:
-                    Theme.of(context).colorScheme.secondary,
+                icon: HugeIcons.strokeRoundedPause,
+                iconColor: Theme.of(context).colorScheme.secondary,
                 title: tr(locale, 'takeABreak'),
                 body: tr(locale, 'takeABreakCopy'),
                 actionLabel: tr(locale, 'deactivateAccount'),
@@ -277,7 +323,7 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
               ),
               const SizedBox(height: SanjariSpacing.sm),
               _DangerCard(
-                icon: Icons.delete_outline,
+                icon: HugeIcons.strokeRoundedDelete01,
                 iconColor: Theme.of(context).colorScheme.error,
                 title: tr(locale, 'leaveForGood'),
                 titleColor: Theme.of(context).colorScheme.error,
@@ -286,6 +332,36 @@ class _SafetyPageState extends ConsumerState<SafetyPage> {
                 busy: controller.deleting,
                 onAction: _confirmDeletion,
               ),
+              if (controller.pendingDeletion != null) ...[
+                const SizedBox(height: 8),
+                Card(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(SanjariSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tr(locale, 'deletionPending').replaceAll(
+                            '{date}',
+                            _deletionDate(
+                                controller.pendingDeletion!.executeAfter),
+                          ),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(tr(locale, 'deletionPendingCopy')),
+                        TextButton(
+                          onPressed: controller.deleting
+                              ? null
+                              : controller.cancelDeletion,
+                          child: Text(tr(locale, 'cancelDeletion')),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               if (controller.accountError != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -416,9 +492,7 @@ class _StatementFieldState extends ConsumerState<_StatementField> {
   void initState() {
     super.initState();
     _controller = TextEditingController(
-      text: ref
-          .read(safetyControllerProvider)
-          .statementFor(widget.caseId),
+      text: ref.read(safetyControllerProvider).statementFor(widget.caseId),
     );
   }
 
@@ -435,9 +509,8 @@ class _StatementFieldState extends ConsumerState<_StatementField> {
       controller: _controller,
       minLines: 2,
       maxLines: 4,
-      onChanged: (value) => ref
-          .read(safetyControllerProvider)
-          .setStatement(widget.caseId, value),
+      onChanged: (value) =>
+          ref.read(safetyControllerProvider).setStatement(widget.caseId, value),
       decoration: InputDecoration(
         labelText: tr(locale, 'yourStatement'),
         border: const OutlineInputBorder(),

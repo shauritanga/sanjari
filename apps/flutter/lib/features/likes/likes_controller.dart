@@ -73,7 +73,6 @@ class LikesController extends ChangeNotifier {
   }
 }
 
-final likesControllerProvider =
-    ChangeNotifierProvider<LikesController>((ref) {
+final likesControllerProvider = ChangeNotifierProvider<LikesController>((ref) {
   return LikesController(ref.watch(discoveryRepositoryProvider));
 });

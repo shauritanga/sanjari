@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -32,7 +33,7 @@ class _BlockedPageState extends ConsumerState<BlockedPage> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: tr(locale, 'back'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: Text(tr(locale, 'blockedProfiles')),
@@ -47,8 +48,7 @@ class _BlockedPageState extends ConsumerState<BlockedPage> {
             children: [
               if (controller.error != null)
                 Padding(
-                  padding:
-                      const EdgeInsets.only(bottom: SanjariSpacing.sm),
+                  padding: const EdgeInsets.only(bottom: SanjariSpacing.sm),
                   child: Text(
                     tr(locale, controller.error!),
                     style: TextStyle(
@@ -63,7 +63,7 @@ class _BlockedPageState extends ConsumerState<BlockedPage> {
                   child: Column(
                     children: [
                       const Icon(
-                        Icons.block_outlined,
+                        HugeIcons.strokeRoundedBlocked,
                         size: 32,
                       ),
                       const SizedBox(height: 12),
@@ -86,14 +86,13 @@ class _BlockedPageState extends ConsumerState<BlockedPage> {
                         children: [
                           CircleAvatar(
                             radius: 20,
-                            backgroundImage:
-                                item.photoUrl?.isNotEmpty == true
-                                    ? NetworkImage(item.photoUrl!)
-                                    : null,
+                            backgroundImage: item.photoUrl?.isNotEmpty == true
+                                ? NetworkImage(item.photoUrl!)
+                                : null,
                             child: item.photoUrl?.isNotEmpty == true
                                 ? null
                                 : const Icon(
-                                    Icons.block_outlined,
+                                    HugeIcons.strokeRoundedBlocked,
                                     size: 18,
                                   ),
                           ),

@@ -37,6 +37,10 @@ abstract class MediaPicker {
   Future<bool> ensureGalleryAccess();
   Future<bool> ensureCameraAccess();
 
+  /// Opens the OS app-settings page so the user can re-grant a denied
+  /// permission. Backs the "Open Settings" action on denial dialogs.
+  Future<void> openSettings();
+
   /// Null when the user cancels.
   Future<PickedMedia?> pickImage();
 

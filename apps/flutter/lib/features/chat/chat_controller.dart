@@ -267,12 +267,12 @@ class ChatController extends ChangeNotifier {
     var next = message;
     if (message.senderId == _selfId) {
       final index = _pendingSends.indexWhere(
-        (p) =>
-            (p.replyToMessageId) == (message.replyToMessageId),
+        (p) => (p.replyToMessageId) == (message.replyToMessageId),
       );
       if (index != -1) {
         final pending = _pendingSends.removeAt(index);
-        if (pending.replyTo != null) next = next.copyWith(replyTo: pending.replyTo);
+        if (pending.replyTo != null)
+          next = next.copyWith(replyTo: pending.replyTo);
       }
     }
     next = lookupReply(next, _messages);
@@ -280,8 +280,7 @@ class ChatController extends ChangeNotifier {
     notifyListeners();
     if (message.senderId != _selfId) {
       _repository
-          .markDelivered(conversationId, [message.id])
-          .catchError((_) {});
+          .markDelivered(conversationId, [message.id]).catchError((_) {});
       _readDelays[message.id]?.cancel();
       _readDelays[message.id] = Timer(
         const Duration(milliseconds: 400),
@@ -377,9 +376,7 @@ class ChatController extends ChangeNotifier {
   void _mergeAttachment(String messageId, MsgAttachment attachment) {
     final index = _messages.indexWhere((entry) => entry.id == messageId);
     if (index == -1) {
-      _pendingAttachments
-          .putIfAbsent(messageId, () => [])
-          .add(attachment);
+      _pendingAttachments.putIfAbsent(messageId, () => []).add(attachment);
       return;
     }
     final entry = _messages[index];
@@ -393,9 +390,13 @@ class ChatController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Opens the OS app settings so the user can re-grant a denied
+  /// photo-library gate from the denial dialog.
+  Future<void> openSettings() => _picker.openSettings();
+
   /// Photo flow: permission gate, multi-pick (max 10), then the sequential
-  /// pipeline. Denial throws [DeviceDenied] with the Expo alert copy so
-  /// the page can show it; cancellation returns silently.
+  /// pipeline. Denial throws [DeviceDenied] so the page can show the
+  /// settings guidance; cancellation returns silently.
   Future<void> sendPhotosFlow() async {
     if (!await _picker.ensureGalleryAccess()) {
       throw DeviceDenied('Allow photo library access to send photos.');

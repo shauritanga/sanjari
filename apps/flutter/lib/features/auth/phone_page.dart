@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
-import '../../core/session.dart';
 import '../../core/theme.dart';
 import '../../l10n/locale_controller.dart';
 import '../../widgets/app_button.dart';
@@ -31,8 +30,6 @@ class PhonePage extends ConsumerStatefulWidget {
 
 class _PhonePageState extends ConsumerState<PhonePage> {
   final _phone = TextEditingController();
-  final _code = TextEditingController();
-  bool _sent = false;
   String? _error;
   bool _busy = false;
 
@@ -41,7 +38,6 @@ class _PhonePageState extends ConsumerState<PhonePage> {
   @override
   void dispose() {
     _phone.dispose();
-    _code.dispose();
     super.dispose();
   }
 
@@ -67,7 +63,11 @@ class _PhonePageState extends ConsumerState<PhonePage> {
       } else {
         await session.requestPhoneLoginCode(_phone.text.trim());
       }
-      setState(() => _sent = true);
+      if (!mounted) return;
+      context.push(
+        '/auth/verify-phone?phone=${Uri.encodeComponent(_phone.text.trim())}'
+        '&from=${Uri.encodeComponent(widget.from)}',
+      );
     } on ApiException catch (e) {
       if (e.message.contains('18 years old')) {
         if (mounted) {
@@ -76,38 +76,6 @@ class _PhonePageState extends ConsumerState<PhonePage> {
       } else {
         setState(() => _error = e.message);
       }
-    } catch (_) {
-      setState(() => _error = tr(strings.value, 'requestFailed'));
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _verify() async {
-    final strings = ref.read(localeProvider);
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      final session = ref.read(sessionProvider);
-      final result = _isSignup
-          ? await session.verifyPhoneRegistration(
-              _phone.text.trim(),
-              _code.text.trim(),
-            )
-          : await session.verifyPhoneLoginCode(
-              _phone.text.trim(),
-              _code.text.trim(),
-            );
-      if (!mounted) return;
-      if (result.destination == PostAuthDestination.home) {
-        context.go('/home');
-      } else {
-        context.go('/onboarding?step=${result.onboardingStep}');
-      }
-    } on ApiException catch (e) {
-      setState(() => _error = e.message);
     } catch (_) {
       setState(() => _error = tr(strings.value, 'requestFailed'));
     } finally {
@@ -131,23 +99,7 @@ class _PhonePageState extends ConsumerState<PhonePage> {
               controller: _phone,
               keyboardType: TextInputType.phone,
             ),
-            if (_sent) ...[
-              if (!_isSignup) ...[
-                const SizedBox(height: SanjariSpacing.sm),
-                Text(
-                  tr(locale, 'phoneCodeSentHint'),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-              const SizedBox(height: SanjariSpacing.md),
-              AppTextField(
-                label: tr(locale, 'verificationCode'),
-                controller: _code,
-                keyboardType: TextInputType.number,
-                error: _error,
-                onSubmitted: (_) => _verify(),
-              ),
-            ] else if (_error != null) ...[
+            if (_error != null) ...[
               const SizedBox(height: SanjariSpacing.sm),
               Text(
                 _error!,
@@ -156,11 +108,11 @@ class _PhonePageState extends ConsumerState<PhonePage> {
             ],
             const SizedBox(height: SanjariSpacing.lg),
             AppButton(
-              label: tr(locale, _sent ? 'verifyCode' : 'sendCode'),
+              label: tr(locale, 'sendCode'),
               busy: _busy,
-              onPressed: _sent ? _verify : _send,
+              onPressed: _send,
             ),
-            if (!_sent && !_isSignup)
+            if (!_isSignup)
               TextButton(
                 onPressed: () => context.go('/auth/phone?from=signup'),
                 child: Text(tr(locale, 'needAccount')),

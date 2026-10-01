@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 /// Full-width option card with a selected check mark. Port of
 /// SelectableCard.tsx.
@@ -61,7 +62,8 @@ class SelectableCard extends StatelessWidget {
               ),
             ),
             if (selected)
-              Icon(Icons.check_circle, color: scheme.primary, size: 22),
+              Icon(HugeIcons.strokeRoundedCheckmarkCircle01,
+                  color: scheme.primary, size: 22),
           ],
         ),
       ),

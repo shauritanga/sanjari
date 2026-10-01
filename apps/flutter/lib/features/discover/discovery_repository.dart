@@ -136,8 +136,7 @@ class DiscoveryRepository {
     final body = await _api.post('/discovery/$userId/like', {
       'priority': priority,
       if (comment != null && comment.isNotEmpty) 'comment': comment,
-      'idempotencyKey':
-          '$userId-${DateTime.now().millisecondsSinceEpoch}',
+      'idempotencyKey': '$userId-${DateTime.now().millisecondsSinceEpoch}',
     });
     final data = body['data'];
     if (data is! Map<String, dynamic>) {
@@ -148,8 +147,7 @@ class DiscoveryRepository {
 
   Future<void> pass(String userId) {
     return _api.post('/discovery/$userId/pass', {
-      'idempotencyKey':
-          '$userId-${DateTime.now().millisecondsSinceEpoch}',
+      'idempotencyKey': '$userId-${DateTime.now().millisecondsSinceEpoch}',
     });
   }
 

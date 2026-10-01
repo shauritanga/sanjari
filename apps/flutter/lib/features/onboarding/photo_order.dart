@@ -21,8 +21,7 @@ List<OnboardingPhoto> primaryFirst(
   List<OnboardingPhoto> photos,
   String photoId,
 ) {
-  final photo =
-      photos.where((item) => item.id == photoId).toList();
+  final photo = photos.where((item) => item.id == photoId).toList();
   if (photo.isEmpty || photos.first.id == photoId) return photos;
   final rest = photos.where((item) => item.id != photoId).toList();
   return _renumbered([photo.first, ...rest]);

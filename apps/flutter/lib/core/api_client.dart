@@ -81,9 +81,7 @@ class ApiClient {
   Never _throwEnvelope(Map<String, dynamic> body, String fallback) {
     final error = body['error'];
     final message = body['message'] as String? ??
-        (error is Map<String, dynamic>
-            ? error['message'] as String?
-            : null) ??
+        (error is Map<String, dynamic> ? error['message'] as String? : null) ??
         fallback;
     final code =
         error is Map<String, dynamic> ? error['code'] as String? : null;

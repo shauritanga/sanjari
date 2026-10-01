@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -55,8 +56,7 @@ class _DateOfBirthPageState extends ConsumerState<DateOfBirthPage> {
     return OnboardingScreen(
       step: stepNumber('age'),
       title: 'Confirm your date of birth',
-      subtitle:
-          "It's verified again when you create your account, and is "
+      subtitle: "It's verified again when you create your account, and is "
           'never shown on your public profile — only your age.',
       primaryLabel: tr(locale, 'continueAction'),
       primaryDisabled: dob == null,
@@ -75,7 +75,7 @@ class _DateOfBirthPageState extends ConsumerState<DateOfBirthPage> {
               alignment: Alignment.centerLeft,
               minimumSize: const Size.fromHeight(52),
             ),
-            icon: const Icon(Icons.calendar_today_outlined, size: 18),
+            icon: const Icon(HugeIcons.strokeRoundedCalendar03, size: 18),
             label: Text(
               dob == null
                   ? tr(locale, 'selectDateOfBirth')

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -26,6 +27,22 @@ const _tabs = ['discover', 'likes', 'matches', 'messages', 'profile'];
 
 const _tabKeys = ['discover', 'likes', 'matches', 'messages', 'profile'];
 
+const _tabIcons = [
+  HugeIcons.strokeRoundedCompass,
+  HugeIcons.strokeRoundedFavourite,
+  HugeIcons.strokeRoundedUserGroup,
+  HugeIcons.strokeRoundedBubbleChat,
+  HugeIcons.strokeRoundedUser,
+];
+
+const _tabSelectedIcons = [
+  HugeIcons.strokeRoundedCompass,
+  HugeIcons.strokeRoundedFavourite,
+  HugeIcons.strokeRoundedUserGroup,
+  HugeIcons.strokeRoundedBubbleChat,
+  HugeIcons.strokeRoundedUser,
+];
+
 class _HomeShellState extends ConsumerState<HomeShell> {
   int get _index => _tabs.contains(widget.tab) ? _tabs.indexOf(widget.tab) : 0;
 
@@ -33,7 +50,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     return [
       IconButton(
         tooltip: tr(locale, 'language'),
-        icon: const Icon(Icons.language),
+        icon: const Icon(HugeIcons.strokeRoundedLanguageCircle),
         onPressed: () {
           final controller = ref.read(localeProvider);
           controller.set(
@@ -45,7 +62,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       ),
       IconButton(
         tooltip: tr(locale, 'logout'),
-        icon: const Icon(Icons.logout),
+        icon: const Icon(HugeIcons.strokeRoundedLogout01),
         onPressed: () async {
           await ref.read(sessionProvider).logout();
           if (mounted) context.go('/auth/login');
@@ -59,10 +76,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       selectedIndex: _index,
       onDestinationSelected: (i) => context.go('/home/${_tabs[i]}'),
       destinations: [
-        for (final key in _tabKeys)
+        for (var i = 0; i < _tabKeys.length; i++)
           NavigationDestination(
-            icon: const Icon(Icons.circle_outlined),
-            label: tr(locale, key),
+            icon: Icon(_tabIcons[i]),
+            selectedIcon: Icon(_tabSelectedIcons[i]),
+            label: tr(locale, _tabKeys[i]),
           ),
       ],
     );

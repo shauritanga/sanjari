@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -68,8 +69,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
                     child: CircularProgressIndicator(),
                   );
                 }
-                if (controller.error != null &&
-                    controller.items.isEmpty) {
+                if (controller.error != null && controller.items.isEmpty) {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -95,7 +95,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(
-                            Icons.chat_bubble_outline,
+                            HugeIcons.strokeRoundedBubbleChat,
                             size: 40,
                           ),
                           const SizedBox(height: SanjariSpacing.sm),
@@ -162,9 +162,7 @@ class _InboxRow extends ConsumerWidget {
               CircleAvatar(
                 radius: 24,
                 child: Text(
-                  name.trim().isEmpty
-                      ? '?'
-                      : name.trim()[0].toUpperCase(),
+                  name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase(),
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -181,9 +179,8 @@ class _InboxRow extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontWeight: hasUnread
-                                  ? FontWeight.w800
-                                  : FontWeight.w600,
+                              fontWeight:
+                                  hasUnread ? FontWeight.w800 : FontWeight.w600,
                             ),
                           ),
                         ),
@@ -193,9 +190,7 @@ class _InboxRow extends ConsumerWidget {
                               last.createdAt,
                               tr(locale, 'justNow'),
                             ),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall,
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                       ],
                     ),
@@ -208,9 +203,8 @@ class _InboxRow extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontWeight: hasUnread
-                                  ? FontWeight.w800
-                                  : FontWeight.w400,
+                              fontWeight:
+                                  hasUnread ? FontWeight.w800 : FontWeight.w400,
                             ),
                           ),
                         ),
@@ -226,9 +220,7 @@ class _InboxRow extends ConsumerWidget {
                             ),
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary,
+                              color: Theme.of(context).colorScheme.primary,
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(

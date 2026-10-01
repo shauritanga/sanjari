@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/locale_controller.dart';
@@ -32,8 +33,7 @@ class VerificationBadge extends ConsumerWidget {
   final double size;
 
   bool get anyVerified => photoVerified || ageVerified || idVerified;
-  bool get fullyVerified =>
-      photoVerified && ageVerified && idVerified;
+  bool get fullyVerified => photoVerified && ageVerified && idVerified;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,7 +60,7 @@ class VerificationBadge extends ConsumerWidget {
               child: Stack(
                 children: [
                   Icon(
-                    Icons.verified,
+                    HugeIcons.strokeRoundedCheckmarkBadge01,
                     color: tone == VerificationTone.overlay
                         ? Colors.white
                         : Theme.of(context).colorScheme.surface,
@@ -69,7 +69,7 @@ class VerificationBadge extends ConsumerWidget {
                   Positioned(
                     left: size * 0.45,
                     child: Icon(
-                      Icons.verified,
+                      HugeIcons.strokeRoundedCheckmarkBadge01,
                       color: verificationBlue,
                       size: size,
                     ),
@@ -78,7 +78,7 @@ class VerificationBadge extends ConsumerWidget {
               ),
             )
           : Icon(
-              Icons.verified,
+              HugeIcons.strokeRoundedCheckmarkBadge01,
               color: verificationBlue,
               size: size,
             ),
@@ -161,7 +161,7 @@ class _BadgesDialog extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      Icons.verified,
+                      HugeIcons.strokeRoundedCheckmarkBadge01,
                       color: row.verified
                           ? verificationBlue
                           : tone == VerificationTone.overlay

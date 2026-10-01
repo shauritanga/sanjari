@@ -14,8 +14,7 @@ class InboxState {
   final List<ConversationSummary> items;
 
   InboxState applyMessage(IncomingMessage message) {
-    final index =
-        items.indexWhere((c) => c.id == message.conversationId);
+    final index = items.indexWhere((c) => c.id == message.conversationId);
     if (index == -1) return this;
     final existing = items[index];
     final updated = existing.copyWith(

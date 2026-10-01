@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
@@ -186,7 +187,7 @@ class _SwipeCardState extends ConsumerState<SwipeCard> {
                             const Padding(
                               padding: EdgeInsets.only(left: 8),
                               child: Icon(
-                                Icons.verified,
+                                HugeIcons.strokeRoundedCheckmarkBadge01,
                                 color: Colors.white,
                                 size: 26,
                               ),
@@ -216,8 +217,7 @@ class _SwipeCardState extends ConsumerState<SwipeCard> {
                               Chip(label: Text(candidate.countryName!)),
                             if (candidate.occupationCategory != null)
                               Chip(
-                                label:
-                                    Text(candidate.occupationCategory!),
+                                label: Text(candidate.occupationCategory!),
                               ),
                           ],
                         ),

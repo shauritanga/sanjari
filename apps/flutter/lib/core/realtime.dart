@@ -253,8 +253,7 @@ class ChatRealtimeService implements ChatRealtime {
     socket.off('message.new');
     socket.on(
       'message.new',
-      (dynamic data) =>
-          handler(ChatMessage.fromJson(_map(data))),
+      (dynamic data) => handler(ChatMessage.fromJson(_map(data))),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -85,7 +86,7 @@ class _LocationPageState extends ConsumerState<LocationPage> {
               shape: BoxShape.circle,
               color: scheme.surfaceContainerHighest,
             ),
-            child: Icon(Icons.location_on_outlined,
+            child: Icon(HugeIcons.strokeRoundedLocation01,
                 color: scheme.primary, size: 56),
           ),
           if (_error != null) ...[

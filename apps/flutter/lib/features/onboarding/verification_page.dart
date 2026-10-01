@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -180,7 +181,8 @@ class _VerificationCard extends StatelessWidget {
               height: 26,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : Icon(Icons.verified_outlined, color: _colorFor(scheme), size: 26),
+          : Icon(HugeIcons.strokeRoundedCheckmarkBadge01,
+              color: _colorFor(scheme), size: 26),
       selected: status == 'approved',
       onTap: onTap,
     );

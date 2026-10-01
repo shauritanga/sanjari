@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -48,10 +49,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
 
   Future<void> _showMatch(LikeResult result) async {
     if (!mounted) return;
-    final name =
-        result.matchedUser?.displayName?.trim().isNotEmpty == true
-            ? result.matchedUser!.displayName!.trim()
-            : 'Your match';
+    final name = result.matchedUser?.displayName?.trim().isNotEmpty == true
+        ? result.matchedUser!.displayName!.trim()
+        : 'Your match';
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -145,7 +145,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                 ),
                 IconButton.filledTonal(
                   tooltip: tr(locale, 'openFilters'),
-                  icon: const Icon(Icons.tune),
+                  icon: const Icon(HugeIcons.strokeRoundedFilter),
                   onPressed: () => context.push('/filters'),
                 ),
               ],
@@ -182,13 +182,12 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                 }
                 if (controller.error != null) {
                   return _CenteredMessage(
-                    icon: Icons.error_outline,
+                    icon: HugeIcons.strokeRoundedAlertCircle,
                     iconColor: Theme.of(context).colorScheme.error,
                     title: tr(locale, controller.error!),
                     actionLabel: tr(locale, 'tryAgain'),
                     onAction: () {
-                      final filters =
-                          ref.read(discoveryFiltersProvider);
+                      final filters = ref.read(discoveryFiltersProvider);
                       controller.refresh(
                         recentlyActive: filters.recentlyActive,
                         newMembers: filters.newMembers,
@@ -198,13 +197,12 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                 }
                 if (current == null) {
                   return _CenteredMessage(
-                    icon: Icons.search,
+                    icon: HugeIcons.strokeRoundedSearch01,
                     title: tr(locale, 'noProfilesTitle'),
                     copy: tr(locale, 'noProfilesCopy'),
                     actionLabel: tr(locale, 'refresh'),
                     onAction: () {
-                      final filters =
-                          ref.read(discoveryFiltersProvider);
+                      final filters = ref.read(discoveryFiltersProvider);
                       controller.refresh(
                         recentlyActive: filters.recentlyActive,
                         newMembers: filters.newMembers,
@@ -223,8 +221,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                     key: ValueKey(current.id),
                     candidate: current,
                     onSwipeLeft: controller.passCurrent,
-                    onSwipeRight: () =>
-                        controller.likeCurrent(priority: false),
+                    onSwipeRight: () => controller.likeCurrent(priority: false),
                     onTap: () => _openProfile(current),
                   ),
                 );
@@ -248,27 +245,24 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                     children: [
                       _RoundAction(
                         tooltip: tr(locale, 'pass'),
-                        icon: Icons.close,
+                        icon: HugeIcons.strokeRoundedCancel01,
                         color: SanjariColors.error,
-                        onPressed: controller.busy
-                            ? null
-                            : controller.passCurrent,
+                        onPressed:
+                            controller.busy ? null : controller.passCurrent,
                       ),
                       const SizedBox(width: SanjariSpacing.md),
                       _RoundAction(
                         tooltip: tr(locale, 'undo'),
-                        icon: Icons.undo,
+                        icon: HugeIcons.strokeRoundedUndo,
                         color: SanjariColors.softGold,
                         small: true,
                         busy: controller.undoing,
-                        onPressed: controller.canUndo
-                            ? controller.undo
-                            : null,
+                        onPressed: controller.canUndo ? controller.undo : null,
                       ),
                       const SizedBox(width: SanjariSpacing.md),
                       _RoundAction(
                         tooltip: tr(locale, 'superLike'),
-                        icon: Icons.star,
+                        icon: HugeIcons.strokeRoundedStar,
                         color: SanjariColors.deepPlum,
                         small: true,
                         onPressed: controller.busy
@@ -280,7 +274,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                       const SizedBox(width: SanjariSpacing.md),
                       _RoundAction(
                         tooltip: tr(locale, 'like'),
-                        icon: Icons.favorite,
+                        icon: HugeIcons.strokeRoundedFavourite,
                         filled: true,
                         onPressed: controller.busy
                             ? null

@@ -20,6 +20,20 @@ class GuidanceSection {
   final String body;
 }
 
+class PendingDeletion {
+  const PendingDeletion({required this.status, required this.executeAfter});
+
+  factory PendingDeletion.fromJson(Map<String, dynamic> json) {
+    return PendingDeletion(
+      status: json['status'] as String? ?? '',
+      executeAfter: DateTime.tryParse(json['executeAfter'] as String? ?? ''),
+    );
+  }
+
+  final String status;
+  final DateTime? executeAfter;
+}
+
 class Guidance {
   const Guidance({required this.title, this.sections = const []});
 

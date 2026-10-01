@@ -25,11 +25,9 @@ class LikeReceived {
       createdAt: json['createdAt'] as String? ?? '',
       displayName: json['displayName'] as String?,
       city: json['city'] as String?,
-      verificationStatus:
-          json['verificationStatus'] as String? ?? 'unverified',
-      primaryPhoto: photo is Map<String, dynamic>
-          ? CandidatePhoto.fromJson(photo)
-          : null,
+      verificationStatus: json['verificationStatus'] as String? ?? 'unverified',
+      primaryPhoto:
+          photo is Map<String, dynamic> ? CandidatePhoto.fromJson(photo) : null,
     );
   }
 

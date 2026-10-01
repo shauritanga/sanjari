@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 import 'stepper_value.dart';
 
@@ -38,9 +39,11 @@ class NumberStepper extends StatelessWidget {
           ),
           _StepButton(
             semanticLabel: 'Decrease $label',
-            icon: const Text('−', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            icon: const Text('−',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             onTap: () {
-              final next = stepperNext(value, -1, min: min, max: max, step: step);
+              final next =
+                  stepperNext(value, -1, min: min, max: max, step: step);
               if (next != value) onChanged(next);
             },
           ),
@@ -58,9 +61,11 @@ class NumberStepper extends StatelessWidget {
           ),
           _StepButton(
             semanticLabel: 'Increase $label',
-            icon: Icon(Icons.add, color: scheme.onSurface, size: 14),
+            icon: Icon(HugeIcons.strokeRoundedAdd01,
+                color: scheme.onSurface, size: 14),
             onTap: () {
-              final next = stepperNext(value, 1, min: min, max: max, step: step);
+              final next =
+                  stepperNext(value, 1, min: min, max: max, step: step);
               if (next != value) onChanged(next);
             },
           ),

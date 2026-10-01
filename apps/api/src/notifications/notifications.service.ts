@@ -26,8 +26,8 @@ export class NotificationsService {
     const tokenHash = createHash('sha256').update(token).digest('hex');
     return this.prisma.pushToken.upsert({
       where: { tokenHash },
-      create: { userId, tokenHash, provider },
-      update: { userId, provider },
+      create: { userId, token, tokenHash, provider },
+      update: { userId, token, provider },
     });
   }
 

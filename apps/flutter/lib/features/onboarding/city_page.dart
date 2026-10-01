@@ -53,9 +53,8 @@ class _CityPageState extends ConsumerState<CityPage> {
       final countries =
           await ref.read(locationsRepositoryProvider).fetchCountries();
       if (!mounted) return;
-      final match = countries
-          .where((country) => country.code == _code)
-          .toList();
+      final match =
+          countries.where((country) => country.code == _code).toList();
       setState(() {
         _cities = match.isEmpty ? const [] : match.first.cities;
         _loading = false;

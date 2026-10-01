@@ -80,7 +80,8 @@ class _ReportProfilePageState extends ConsumerState<ReportProfilePage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e is ApiException ? e.message : tr(locale, 'unableToSubmitReport');
+        _error =
+            e is ApiException ? e.message : tr(locale, 'unableToSubmitReport');
         _busy = false;
       });
     }
@@ -109,8 +110,7 @@ class _ReportProfilePageState extends ConsumerState<ReportProfilePage> {
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(SanjariRadius.lg),
+                          borderRadius: BorderRadius.circular(SanjariRadius.lg),
                           side: BorderSide(
                             color: Theme.of(context).colorScheme.outline,
                           ),
@@ -118,8 +118,7 @@ class _ReportProfilePageState extends ConsumerState<ReportProfilePage> {
                       ),
                     if (_error != null)
                       Padding(
-                        padding:
-                            const EdgeInsets.only(top: SanjariSpacing.sm),
+                        padding: const EdgeInsets.only(top: SanjariSpacing.sm),
                         child: Text(
                           _error!,
                           textAlign: TextAlign.center,

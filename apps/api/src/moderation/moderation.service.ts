@@ -643,6 +643,35 @@ export class ModerationService {
     return { id: request.id, status: request.status, executeAfter: request.executeAfter };
   }
 
+  async cancelAccountDeletion(userId: string) {
+    const request = await this.prisma.accountDeletionRequest.findFirst({
+      where: { userId, status: { in: ['requested', 'scheduled'] } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!request) {
+      throw new BadRequestException({
+        code: 'NO_PENDING_DELETION',
+        message: 'There is no pending account deletion to cancel.',
+      });
+    }
+    const cancelled = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.accountDeletionRequest.update({
+        where: { id: request.id },
+        data: { status: 'cancelled' },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          actorType: 'user',
+          action: 'privacy.deletion_cancelled',
+          metadata: { requestId: request.id },
+        },
+      });
+      return updated;
+    });
+    return { id: cancelled.id, status: cancelled.status };
+  }
+
   /**
    * Distinct from pause-discovery (still logged in, just hidden from new
    * matches) and from permanent deletion. A deactivated account is excluded

@@ -15,12 +15,15 @@ dependencies:
   audioplayers: ^6.1.0
   crypto: ^3.0.0
   dio: ^5.7.0
+  firebase_core: ^3.15.2
   flutter_riverpod: ^2.5.1
   firebase_messaging: ^15.1.0
   flutter_contacts: ^1.1.7
   flutter_secure_storage: ^9.2.2
   geolocator: ^13.0.1
   go_router: ^14.2.7
+  hugeicons:
+    path: ../../third_party/hugeicons
   image_picker: ^1.1.0
   intl: ^0.20.2
   local_auth: ^2.1.0
@@ -30,6 +33,8 @@ dependencies:
   record_platform_interface: 1.2.0
   share_plus: ^11.0.0
   shared_preferences: ^2.3.0
+  smart_auth:
+    path: ../../third_party/smart_auth
   socket_io_client: ^2.0.3
   uuid: ^4.5.0
 
@@ -41,3 +46,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/onboarding/
+  fonts:
+    - family: HgiStrokeRounded
+      fonts:
+        - asset: assets/fonts/hugeicons-stroke-rounded.ttf

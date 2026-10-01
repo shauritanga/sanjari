@@ -53,8 +53,7 @@ String formatAttachmentDuration(double seconds) {
 double normalizeMetering(double db) => max(0, min(1, (db + 60) / 60));
 
 /// Recorder counter, capped at the 120s voice-note limit.
-int voiceNoteSeconds(int durationMs) =>
-    min(120, (durationMs / 1000).round());
+int voiceNoteSeconds(int durationMs) => min(120, (durationMs / 1000).round());
 
 /// Placeholder bodies, matching the Expo literals (the bubble hides them
 /// when attachments are present).

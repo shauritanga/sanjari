@@ -289,6 +289,5 @@ bool isImageAttachment(String mimeType) => mimeType.startsWith('image/');
 /// Attachment-only messages carry a placeholder body in Expo
 /// ("🎤 Voice note" / "📷 ..."); the bubble renders the attachment instead.
 bool isAttachmentPlaceholderBody(String? body) {
-  return body != null &&
-      (body == '🎤 Voice note' || body.startsWith('📷'));
+  return body != null && (body == '🎤 Voice note' || body.startsWith('📷'));
 }

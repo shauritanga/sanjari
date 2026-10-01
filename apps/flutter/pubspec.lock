@@ -250,7 +250,7 @@ packages:
     source: hosted
     version: "0.9.3+6"
   firebase_core:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: firebase_core
       sha256: "7be63a3f841fc9663342f7f3a011a42aef6a61066943c90b1c434d79d5c995c5"
@@ -509,6 +509,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  hugeicons:
+    dependency: "direct main"
+    description:
+      path: "../../third_party/hugeicons"
+      relative: true
+    source: path
+    version: "0.0.11"
   image_picker:
     dependency: "direct main"
     description:
@@ -1074,6 +1081,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  smart_auth:
+    dependency: "direct main"
+    description:
+      path: "../../third_party/smart_auth"
+      relative: true
+    source: path
+    version: "3.2.0"
   socket_io_client:
     dependency: "direct main"
     description:

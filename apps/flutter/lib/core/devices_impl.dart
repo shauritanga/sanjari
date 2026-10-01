@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:dio/dio.dart';
@@ -28,6 +29,11 @@ class PluginMediaPicker implements MediaPicker {
 
   @override
   Future<bool> ensureGalleryAccess() async {
+    // image_picker opens the system photo picker on Android, which needs
+    // no runtime permission — gating on Permission.photos here always
+    // fails (READ_MEDIA_IMAGES is intentionally undeclared) and blocks
+    // a flow that would otherwise just work. Only iOS needs the request.
+    if (!Platform.isIOS) return true;
     final status = await Permission.photos.request();
     return status.isGranted || status.isLimited;
   }
@@ -35,6 +41,11 @@ class PluginMediaPicker implements MediaPicker {
   @override
   Future<bool> ensureCameraAccess() async {
     return (await Permission.camera.request()).isGranted;
+  }
+
+  @override
+  Future<void> openSettings() async {
+    await openAppSettings();
   }
 
   Future<PickedMedia?> _toMedia(XFile? file) async {
@@ -63,14 +74,12 @@ class PluginMediaPicker implements MediaPicker {
   }
 
   @override
-  Future<PickedMedia?> takePhoto({bool front = false}) =>
-      _picker
-          .pickImage(
-            source: ImageSource.camera,
-            preferredCameraDevice:
-                front ? CameraDevice.front : CameraDevice.rear,
-          )
-          .then(_toMedia);
+  Future<PickedMedia?> takePhoto({bool front = false}) => _picker
+      .pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: front ? CameraDevice.front : CameraDevice.rear,
+      )
+      .then(_toMedia);
 }
 
 class DioBinaryUploader implements BinaryUploader {
@@ -138,21 +147,19 @@ class RecordVoiceRecorder implements VoiceRecorder {
 }
 
 class AudioPlayersSound implements SoundPlayer {
-  AudioPlayersSound({AudioPlayer? player})
-      : _player = player ?? AudioPlayer();
+  AudioPlayersSound({AudioPlayer? player}) : _player = player ?? AudioPlayer();
 
   final AudioPlayer _player;
 
   @override
-  Future<void> play(String path) =>
-      _player.play(DeviceFileSource(path));
+  Future<void> play(String path) => _player.play(DeviceFileSource(path));
 
   @override
   Future<void> pause() => _player.pause();
 
   @override
-  Stream<bool> get playing => _player.onPlayerStateChanged
-      .map((state) => state == PlayerState.playing);
+  Stream<bool> get playing =>
+      _player.onPlayerStateChanged.map((state) => state == PlayerState.playing);
 }
 
 class GeolocatorService implements LocationService {
@@ -199,8 +206,7 @@ class FirebasePushRegistrar implements PushRegistrar {
   @override
   Future<bool> ensureAccess() async {
     try {
-      final settings =
-          await FirebaseMessaging.instance.requestPermission();
+      final settings = await FirebaseMessaging.instance.requestPermission();
       return settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (_) {

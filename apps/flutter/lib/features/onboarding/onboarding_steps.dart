@@ -26,8 +26,7 @@ const List<OnboardingStep> onboardingSteps = [
   OnboardingStep(key: 'prompts', path: '/onboarding/prompts'),
   OnboardingStep(key: 'languages', path: '/onboarding/languages'),
   OnboardingStep(
-      key: 'discovery-preferences',
-      path: '/onboarding/discovery-preferences'),
+      key: 'discovery-preferences', path: '/onboarding/discovery-preferences'),
   OnboardingStep(key: 'location', path: '/onboarding/location'),
   OnboardingStep(key: 'privacy', path: '/onboarding/privacy'),
   OnboardingStep(key: 'verification', path: '/onboarding/verification'),

@@ -49,6 +49,19 @@ class SafetyRepository {
     return _api.post('/safety/account-deactivation', {});
   }
 
+  Future<PendingDeletion?> pendingDeletion() async {
+    final body = await _api.get('/safety/data-controls');
+    final data = body['data'];
+    if (data is! Map<String, dynamic> || data['deletions'] is! List) {
+      return null;
+    }
+    final items = (data['deletions'] as List)
+        .whereType<Map<String, dynamic>>()
+        .where((item) => ['requested', 'scheduled'].contains(item['status']))
+        .toList();
+    return items.isEmpty ? null : PendingDeletion.fromJson(items.first);
+  }
+
   /// Returns the server status (e.g. "scheduled") for the confirmation line.
   Future<String> requestDeletion() async {
     final body = await _api.post('/safety/account-deletion', {});
@@ -56,5 +69,9 @@ class SafetyRepository {
     final status =
         data is Map<String, dynamic> ? data['status'] as String? : null;
     return status ?? 'scheduled';
+  }
+
+  Future<void> cancelDeletion() {
+    return _api.remove('/safety/account-deletion');
   }
 }

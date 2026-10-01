@@ -110,8 +110,7 @@ class ProfileDetail {
       heightCm: (json['heightCm'] as num?)?.toInt(),
       memberSince: json['memberSince'] as String?,
       biography: json['biography'] as String?,
-      verificationStatus:
-          json['verificationStatus'] as String? ?? 'unverified',
+      verificationStatus: json['verificationStatus'] as String? ?? 'unverified',
       verification: VerificationFlags.fromJson(
         json['verification'] as Map<String, dynamic>?,
       ),

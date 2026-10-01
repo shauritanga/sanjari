@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -161,7 +162,7 @@ class _ChaperonePageState extends ConsumerState<ChaperonePage> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: tr(locale, 'back'),
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: Text(tr(locale, 'chaperone')),
@@ -178,7 +179,7 @@ class _ChaperonePageState extends ConsumerState<ChaperonePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.group_outlined, size: 28),
+                        const Icon(HugeIcons.strokeRoundedUserGroup, size: 28),
                         const SizedBox(height: 8),
                         Text(
                           tr(locale, 'chaperoneIntroTitle'),
@@ -242,8 +243,7 @@ class _ChaperonePageState extends ConsumerState<ChaperonePage> {
                   title: Text(tr(locale, 'forwardCopies')),
                   subtitle: Text(tr(locale, 'forwardCopiesCopy')),
                   value: _forwardEnabled,
-                  onChanged: (value) =>
-                      setState(() => _forwardEnabled = value),
+                  onChanged: (value) => setState(() => _forwardEnabled = value),
                 ),
                 const SizedBox(height: SanjariSpacing.md),
                 AppButton(

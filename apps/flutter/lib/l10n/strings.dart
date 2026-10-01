@@ -35,11 +35,15 @@ const Map<String, String> _en = {
   'signupCopy': 'You must be 18 or older to create an account.',
   'creatingAccount': 'Creating account...',
   'phoneTitle': 'Continue with phone',
+  'verifyPhoneTitle': 'Enter verification code',
   'phoneCopy': 'We will text you a verification code.',
   'phoneCodeSentHint':
       "If that number is registered, we've texted a code to it.",
   'sendCode': 'Send code',
   'verifyCode': 'Verify code',
+  'resendCode': 'Resend code',
+  'resendCodeIn': 'Resend code in {seconds}s',
+  'changePhoneNumber': 'Change phone number',
   'verifyEmailTitle': 'Check your email',
   'verifyEmailCopy': 'Enter the verification code we sent you.',
   'passwordResetTitle': 'Reset password',
@@ -62,7 +66,8 @@ const Map<String, String> _en = {
   'findYourMatch': 'Find your match',
   'openFilters': 'Open filters',
   'noProfilesTitle': 'No new profiles right now',
-  'noProfilesCopy': 'Check back later, or widen your filters to see more people.',
+  'noProfilesCopy':
+      'Check back later, or widen your filters to see more people.',
   'refresh': 'Refresh',
   'tryAgain': 'Try again',
   'pass': 'Pass',
@@ -226,6 +231,8 @@ const Map<String, String> _en = {
   'termsCopy': 'How Sanjari expects members to behave',
   'privacyPolicy': 'Privacy Policy',
   'privacyPolicyCopy': 'How your data is collected and used',
+  'accountDeletionAccess': 'Delete or deactivate account',
+  'accountDeletionAccessCopy': 'Manage your account and personal data',
   'devices': 'Devices',
   'devicesHint': "Sign out of devices you don't recognize.",
   'noOtherSessions': 'No other active sessions.',
@@ -259,8 +266,7 @@ const Map<String, String> _en = {
   'photoVerification': 'Photo Verification',
   'photoVerifiedCopy':
       "We have verified {name}'s main photo by comparing their face scan to their main photo to verify that they match.",
-  'photoUnverifiedCopy':
-      "We have not verified {name}'s main photo yet.",
+  'photoUnverifiedCopy': "We have not verified {name}'s main photo yet.",
   'ageVerification': 'Age Verification',
   'ageVerifiedCopy':
       "{name}'s age has been verified after proving their date of birth matches their ID.",
@@ -281,8 +287,7 @@ const Map<String, String> _en = {
   'requestMyData': 'Request my data',
   'requestMyDataCopy':
       'Get a copy of everything Sanjari holds about your account.',
-  'exportRequested':
-      "Data export {status}. We'll notify you when it's ready.",
+  'exportRequested': "Data export {status}. We'll notify you when it's ready.",
   'appealDecision': 'Appeal a moderation decision',
   'appealMeta': 'Category: {category} · Status: {status}',
   'appealNotSubmitted': 'not submitted',
@@ -304,6 +309,19 @@ const Map<String, String> _en = {
   'deleteTitle': 'Delete your account?',
   'deleteCopy':
       'This permanently deletes your profile, matches, and messages after a cooling-off period. This cannot be undone.',
+  'deleteCoolingOffCopy':
+      'You have 7 days to cancel this request before it is permanent.',
+  'confirmDeletionTitle': 'Confirm permanent deletion',
+  'confirmDeletionCopy':
+      'Type DELETE to confirm that you want to permanently remove your account.',
+  'typeDelete': 'Type DELETE',
+  'deleteDataWarning':
+      'Your profile and account data will be removed after the cooling-off period.',
+  'deletionPending': 'Deletion scheduled for {date}',
+  'deletionPendingCopy':
+      'Your account remains available during the cooling-off period. You can cancel this request below.',
+  'cancelDeletion': 'Cancel deletion request',
+  'unableToCancelDeletion': 'Unable to cancel account deletion.',
   'deletionScheduled':
       'Account deletion {status} after the cooling-off period.',
   'unableToLoadGuidance': 'Unable to load safety guidance.',
@@ -311,8 +329,7 @@ const Map<String, String> _en = {
   'unableToExport': 'Unable to request your data.',
   'unableToDeactivate': 'Unable to deactivate your account.',
   'unableToRequestDeletion': 'Unable to request account deletion.',
-  'messagesEmpty':
-      'Your conversations will appear here after a mutual match.',
+  'messagesEmpty': 'Your conversations will appear here after a mutual match.',
   'unableToLoadMessages': 'Unable to load your messages.',
   'account': 'ACCOUNT',
   'editProfile': 'Edit profile',
@@ -384,11 +401,15 @@ const Map<String, String> _sw = {
   'signupCopy': 'Lazima uwe na umri wa miaka 18 au zaidi.',
   'creatingAccount': 'Inafungua akaunti...',
   'phoneTitle': 'Endelea na simu',
+  'verifyPhoneTitle': 'Weka nambari ya uthibitisho',
   'phoneCopy': 'Tutakutumia nambari ya uthibitisho.',
   'phoneCodeSentHint':
       'Ikiwa nambari hiyo imesajiliwa, tumeituma nambari ya uthibitisho.',
   'sendCode': 'Tuma nambari',
   'verifyCode': 'Thibitisha',
+  'resendCode': 'Tuma tena nambari',
+  'resendCodeIn': 'Tuma tena baada ya sekunde {seconds}',
+  'changePhoneNumber': 'Badilisha nambari ya simu',
   'verifyEmailTitle': 'Angalia barua pepe yako',
   'verifyEmailCopy': 'Weka nambari tuliyokutumia.',
   'passwordResetTitle': 'Weka upya nenosiri',
@@ -411,7 +432,8 @@ const Map<String, String> _sw = {
   'findYourMatch': 'Tafuta mechi yako',
   'openFilters': 'Fungua vichujio',
   'noProfilesTitle': 'Hakuna wasifu mpya kwa sasa',
-  'noProfilesCopy': 'Rudi baadaye, au panua vichujio vyako ili uone watu zaidi.',
+  'noProfilesCopy':
+      'Rudi baadaye, au panua vichujio vyako ili uone watu zaidi.',
   'refresh': 'Onyesha upya',
   'tryAgain': 'Jaribu tena',
   'pass': 'Pita',
@@ -572,6 +594,8 @@ const Map<String, String> _sw = {
   'termsCopy': 'Jinsi Sanjari inavyotarajia wanachama kuenenda',
   'privacyPolicy': 'Sera ya Faragha',
   'privacyPolicyCopy': 'Jinsi data yako inakusanywa na kutumiwa',
+  'accountDeletionAccess': 'Futa au zima akaunti',
+  'accountDeletionAccessCopy': 'Dhibiti akaunti na data yako binafsi',
   'devices': 'Vifaa',
   'devicesHint': 'Toka kwenye vifaa usivyovitambua.',
   'noOtherSessions': 'Hakuna vipindi vingine.',
@@ -647,6 +671,19 @@ const Map<String, String> _sw = {
   'deleteTitle': 'Kufuta akaunti yako?',
   'deleteCopy':
       'Hii inafuta wasifu, mechi, na ujumbe wako kabisa baada ya kipindi cha kusubiri. Haiwezi kutenduliwa.',
+  'deleteCoolingOffCopy':
+      'Una siku 7 za kughairi ombi hili kabla halijawa la kudumu.',
+  'confirmDeletionTitle': 'Thibitisha ufutaji wa kudumu',
+  'confirmDeletionCopy':
+      'Andika DELETE kuthibitisha kuwa unataka kuondoa akaunti yako kabisa.',
+  'typeDelete': 'Andika DELETE',
+  'deleteDataWarning':
+      'Wasifu na data ya akaunti vitaondolewa baada ya muda wa kusubiri.',
+  'deletionPending': 'Ufutaji umepangwa tarehe {date}',
+  'deletionPendingCopy':
+      'Akaunti yako itaendelea kupatikana wakati wa kusubiri. Unaweza kughairi ombi hapa chini.',
+  'cancelDeletion': 'Ghairi ombi la ufutaji',
+  'unableToCancelDeletion': 'Imeshindikana kughairi ufutaji wa akaunti.',
   'deletionScheduled':
       'Ufutaji wa akaunti {status} baada ya kipindi cha kusubiri.',
   'unableToLoadGuidance': 'Imeshindwa kupakia mwongozo wa usalama.',
@@ -691,8 +728,7 @@ const Map<String, String> _sw = {
       'Kuripoti kwa uongo kwa makusudi kutasababisha akaunti yako kusimamishwa.',
   'unableToSubmitReport': 'Imeshindwa kuwasilisha ripoti hii.',
   'blockTitle': 'Zuia {name}',
-  'blockCopy':
-      'Usijali, {name} hatajua kwamba umemripoti na kumzuia.',
+  'blockCopy': 'Usijali, {name} hatajua kwamba umemripoti na kumzuia.',
   'reportAndBlock': 'Ripoti na Uzuie',
   'unableToBlock': 'Imeshindwa kumzuia mwanachama huyu.',
   'thisMember': 'mwanachama huyu',

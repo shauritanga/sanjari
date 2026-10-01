@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -59,9 +60,8 @@ class _ContactsBlockPageState extends ConsumerState<ContactsBlockPage> {
       final hashes = hashContactNumbers(numbers);
       if (!mounted) return;
       setState(() => _scannedCount = hashes.length);
-      final blocked = await ref
-          .read(contactsBlockRepositoryProvider)
-          .blockByHashes(hashes);
+      final blocked =
+          await ref.read(contactsBlockRepositoryProvider).blockByHashes(hashes);
       if (!mounted) return;
       setState(() {
         _blockedCount = blocked;
@@ -90,7 +90,7 @@ class _ContactsBlockPageState extends ConsumerState<ContactsBlockPage> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -117,7 +117,7 @@ class _ContactsBlockPageState extends ConsumerState<ContactsBlockPage> {
                       color: scheme.surfaceContainerHighest,
                     ),
                     child: Icon(
-                      Icons.contacts_outlined,
+                      HugeIcons.strokeRoundedContact01,
                       color: scheme.primary,
                       size: 22,
                     ),

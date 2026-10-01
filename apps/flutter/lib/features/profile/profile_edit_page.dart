@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -79,14 +80,14 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(HugeIcons.strokeRoundedArrowLeft01),
           onPressed: () => context.pop(),
         ),
         title: const Text('Edit profile'),
         actions: [
           TextButton.icon(
             onPressed: () => context.push('/profile/preview'),
-            icon: const Icon(Icons.visibility_outlined, size: 16),
+            icon: const Icon(HugeIcons.strokeRoundedView, size: 16),
             label: const Text('Preview'),
           ),
         ],
@@ -115,14 +116,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                   children: [
                     Expanded(
                       child: AppButton(
-                        label: controller.saving
-                            ? 'Saving...'
-                            : 'Save changes',
+                        label: controller.saving ? 'Saving...' : 'Save changes',
                         onPressed: controller.saving
                             ? null
-                            : () => ref
-                                .read(profileEditControllerProvider)
-                                .save(),
+                            : () =>
+                                ref.read(profileEditControllerProvider).save(),
                         busy: controller.saving,
                       ),
                     ),
@@ -237,9 +235,8 @@ class _Body extends ConsumerWidget {
               'Tap a photo for more options.',
           child: PhotoGrid(
             photos: draft.photos,
-            onChanged: (photos) => ref
-                .read(profileEditControllerProvider)
-                .setPhotos(photos),
+            onChanged: (photos) =>
+                ref.read(profileEditControllerProvider).setPhotos(photos),
             picker: ref.watch(mediaPickerProvider),
             media: ref.watch(mediaRepositoryProvider),
           ),
@@ -391,9 +388,8 @@ class _Hero extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: published
-                            ? Colors.white
-                            : scheme.onSurfaceVariant,
+                        color:
+                            published ? Colors.white : scheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -525,11 +521,9 @@ class _Labeled extends StatelessWidget {
 List<String> _single(String? value) =>
     value == null || value.isEmpty ? const [] : [value];
 
-String _firstOrEmpty(List<String> next) =>
-    next.isEmpty ? '' : next.first;
+String _firstOrEmpty(List<String> next) => next.isEmpty ? '' : next.first;
 
-String? _firstOrNull(List<String> next) =>
-    next.isEmpty ? null : next.first;
+String? _firstOrNull(List<String> next) => next.isEmpty ? null : next.first;
 
 class _AboutSection extends ConsumerWidget {
   const _AboutSection({
@@ -551,8 +545,7 @@ class _AboutSection extends ConsumerWidget {
         AppTextField(
           label: 'Display name',
           controller: fields.name,
-          onChanged: (value) =>
-              edit((d) => d.displayName = value),
+          onChanged: (value) => edit((d) => d.displayName = value),
         ),
         const SizedBox(height: 12),
         _Labeled(
@@ -564,8 +557,7 @@ class _AboutSection extends ConsumerWidget {
             ],
             selected: _single(draft.gender),
             multiple: false,
-            onChanged: (next) =>
-                edit((d) => d.gender = _firstOrEmpty(next)),
+            onChanged: (next) => edit((d) => d.gender = _firstOrEmpty(next)),
           ),
         ),
         AppTextField(
@@ -590,8 +582,7 @@ class _AboutSection extends ConsumerWidget {
               child: AppTextField(
                 label: 'Occupation',
                 controller: fields.occupation,
-                onChanged: (value) =>
-                    edit((d) => d.occupationCategory = value),
+                onChanged: (value) => edit((d) => d.occupationCategory = value),
               ),
             ),
             const SizedBox(width: 12),
@@ -599,8 +590,7 @@ class _AboutSection extends ConsumerWidget {
               child: AppTextField(
                 label: 'Education',
                 controller: fields.education,
-                onChanged: (value) =>
-                    edit((d) => d.educationLevel = value),
+                onChanged: (value) => edit((d) => d.educationLevel = value),
               ),
             ),
           ],
@@ -698,8 +688,7 @@ class _LifestyleSection extends ConsumerWidget {
           controller: culturalController,
           hint: "Share only if you'd like to",
           maxLength: 80,
-          onChanged: (value) =>
-              edit((d) => d.culturalPreference = value),
+          onChanged: (value) => edit((d) => d.culturalPreference = value),
         ),
       ],
     );
@@ -731,7 +720,7 @@ class _DropdownRow extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                Icons.location_on_outlined,
+                HugeIcons.strokeRoundedLocation01,
                 color: scheme.primary,
                 size: 18,
               ),
@@ -745,7 +734,7 @@ class _DropdownRow extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.keyboard_arrow_down,
+                HugeIcons.strokeRoundedArrowDown01,
                 color: scheme.onSurfaceVariant,
                 size: 16,
               ),
@@ -850,8 +839,7 @@ class _LookingForSection extends ConsumerWidget {
             ],
             selected: draft.relationshipIntentions,
             max: 3,
-            onChanged: (next) =>
-                edit((d) => d.relationshipIntentions = next),
+            onChanged: (next) => edit((d) => d.relationshipIntentions = next),
           ),
         ),
         _Labeled(
@@ -907,14 +895,12 @@ class _PrivacySection extends ConsumerWidget {
         ToggleRow(
           title: 'Age',
           value: visibility.hideAge,
-          onChanged: (value) =>
-              edit((d) => d.visibility.hideAge = value),
+          onChanged: (value) => edit((d) => d.visibility.hideAge = value),
         ),
         ToggleRow(
           title: 'City',
           value: visibility.hideCity,
-          onChanged: (value) =>
-              edit((d) => d.visibility.hideCity = value),
+          onChanged: (value) => edit((d) => d.visibility.hideCity = value),
         ),
         ToggleRow(
           title: 'Occupation',
@@ -925,14 +911,12 @@ class _PrivacySection extends ConsumerWidget {
         ToggleRow(
           title: 'Education',
           value: visibility.hideEducation,
-          onChanged: (value) =>
-              edit((d) => d.visibility.hideEducation = value),
+          onChanged: (value) => edit((d) => d.visibility.hideEducation = value),
         ),
         ToggleRow(
           title: 'Height',
           value: visibility.hideHeight,
-          onChanged: (value) =>
-              edit((d) => d.visibility.hideHeight = value),
+          onChanged: (value) => edit((d) => d.visibility.hideHeight = value),
         ),
         const SizedBox(height: 8),
         Text(
@@ -1032,8 +1016,7 @@ class _VerifyCard extends StatelessWidget {
 
     return SelectableCard(
       title: title,
-      description:
-          busy ? 'Uploading…' : profileStatusLabel(status),
+      description: busy ? 'Uploading…' : profileStatusLabel(status),
       icon: busy
           ? const SizedBox(
               width: 24,
@@ -1041,7 +1024,7 @@ class _VerifyCard extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : Icon(
-              Icons.verified_outlined,
+              HugeIcons.strokeRoundedCheckmarkBadge01,
               color: iconColor(),
               size: 24,
             ),
