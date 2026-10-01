@@ -20,6 +20,8 @@ export const appConfigSchema = z.object({
   SMTP_HOST: z.string().min(1),
   SMTP_PORT: z.coerce.number().int().positive(),
   SMTP_FROM: z.email().default('support@sanjari.app'),
+  RESEND_API_KEY: z.string().default(''),
+  RESEND_FROM: z.email().default('support@sanjari.app'),
   SMS_PROVIDER: z.enum(['disabled', 'mailpit', 'beem']).default('disabled'),
   SMS_DEV_INBOX: z.email().default('sms@sanjari.test'),
   BEEM_API_KEY: z.string().default(''),
