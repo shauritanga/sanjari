@@ -35,7 +35,14 @@ class _EmailPageState extends ConsumerState<EmailPage> {
     }
     setState(() => _busy = true);
     try {
-      await ref.read(sessionProvider).requestEmailLoginCode(email);
+      final session = ref.read(sessionProvider);
+      if (!await session.emailAccountExists(email)) {
+        if (mounted) {
+          context.push('/auth/signup?email=${Uri.encodeComponent(email)}');
+        }
+        return;
+      }
+      await session.requestEmailLoginCode(email);
       if (mounted) {
         context.push('/auth/email/verify?email=${Uri.encodeComponent(email)}');
       }

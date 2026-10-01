@@ -362,6 +362,11 @@ export class AuthService {
     await this.emailVerification.issue(user.id, normalized);
   }
 
+  async emailAccountExists(email: string): Promise<boolean> {
+    const normalized = email.trim().toLowerCase();
+    return Boolean(await this.prisma.user.findUnique({ where: { email: normalized }, select: { id: true } }));
+  }
+
   async requestEmailChange(userId: string, newEmail: string): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     await this.emailVerification.requestChange(userId, user.email, newEmail);

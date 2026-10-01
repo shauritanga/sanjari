@@ -26,6 +26,16 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _password = TextEditingController();
   String? _error;
   bool _busy = false;
+  bool _prefilled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_prefilled) return;
+    _prefilled = true;
+    final email = GoRouterState.of(context).uri.queryParameters['email'];
+    if (email != null && email.isNotEmpty) _email.text = email;
+  }
 
   @override
   void dispose() {

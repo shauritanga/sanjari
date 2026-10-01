@@ -164,6 +164,12 @@ class SessionController extends ChangeNotifier {
   Future<void> requestEmailLoginCode(String email) =>
       _api.post('/auth/email/login/request', {'email': email});
 
+  Future<bool> emailAccountExists(String email) async {
+    final body = await _api.post('/auth/email/check', {'email': email});
+    final data = body['data'];
+    return data is Map<String, dynamic> && data['accountExists'] == true;
+  }
+
   Future<void> requestPhoneLoginCode(String phoneNumber) =>
       _api.post('/auth/phone/login/request', {'phoneNumber': phoneNumber});
 
