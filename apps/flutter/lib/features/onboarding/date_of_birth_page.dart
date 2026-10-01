@@ -1,89 +1,121 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../l10n/locale_controller.dart';
-import '../../widgets/date_of_birth_picker.dart';
+import '../../core/theme.dart';
 import 'onboarding_screen.dart';
 import 'onboarding_steps.dart';
 import 'pending_dob_provider.dart';
 
-/// Date-of-birth capture, shown right after the /onboarding/age "I'm 18 or
-/// older" confirmation. An under-18 pick is rejected here, immediately,
-/// with an unmistakable "adults only" message — before the user can go
-/// any further. Not part of the numbered onboardingSteps catalogue (it
-/// has no server-side counterpart, matching the original app), so it
-/// reuses the 'age' step's progress position. The picked date carries
-/// forward to the email/phone sign-up screens via
-/// [pendingDateOfBirthProvider] so it isn't asked for twice.
 class DateOfBirthPage extends ConsumerStatefulWidget {
   const DateOfBirthPage({super.key});
-
   @override
   ConsumerState<DateOfBirthPage> createState() => _DateOfBirthPageState();
 }
 
 class _DateOfBirthPageState extends ConsumerState<DateOfBirthPage> {
-  DateTime? _dateOfBirth;
-
+  static const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sept',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
+  late int day, month, year;
+  DateTime? selected;
   @override
   void initState() {
     super.initState();
-    _dateOfBirth = ref.read(pendingDateOfBirthProvider);
+    final d = ref.read(pendingDateOfBirthProvider);
+    day = d?.day ?? 30;
+    month = (d?.month ?? 9) - 1;
+    year = d?.year ?? DateTime.now().year - 18;
+    selected = d;
   }
 
-  void _pickDate() {
-    pickDateOfBirth(
-      context,
-      ref.read(localeProvider).value,
-      initialDateTime: _dateOfBirth,
-      onSelected: (date) => setState(() => _dateOfBirth = date),
-    );
+  DateTime? get date {
+    final d = DateTime(year, month + 1, day);
+    return d.month == month + 1 && d.day == day && !d.isAfter(DateTime.now())
+        ? d
+        : null;
   }
 
-  void _continue() {
-    final dob = _dateOfBirth;
-    if (dob == null) return;
-    ref.read(pendingDateOfBirthProvider.notifier).state = dob;
-    context.push(pathForStep('terms'));
+  int? age(DateTime? d) {
+    if (d == null) return null;
+    final n = DateTime.now();
+    var a = n.year - d.year;
+    if (n.month < d.month || (n.month == d.month && n.day < d.day)) a--;
+    return a;
   }
 
+  void changed() => setState(() => selected = date);
   @override
   Widget build(BuildContext context) {
-    final locale = ref.watch(localeProvider).value;
-    final dob = _dateOfBirth;
+    final years = age(selected);
+    final valid = years != null && years >= 18;
     return OnboardingScreen(
-      step: stepNumber('age'),
-      title: 'Confirm your date of birth',
-      subtitle: "It's verified again when you create your account, and is "
-          'never shown on your public profile — only your age.',
-      primaryLabel: tr(locale, 'continueAction'),
-      primaryDisabled: dob == null,
-      onPrimary: _continue,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            tr(locale, 'dateOfBirth'),
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-          const SizedBox(height: 6),
-          OutlinedButton.icon(
-            onPressed: _pickDate,
-            style: OutlinedButton.styleFrom(
-              alignment: Alignment.centerLeft,
-              minimumSize: const Size.fromHeight(52),
-            ),
-            icon: const Icon(HugeIcons.strokeRoundedCalendar03, size: 18),
-            label: Text(
-              dob == null
-                  ? tr(locale, 'selectDateOfBirth')
-                  : '${dob.year}-${dob.month.toString().padLeft(2, '0')}-${dob.day.toString().padLeft(2, '0')}',
-            ),
-          ),
-        ],
-      ),
-    );
+        step: stepNumber('age'),
+        title: 'When were you born?',
+        primaryLabel: 'Continue',
+        primaryDisabled: !valid,
+        onPrimary: () {
+          if (!valid) return;
+          ref.read(pendingDateOfBirthProvider.notifier).state = selected;
+          context.push(pathForStep('terms'));
+        },
+        child: Column(children: [
+          const SizedBox(height: 8),
+          Icon(Icons.calendar_month_outlined,
+              size: 112, color: SanjariColors.coral),
+          const SizedBox(height: 20),
+          SizedBox(
+              height: 190,
+              child: Row(children: [
+                Expanded(
+                    child: picker(
+                        day - 1, 31, (i) => '${i + 1}'.padLeft(2, '0'), (i) {
+                  day = i + 1;
+                  changed();
+                })),
+                Expanded(
+                    child: picker(month, 12, (i) => months[i], (i) {
+                  month = i;
+                  changed();
+                })),
+                Expanded(
+                    child: picker(year - 1900, DateTime.now().year - 1899,
+                        (i) => '${1900 + i}', (i) {
+                  year = 1900 + i;
+                  changed();
+                })),
+              ])),
+          const SizedBox(height: 52),
+          if (years != null)
+            Text("You're $years years old",
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+        ]));
   }
+
+  Widget picker(int initial, int count, String Function(int) label,
+          ValueChanged<int> onChanged) =>
+      CupertinoPicker.builder(
+          itemExtent: 44,
+          diameterRatio: 3,
+          squeeze: 1.15,
+          magnification: 1.05,
+          useMagnifier: true,
+          scrollController: FixedExtentScrollController(
+              initialItem: initial.clamp(0, count - 1)),
+          onSelectedItemChanged: onChanged,
+          itemBuilder: (c, i) => Center(
+              child: Text(label(i), style: const TextStyle(fontSize: 18))),
+          childCount: count);
 }
