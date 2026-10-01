@@ -93,8 +93,8 @@ class _NamePageState extends ConsumerState<NamePage> {
       onPrimary: _save,
       child: Column(children: [
         const SizedBox(height: 12),
-        Icon(Icons.auto_stories_outlined,
-            size: 112, color: SanjariColors.coral),
+        Image.asset('assets/images/onboarding/name_illustration.png',
+            width: 150, height: 150),
         const SizedBox(height: 28),
         TextField(
           controller: _name,
@@ -105,12 +105,17 @@ class _NamePageState extends ConsumerState<NamePage> {
             if (_name.text.trim().length >= 2 && !_saving) _save();
           },
           decoration: InputDecoration(
-            hintText: 'Your first name',
             counterText: '',
+            border: const UnderlineInputBorder(),
+            enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey)),
             suffixIcon: _name.text.isEmpty
                 ? null
                 : IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const CircleAvatar(
+                        radius: 15,
+                        backgroundColor: Color(0xFFF2F2F2),
+                        child: Icon(Icons.close, size: 16, color: Colors.grey)),
                     onPressed: () => setState(_name.clear)),
           ),
         ),
