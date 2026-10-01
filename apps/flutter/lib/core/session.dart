@@ -170,12 +170,47 @@ class SessionController extends ChangeNotifier {
     return data is Map<String, dynamic> && data['accountExists'] == true;
   }
 
-  Future<void> requestEmailRegistrationCode(String email) =>
-      _api.post('/auth/email/register/request', {'email': email});
+  /// Passwordless email sign-up: creates a pending account and emails an
+  /// OTP in one call, mirroring [registerPhone].
+  Future<void> registerEmail(
+    String email,
+    DateTime dateOfBirth,
+    String locale,
+  ) {
+    return _api.post('/auth/email/register', {
+      'email': email,
+      'dateOfBirth':
+          '${dateOfBirth.year.toString().padLeft(4, '0')}-${dateOfBirth.month.toString().padLeft(2, '0')}-${dateOfBirth.day.toString().padLeft(2, '0')}',
+      'confirmedAdult': true,
+      'acceptedTermsVersion': '2026-01',
+      'acceptedPrivacyVersion': '2026-01',
+      'locale': locale,
+    });
+  }
 
-  Future<void> verifyEmailRegistrationCode(String email, String code) async {
-    await _api
-        .post('/auth/email/register/verify', {'email': email, 'code': code});
+  /// Completes email sign-up: verifies the OTP issued by [registerEmail]
+  /// and starts the first session, same shape as [verifyPhoneRegistration].
+  Future<PostAuthResult> verifyEmailRegistration(
+    String email,
+    String code,
+  ) async {
+    final deviceId = await _deviceId();
+    final body = await _api.post('/auth/email/register/verify', {
+      'email': email,
+      'code': code,
+      'deviceId': deviceId,
+    });
+    final data = body['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('Email verification response was incomplete.');
+    }
+    await _storeTokens(data, notify: false);
+    final destination = await _postAuthDestination();
+    _startupLocation = destination.destination == PostAuthDestination.home
+        ? '/home/discover'
+        : '/onboarding?step=${destination.onboardingStep}';
+    notifyListeners();
+    return destination;
   }
 
   Future<void> requestPhoneLoginCode(String phoneNumber) =>

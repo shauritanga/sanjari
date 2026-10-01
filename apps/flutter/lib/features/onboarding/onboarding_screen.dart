@@ -3,6 +3,7 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../widgets/app_button.dart';
+import 'onboarding_steps.dart';
 
 /// Shared onboarding scaffold. Port of OnboardingScreen.tsx: back affordance
 /// (hidden on the age gate), step progress bar, title/subtitle header,
@@ -24,6 +25,9 @@ class OnboardingScreen extends StatelessWidget {
     this.secondaryLabel,
     this.onSecondary,
     this.footerNote,
+    this.footerNoteFontSize = 20,
+    this.footerNoteWeight = FontWeight.w700,
+    this.showPrimary = true,
     required this.child,
   });
 
@@ -40,6 +44,9 @@ class OnboardingScreen extends StatelessWidget {
   final String? secondaryLabel;
   final VoidCallback? onSecondary;
   final String? footerNote;
+  final double footerNoteFontSize;
+  final FontWeight footerNoteWeight;
+  final bool showPrimary;
   final Widget child;
 
   @override
@@ -78,7 +85,7 @@ class OnboardingScreen extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
-                  value: (step / 23).clamp(0.0, 1.0),
+                  value: (step / totalOnboardingSteps).clamp(0.0, 1.0),
                   minHeight: 8,
                   backgroundColor: Colors.grey.shade300,
                   color: Colors.black,
@@ -128,19 +135,20 @@ class OnboardingScreen extends StatelessWidget {
                     Text(
                       footerNote!,
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: footerNoteFontSize,
+                        fontWeight: footerNoteWeight,
                         color: scheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                   ],
-                  AppButton(
-                    label: primaryLabel,
-                    onPressed: primaryDisabled ? null : onPrimary,
-                    busy: primaryBusy,
-                  ),
+                  if (showPrimary)
+                    AppButton(
+                      label: primaryLabel,
+                      onPressed: primaryDisabled ? null : onPrimary,
+                      busy: primaryBusy,
+                    ),
                   if (secondaryLabel != null) ...[
                     const SizedBox(height: 8),
                     TextButton(

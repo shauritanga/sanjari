@@ -115,6 +115,11 @@ class OnboardingDraft {
     this.gender = '',
     List<String>? interestedIn,
     List<String>? relationshipIntentions,
+    List<String>? nationalities,
+    List<String>? ethnicities,
+    this.maritalStatus = '',
+    List<String>? personalityTraits,
+    this.screenshotProtectionEnabled = false,
     this.biography = '',
     this.city = '',
     this.cityId,
@@ -133,6 +138,9 @@ class OnboardingDraft {
     this.voiceIntroKey,
   })  : interestedIn = interestedIn ?? const [],
         relationshipIntentions = relationshipIntentions ?? const [],
+        nationalities = nationalities ?? const [],
+        ethnicities = ethnicities ?? const [],
+        personalityTraits = personalityTraits ?? const [],
         interests = interests ?? const [],
         languages = languages ?? const [],
         photos = photos ?? const [],
@@ -148,6 +156,11 @@ class OnboardingDraft {
   String gender;
   List<String> interestedIn;
   List<String> relationshipIntentions;
+  List<String> nationalities;
+  List<String> ethnicities;
+  String maritalStatus;
+  List<String> personalityTraits;
+  bool screenshotProtectionEnabled;
   String biography;
   String city;
   String? cityId;
@@ -178,6 +191,12 @@ class OnboardingDraft {
       gender: profile['gender'] as String? ?? '',
       interestedIn: _stringList(profile['interestedIn']),
       relationshipIntentions: _stringList(profile['relationshipIntentions']),
+      nationalities: _stringList(profile['nationalities']),
+      ethnicities: _stringList(profile['ethnicities']),
+      maritalStatus: profile['maritalStatus'] as String? ?? '',
+      personalityTraits: _stringList(profile['personalityTraits']),
+      screenshotProtectionEnabled:
+          profile['screenshotProtectionEnabled'] as bool? ?? false,
       biography: profile['biography'] as String? ?? '',
       city: profile['city'] as String? ?? '',
       cityId: profile['cityId'] as String?,
@@ -211,6 +230,21 @@ class OnboardingDraft {
     }
     if (fields['relationshipIntentions'] is List) {
       relationshipIntentions = _stringList(fields['relationshipIntentions']);
+    }
+    if (fields['nationalities'] is List) {
+      nationalities = _stringList(fields['nationalities']);
+    }
+    if (fields['ethnicities'] is List) {
+      ethnicities = _stringList(fields['ethnicities']);
+    }
+    if (fields['maritalStatus'] is String) {
+      maritalStatus = fields['maritalStatus'] as String;
+    }
+    if (fields['personalityTraits'] is List) {
+      personalityTraits = _stringList(fields['personalityTraits']);
+    }
+    if (fields['screenshotProtectionEnabled'] is bool) {
+      screenshotProtectionEnabled = fields['screenshotProtectionEnabled'] as bool;
     }
     if (fields['biography'] is String) {
       biography = fields['biography'] as String;

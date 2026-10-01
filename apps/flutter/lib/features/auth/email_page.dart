@@ -8,6 +8,8 @@ import '../../core/api_client.dart';
 import '../../l10n/locale_controller.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_text_field.dart';
+import '../../widgets/under18_dialog.dart';
+import '../onboarding/pending_dob_provider.dart';
 import 'session_provider.dart';
 
 class EmailPage extends ConsumerStatefulWidget {
@@ -37,7 +39,17 @@ class _EmailPageState extends ConsumerState<EmailPage> {
     try {
       final session = ref.read(sessionProvider);
       if (!await session.emailAccountExists(email)) {
-        await session.requestEmailRegistrationCode(email);
+        final dateOfBirth = ref.read(pendingDateOfBirthProvider);
+        if (dateOfBirth == null) {
+          if (mounted) context.go('/onboarding/date-of-birth');
+          return;
+        }
+        final strings = ref.read(localeProvider);
+        await session.registerEmail(
+          email,
+          dateOfBirth,
+          strings.value.languageCode,
+        );
         if (mounted) {
           context.push(
               '/auth/email/verify?email=${Uri.encodeComponent(email)}&mode=register');
@@ -49,7 +61,13 @@ class _EmailPageState extends ConsumerState<EmailPage> {
         context.push('/auth/email/verify?email=${Uri.encodeComponent(email)}');
       }
     } on ApiException catch (e) {
-      _showError(e.message);
+      if (e.message.contains('18 years old')) {
+        if (mounted) {
+          await showUnder18Dialog(context, ref.read(localeProvider).value);
+        }
+      } else {
+        _showError(e.message);
+      }
     } catch (_) {
       _showError(tr(ref.read(localeProvider).value, 'requestFailed'));
     } finally {

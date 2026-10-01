@@ -76,9 +76,11 @@ class _MinMaxChipsPageState extends ConsumerState<MinMaxChipsPage> {
     final draft = ref.watch(onboardingControllerProvider).draft;
     if (!_seeded) {
       _seeded = true;
-      _selected = List.of(
-        widget.field == 'interests' ? draft.interests : draft.languages,
-      );
+      _selected = List.of(switch (widget.field) {
+        'interests' => draft.interests,
+        'personalityTraits' => draft.personalityTraits,
+        _ => draft.languages,
+      });
     }
     return OnboardingScreen(
       step: stepNumber(widget.stepKey),
@@ -118,8 +120,8 @@ class InterestsPage extends StatelessWidget {
       field: 'interests',
       options: interestOptions,
       min: 5,
-      max: 20,
-      nextKey: 'prompts',
+      max: 15,
+      nextKey: 'personality',
       counterLabel: 'min 5',
     );
   }

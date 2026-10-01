@@ -34,13 +34,6 @@ class _NamePageState extends ConsumerState<NamePage> {
   }
 
   Future<void> _save() async {
-    final registrationEmail =
-        GoRouterState.of(context).uri.queryParameters['email'];
-    if (registrationEmail != null && registrationEmail.isNotEmpty) {
-      context.push(
-          '/onboarding/gender?email=${Uri.encodeComponent(registrationEmail)}&name=${Uri.encodeComponent(_name.text.trim())}');
-      return;
-    }
     setState(() {
       _saving = true;
       _error = null;
@@ -53,7 +46,8 @@ class _NamePageState extends ConsumerState<NamePage> {
       );
       if (!mounted) return;
       if (ok) {
-        context.push(pathForStep('gender'));
+        final next = nextStepPath('name');
+        if (next != null) context.push(next);
       } else {
         setState(() => _error = controller.error ?? 'unableToSave');
       }
@@ -68,19 +62,6 @@ class _NamePageState extends ConsumerState<NamePage> {
     if (!_seeded) {
       _seeded = true;
       _name.text = draft.displayName;
-      final email = GoRouterState.of(context).uri.queryParameters['email'];
-      if (_name.text.isEmpty && email != null) {
-        final local =
-            email.split('@').first.replaceAll(RegExp(r'[._-]+'), ' ').trim();
-        if (local.isNotEmpty) {
-          _name.text = local
-              .split(' ')
-              .map((part) => part.isEmpty
-                  ? part
-                  : '${part[0].toUpperCase()}${part.substring(1)}')
-              .join(' ');
-        }
-      }
     }
     return OnboardingScreen(
       step: stepNumber('name'),

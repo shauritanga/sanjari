@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-import '../../widgets/app_text_field.dart';
 import 'onboarding_controller.dart';
 import 'onboarding_screen.dart';
 import 'onboarding_steps.dart';
@@ -20,7 +19,6 @@ class GenderPage extends ConsumerStatefulWidget {
 }
 
 class _GenderPageState extends ConsumerState<GenderPage> {
-  final _pronouns = TextEditingController();
   String _selected = '';
   bool _saving = false;
   String? _error;
@@ -28,34 +26,25 @@ class _GenderPageState extends ConsumerState<GenderPage> {
 
   @override
   void dispose() {
-    _pronouns.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    final query = GoRouterState.of(context).uri.queryParameters;
-    final email = query['email'];
-    if (email != null && email.isNotEmpty) {
-      context.push(
-          '/onboarding/date-of-birth?email=${Uri.encodeComponent(email)}&name=${query['name'] ?? ''}&gender=${Uri.encodeComponent(_selected)}');
-      return;
-    }
     setState(() {
       _saving = true;
       _error = null;
     });
     try {
-      final trimmed = _pronouns.text.trim();
       final ok = await ref.read(onboardingControllerProvider).save(
         {
           'gender': _selected,
-          if (trimmed.isNotEmpty) 'pronouns': trimmed,
         },
         stepNumber('gender'),
       );
       if (!mounted) return;
       if (ok) {
-        context.push(pathForStep('birthday'));
+        final next = nextStepPath('gender');
+        if (next != null) context.push(next);
       } else {
         setState(() {
           _error =
@@ -76,12 +65,12 @@ class _GenderPageState extends ConsumerState<GenderPage> {
     }
     return OnboardingScreen(
       step: stepNumber('gender'),
-      title: "What's your gender?",
-      subtitle: 'This helps us personalize your experience.',
+      title: 'Are you a man or a woman?',
       primaryLabel: 'Continue',
       primaryDisabled: _selected.isEmpty,
       primaryBusy: _saving,
       onPrimary: _save,
+      showPrimary: false,
       child: Column(
         children: [
           Row(children: [
@@ -90,23 +79,21 @@ class _GenderPageState extends ConsumerState<GenderPage> {
                     label: 'I am a man',
                     icon: HugeIcons.strokeRoundedUser,
                     selected: _selected == 'man',
-                    onTap: () => setState(() => _selected = 'man'))),
+                    onTap: () {
+                      setState(() => _selected = 'man');
+                      _save();
+                    })),
             const SizedBox(width: 14),
             Expanded(
                 child: _GenderCard(
                     label: 'I am a woman',
                     icon: HugeIcons.strokeRoundedUser,
                     selected: _selected == 'woman',
-                    onTap: () => setState(() => _selected = 'woman'))),
+                    onTap: () {
+                      setState(() => _selected = 'woman');
+                      _save();
+                    })),
           ]),
-          const SizedBox(height: 4),
-          AppTextField(
-            label: 'Pronouns (optional)',
-            controller: _pronouns,
-            hint: 'e.g. she/her, he/him, they/them',
-            maxLength: 40,
-            error: _error,
-          ),
         ],
       ),
     );

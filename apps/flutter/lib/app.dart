@@ -26,22 +26,35 @@ import 'features/onboarding/age_page.dart';
 import 'features/onboarding/date_of_birth_page.dart';
 import 'features/onboarding/bio_page.dart';
 import 'features/onboarding/birthday_page.dart';
+import 'features/onboarding/children_page.dart';
 import 'features/onboarding/city_page.dart';
+import 'features/onboarding/contacts_block_onboarding_page.dart';
 import 'features/onboarding/country_page.dart';
 import 'features/onboarding/discovery_preferences_page.dart';
+import 'features/onboarding/drinking_page.dart';
+import 'features/onboarding/education_page.dart';
+import 'features/onboarding/ethnicity_page.dart';
 import 'features/onboarding/gender_page.dart';
+import 'features/onboarding/height_page.dart';
 import 'features/onboarding/intentions_page.dart';
+import 'features/onboarding/main_photo_page.dart';
+import 'features/onboarding/marital_status_page.dart';
 import 'features/onboarding/min_max_chips_page.dart';
 import 'features/onboarding/location_page.dart';
 import 'features/onboarding/name_page.dart';
+import 'features/onboarding/nationality_page.dart';
 import 'features/onboarding/notifications_page.dart';
+import 'features/onboarding/personality_page.dart';
+import 'features/onboarding/phone_otp_page.dart';
+import 'features/onboarding/phone_verify_page.dart';
 import 'features/onboarding/photos_page.dart';
 import 'features/onboarding/privacy_page.dart';
+import 'features/onboarding/profession_page.dart';
 import 'features/onboarding/prompts_page.dart';
 import 'features/onboarding/publish_page.dart';
 import 'features/onboarding/pending_dob_provider.dart';
 import 'features/onboarding/review_page.dart';
-import 'features/onboarding/verification_page.dart';
+import 'features/onboarding/smoking_page.dart';
 import 'features/onboarding/voice_intro_page.dart';
 import 'features/onboarding/registration_method_page.dart';
 import 'features/onboarding/terms_page.dart';
@@ -332,6 +345,64 @@ GoRouter buildRouter(SessionController session, LocaleController locales) {
         builder: (context, state) => const IntentionsPage(),
       ),
       GoRoute(
+        path: '/onboarding/profession',
+        builder: (context, state) => const ProfessionPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/education',
+        builder: (context, state) => const EducationPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/contacts-block',
+        builder: (context, state) => const ContactsBlockOnboardingPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/nationality',
+        builder: (context, state) => const NationalityPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/ethnicity',
+        builder: (context, state) => const EthnicityPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/height',
+        builder: (context, state) => const HeightPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/marital-status',
+        builder: (context, state) => const MaritalStatusPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/smoking',
+        builder: (context, state) => const SmokingPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/drinking',
+        builder: (context, state) => const DrinkingPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/children',
+        builder: (context, state) => const ChildrenPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/personality',
+        builder: (context, state) => const PersonalityPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/main-photo',
+        builder: (context, state) => const MainPhotoPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/phone-verify',
+        builder: (context, state) => const PhoneVerifyPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/phone-otp',
+        builder: (context, state) => PhoneOtpPage(
+          phoneNumber: state.uri.queryParameters['phone'] ?? '',
+        ),
+      ),
+      GoRoute(
         path: '/onboarding/name',
         builder: (context, state) => const NamePage(),
       ),
@@ -374,10 +445,6 @@ GoRouter buildRouter(SessionController session, LocaleController locales) {
         builder: (context, state) => const LocationPage(),
       ),
       GoRoute(
-        path: '/onboarding/verification',
-        builder: (context, state) => const VerificationPage(),
-      ),
-      GoRoute(
         path: '/onboarding/notifications',
         builder: (context, state) => const NotificationsPage(),
       ),
@@ -409,7 +476,7 @@ GoRouter buildRouter(SessionController session, LocaleController locales) {
   );
 }
 
-class SanjariApp extends StatelessWidget {
+class SanjariApp extends StatefulWidget {
   const SanjariApp({
     super.key,
     required this.session,
@@ -420,19 +487,38 @@ class SanjariApp extends StatelessWidget {
   final LocaleController locales;
 
   @override
+  State<SanjariApp> createState() => _SanjariAppState();
+}
+
+class _SanjariAppState extends State<SanjariApp> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = buildRouter(widget.session, widget.locales);
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: locales,
+      animation: widget.locales,
       builder: (context, _) {
         return MaterialApp.router(
           title: 'Sanjari',
           debugShowCheckedModeBanner: false,
           theme: sanjariLightTheme(),
           darkTheme: sanjariDarkTheme(),
-          locale: locales.locale,
+          locale: widget.locales.locale,
           supportedLocales: const [Locale('en'), Locale('sw')],
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          routerConfig: buildRouter(session, locales),
+          routerConfig: _router,
         );
       },
     );

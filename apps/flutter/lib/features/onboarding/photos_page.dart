@@ -6,10 +6,11 @@ import 'onboarding_controller.dart';
 import 'onboarding_screen.dart';
 import 'onboarding_steps.dart';
 import 'photo_grid.dart';
+import 'photo_guidelines_sheet.dart';
 
 /// Photo upload step. Port of apps/mobile/app/onboarding/photos.tsx:
-/// at least 2 photos gate Continue; the save itself only advances the
-/// server step and routes to country.
+/// at least 3 photos gate Continue; the save itself only advances the
+/// server step.
 class PhotosPage extends ConsumerStatefulWidget {
   const PhotosPage({super.key});
 
@@ -28,7 +29,8 @@ class _PhotosPageState extends ConsumerState<PhotosPage> {
         stepNumber('photos'),
       );
       if (!mounted || !ok) return;
-      context.push(pathForStep('country'));
+      final next = nextStepPath('photos');
+      if (next != null) context.push(next);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -39,18 +41,32 @@ class _PhotosPageState extends ConsumerState<PhotosPage> {
     final controller = ref.watch(onboardingControllerProvider);
     return OnboardingScreen(
       step: stepNumber('photos'),
-      title: 'Add your photos',
-      subtitle: 'Add at least 2 photos. Your first photo is your main photo.',
+      title: 'Add your profile photos',
+      subtitle:
+          'You need to upload at least 3 photos to continue completing your profile. You can change them later.',
       primaryLabel: 'Continue',
-      primaryDisabled: controller.draft.photos.length < 2,
+      primaryDisabled: controller.draft.photos.length < 3,
       primaryBusy: _saving,
       onPrimary: _save,
-      child: PhotoGrid(
-        photos: controller.draft.photos,
-        onChanged: (photos) =>
-            ref.read(onboardingControllerProvider).setPhotos(photos),
-        picker: ref.watch(mediaPickerProvider),
-        media: ref.watch(mediaRepositoryProvider),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PhotoGrid(
+            photos: controller.draft.photos,
+            onChanged: (photos) =>
+                ref.read(onboardingControllerProvider).setPhotos(photos),
+            picker: ref.watch(mediaPickerProvider),
+            media: ref.watch(mediaRepositoryProvider),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.center,
+            child: TextButton(
+              onPressed: () => showPhotoGuidelinesSheet(context),
+              child: const Text('Photo guidelines'),
+            ),
+          ),
+        ],
       ),
     );
   }

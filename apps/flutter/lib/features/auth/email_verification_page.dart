@@ -69,12 +69,14 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
     setState(() => _busy = true);
     try {
       if (widget.registration) {
-        await ref
+        final result = await ref
             .read(sessionProvider)
-            .verifyEmailRegistrationCode(widget.email, _code.text);
-        if (mounted) {
-          context.go(
-              '/onboarding/name?email=${Uri.encodeComponent(widget.email)}');
+            .verifyEmailRegistration(widget.email, _code.text);
+        if (!mounted) return;
+        if (result.destination == PostAuthDestination.home) {
+          context.go('/home/discover');
+        } else {
+          context.go('/onboarding?step=${result.onboardingStep}');
         }
         return;
       }

@@ -49,8 +49,8 @@ Map<String, dynamic> hydratePayload() => {
 
 void main() {
   group('onboarding steps', () {
-    test('catalogue holds the 23 Expo steps in order', () {
-      expect(totalOnboardingSteps, 23);
+    test('catalogue holds the 36 onboarding steps in order', () {
+      expect(totalOnboardingSteps, 36);
       expect(onboardingSteps.first.key, 'age');
       expect(onboardingSteps.last.key, 'publish');
       expect(stepNumber('birthday'), 4);
@@ -75,7 +75,7 @@ void main() {
     test('resume clamps to birthday and passes through later steps', () {
       expect(resumeOnboardingPath(1), '/onboarding/birthday');
       expect(resumeOnboardingPath(3), '/onboarding/birthday');
-      expect(resumeOnboardingPath(8), '/onboarding/photos');
+      expect(resumeOnboardingPath(stepNumber('photos') - 1), '/onboarding/photos');
       expect(resumeOnboardingPath(999), '/onboarding/birthday');
     });
   });
