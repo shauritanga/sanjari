@@ -69,6 +69,12 @@ class _DateOfBirthPageState extends ConsumerState<DateOfBirthPage> {
         onPrimary: () {
           if (!valid) return;
           ref.read(pendingDateOfBirthProvider.notifier).state = selected;
+          final email = GoRouterState.of(context).uri.queryParameters['email'];
+          if (email != null && email.isNotEmpty) {
+            context.push(
+                '/onboarding/intentions?email=${Uri.encodeComponent(email)}');
+            return;
+          }
           context.push(pathForStep('terms'));
         },
         child: Column(children: [

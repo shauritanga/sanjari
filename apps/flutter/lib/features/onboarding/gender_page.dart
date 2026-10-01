@@ -33,6 +33,13 @@ class _GenderPageState extends ConsumerState<GenderPage> {
   }
 
   Future<void> _save() async {
+    final query = GoRouterState.of(context).uri.queryParameters;
+    final email = query['email'];
+    if (email != null && email.isNotEmpty) {
+      context.push(
+          '/onboarding/date-of-birth?email=${Uri.encodeComponent(email)}&name=${query['name'] ?? ''}&gender=${Uri.encodeComponent(_selected)}');
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;

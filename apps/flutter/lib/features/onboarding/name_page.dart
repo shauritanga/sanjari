@@ -35,6 +35,13 @@ class _NamePageState extends ConsumerState<NamePage> {
   }
 
   Future<void> _save() async {
+    final registrationEmail =
+        GoRouterState.of(context).uri.queryParameters['email'];
+    if (registrationEmail != null && registrationEmail.isNotEmpty) {
+      context.push(
+          '/onboarding/gender?email=${Uri.encodeComponent(registrationEmail)}&name=${Uri.encodeComponent(_name.text.trim())}');
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
