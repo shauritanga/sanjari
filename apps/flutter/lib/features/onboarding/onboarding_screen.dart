@@ -90,16 +90,19 @@ class OnboardingScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(24, 34, 24, 16),
                 children: [
                   if (title != null)
-                    Text(
-                      title!,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                        height: 1.15,
-                        letterSpacing: -0.6,
-                        fontSize: 30,
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        title!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black,
+                          height: 1.15,
+                          letterSpacing: -0.6,
+                          fontSize: 30,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 4),
