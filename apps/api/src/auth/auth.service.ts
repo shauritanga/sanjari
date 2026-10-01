@@ -71,6 +71,27 @@ const phoneRegisterSchema = z
 
 type PhoneRegisterInput = z.infer<typeof phoneRegisterSchema>;
 
+const emailRegisterSchema = z
+  .object({
+    email: z.email().trim().toLowerCase(),
+    dateOfBirth: z.coerce.date(),
+    acceptedTermsVersion: z.string().min(1),
+    acceptedPrivacyVersion: z.string().min(1),
+    confirmedAdult: z.literal(true),
+    locale: z.enum(['en', 'sw']).default('en'),
+  })
+  .superRefine((value, ctx) => {
+    if (calculateAge(value.dateOfBirth) < minimumAge) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['dateOfBirth'],
+        message: 'You must be at least 18 years old to use Sanjari.',
+      });
+    }
+  });
+
+type EmailRegisterInput = z.infer<typeof emailRegisterSchema>;
+
 const loginSchema = z.object({
   email: z.email().trim().toLowerCase(),
   password: z.string().min(1),
@@ -154,6 +175,80 @@ export class AuthService {
             auditLogs: {
               create: {
                 action: 'auth.register',
+                actorType: 'user',
+                metadata: { ageEligibilityStatus: 'confirmed_adult' },
+              },
+            },
+          },
+          select: { id: true, profile: { select: { onboardingStatus: true } } },
+        });
+
+        return created;
+      });
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+        throw new ConflictException({
+          code: 'ACCOUNT_EXISTS',
+          message: 'An account already exists for this email.',
+        });
+      }
+      throw error;
+    }
+
+    await this.emailVerification.issue(user.id, parsed.data.email);
+
+    return {
+      userId: user.id,
+      onboardingStatus: user.profile?.onboardingStatus ?? 'registration_started',
+      emailVerificationRequired: true,
+    };
+  }
+
+  /**
+   * Passwordless email sign-up: creates a pending account (no credential
+   * row) and emails an OTP. Mirrors register()'s shape minus the password;
+   * verification reuses the same emailVerification.verify()/verifyEmail()
+   * pipeline as password registration and email login, since a real User
+   * row (and therefore a userId-linked EmailVerification row) exists up
+   * front — no separate pre-account verification path is needed.
+   */
+  async registerEmail(
+    input: EmailRegisterInput,
+  ): Promise<{ userId: string; onboardingStatus: string; emailVerificationRequired: true }> {
+    const parsed = emailRegisterSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'Registration details are invalid.',
+        issues: parsed.error.flatten().fieldErrors,
+      });
+    }
+
+    let user: { id: string; profile: { onboardingStatus: string } | null };
+    try {
+      user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email: parsed.data.email,
+            locale: parsed.data.locale,
+            dateOfBirth: parsed.data.dateOfBirth,
+            ageEligibilityStatus: 'confirmed_adult',
+            status: 'pending_verification',
+            profile: {
+              create: {
+                moderationStatus: 'pending',
+                onboardingStatus: 'registration_started',
+              },
+            },
+            legalAcceptances: {
+              create: [
+                { documentType: 'terms', version: parsed.data.acceptedTermsVersion },
+                { documentType: 'privacy', version: parsed.data.acceptedPrivacyVersion },
+              ],
+            },
+            auditLogs: {
+              create: {
+                action: 'auth.register_email',
                 actorType: 'user',
                 metadata: { ageEligibilityStatus: 'confirmed_adult' },
               },
@@ -365,18 +460,6 @@ export class AuthService {
   async emailAccountExists(email: string): Promise<boolean> {
     const normalized = email.trim().toLowerCase();
     return Boolean(await this.prisma.user.findUnique({ where: { email: normalized }, select: { id: true } }));
-  }
-
-  async requestEmailRegistration(email: string): Promise<void> {
-    if (await this.emailAccountExists(email)) {
-      throw new ConflictException({ code: 'ACCOUNT_EXISTS', message: 'An account already exists for this email.' });
-    }
-    await this.emailVerification.issueForRegistration(email);
-  }
-
-  async verifyEmailRegistration(email: string, code: string): Promise<{ verified: true }> {
-    await this.emailVerification.verifyForRegistration(email, code);
-    return { verified: true };
   }
 
   async requestEmailChange(userId: string, newEmail: string): Promise<void> {

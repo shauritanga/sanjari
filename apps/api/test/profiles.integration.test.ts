@@ -1,8 +1,60 @@
 import { describe, expect, it, vi } from 'vitest';
+import { ProfilesService } from '../src/profiles/profiles.service';
 import { StorageService } from '../src/profiles/storage.service';
 import { VerificationService } from '../src/profiles/verification.service';
 
 describe('profiles and verification integration contracts', () => {
+  it('persists nationality, ethnicity, marital status, personality traits, and screenshot protection', async () => {
+    const update = vi.fn().mockResolvedValue({
+      interests: [],
+      languages: [],
+      photos: [],
+    });
+    const prisma = {
+      profile: {
+        findUnique: vi.fn().mockResolvedValue({
+          onboardingStep: 1,
+          onboardingStatus: 'in_progress',
+          visibilitySettings: null,
+          interests: [],
+          languages: [],
+          photos: [],
+        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          displayName: null,
+          gender: null,
+          interestedIn: [],
+          relationshipIntentions: [],
+          biography: null,
+          city: null,
+          interests: [],
+          languages: [],
+          photos: [],
+        }),
+        update,
+      },
+    };
+    const service = new ProfilesService(prisma as never, {} as never, {} as never);
+
+    await service.updateOnboarding('user-1', {
+      nationalities: ['TZ', 'KE'],
+      ethnicities: ['Bantu'],
+      maritalStatus: 'never_married',
+      personalityTraits: ['Adventurous', 'Empathetic'],
+      screenshotProtectionEnabled: true,
+    } as never);
+
+    expect(update).toHaveBeenCalledTimes(2);
+    const [callArgs] = update.mock.calls[0] as [{ data: Record<string, unknown> }];
+    expect(callArgs.data).toMatchObject({
+      nationalities: ['TZ', 'KE'],
+      ethnicities: ['Bantu'],
+      maritalStatus: 'never_married',
+      personalityTraits: ['Adventurous', 'Empathetic'],
+      screenshotProtectionEnabled: true,
+    });
+  });
+
   it('creates a scoped, expiring profile photo upload contract', async () => {
     const send = vi
       .fn()

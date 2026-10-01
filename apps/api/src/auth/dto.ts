@@ -75,6 +75,25 @@ export class EmailAddressDto {
   email!: string;
 }
 
+export class EmailRegisterDto extends EmailAddressDto {
+  @IsDateString()
+  dateOfBirth!: Date;
+
+  @IsString()
+  @MinLength(1)
+  acceptedTermsVersion!: string;
+
+  @IsString()
+  @MinLength(1)
+  acceptedPrivacyVersion!: string;
+
+  @IsBoolean()
+  confirmedAdult!: true;
+
+  @IsEnum(['en', 'sw'])
+  locale!: 'en' | 'sw';
+}
+
 export class ResetPasswordDto {
   @IsString()
   @MinLength(32)

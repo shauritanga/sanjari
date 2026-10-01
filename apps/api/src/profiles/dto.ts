@@ -20,7 +20,7 @@ export class OnboardingUpdateDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(30)
+  @Max(40)
   step?: number;
 
   @IsOptional()
@@ -126,6 +126,36 @@ export class OnboardingUpdateDto {
   @IsString()
   @MaxLength(80)
   culturalPreference?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(2)
+  @IsString({ each: true })
+  @MaxLength(2, { each: true })
+  nationalities?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(3)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  ethnicities?: string[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  maritalStatus?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  personalityTraits?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  screenshotProtectionEnabled?: boolean;
 
   @IsOptional()
   @IsBoolean()

@@ -162,6 +162,11 @@ model Profile {
   exercisePreference     String?
   childrenPreference     String?
   culturalPreference     String?
+  nationalities          String[]
+  ethnicities            String[]
+  maritalStatus          String?
+  personalityTraits      String[]
+  screenshotProtectionEnabled Boolean         @default(false)
   voiceIntroKey          String?
   verificationStatus     String               @default("unverified")
   moderationStatus       String               @default("pending")

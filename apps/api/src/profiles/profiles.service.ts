@@ -149,6 +149,11 @@ export class ProfilesService {
         exercisePreference: profile.exercisePreference,
         childrenPreference: profile.childrenPreference,
         culturalPreference: profile.culturalPreference,
+        nationalities: profile.nationalities,
+        ethnicities: profile.ethnicities,
+        maritalStatus: profile.maritalStatus,
+        personalityTraits: profile.personalityTraits,
+        screenshotProtectionEnabled: profile.screenshotProtectionEnabled,
           voiceIntroKey: profile.voiceIntroKey,
           visibilitySettings: profile.visibilitySettings,
           interests: profile.interests.map((item) => item.interest.slug),
@@ -217,6 +222,15 @@ export class ProfilesService {
         }),
         ...(input.culturalPreference !== undefined && {
           culturalPreference: input.culturalPreference,
+        }),
+        ...(input.nationalities !== undefined && { nationalities: input.nationalities }),
+        ...(input.ethnicities !== undefined && { ethnicities: input.ethnicities }),
+        ...(input.maritalStatus !== undefined && { maritalStatus: input.maritalStatus }),
+        ...(input.personalityTraits !== undefined && {
+          personalityTraits: input.personalityTraits,
+        }),
+        ...(input.screenshotProtectionEnabled !== undefined && {
+          screenshotProtectionEnabled: input.screenshotProtectionEnabled,
         }),
         ...((input.hideAge !== undefined ||
           input.hideOnlineStatus !== undefined ||

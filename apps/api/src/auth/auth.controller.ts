@@ -5,6 +5,7 @@ import {
   EmailAddressDto,
   EmailChangeConfirmDto,
   EmailChangeRequestDto,
+  EmailRegisterDto,
   LoginDto,
   LogoutDto,
   RefreshTokenDto,
@@ -90,15 +91,19 @@ export class AuthController {
     return { data: { accountExists: await this.authService.emailAccountExists(dto.email) } };
   }
 
-  @Post('email/register/request')
-  async requestEmailRegistration(@Body() dto: EmailAddressDto): Promise<{ data: { accepted: true } }> {
-    await this.authService.requestEmailRegistration(dto.email);
-    return { data: { accepted: true } };
+  @Post('email/register')
+  async registerEmail(
+    @Body() dto: EmailRegisterDto,
+  ): Promise<{ data: Awaited<ReturnType<AuthService['registerEmail']>> }> {
+    return { data: await this.authService.registerEmail(dto) };
   }
 
   @Post('email/register/verify')
-  async verifyEmailRegistration(@Body() dto: VerifyEmailDto): Promise<{ data: { verified: true } }> {
-    return { data: await this.authService.verifyEmailRegistration(dto.email, dto.code) };
+  async verifyEmailRegistration(
+    @Body() dto: VerifyEmailDto,
+  ): Promise<{ data: { userId: string; verified: true } }> {
+    const result = await this.authService.verifyEmail(dto.email, dto.code, dto.deviceId);
+    return { data: { ...result, verified: true } };
   }
 
   @Post('password-reset/request')
