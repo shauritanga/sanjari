@@ -5,6 +5,6 @@
 class AppConfig {
   static const apiUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://206.81.14.130:3400/api/v1',
+    defaultValue: 'http://sanjari-api.zanua.co.tz:3400/api/v1',
   );
 }
