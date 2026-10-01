@@ -143,6 +143,7 @@ GoRouter buildRouter(SessionController session, LocaleController locales) {
         path: '/auth/email/verify',
         builder: (context, state) => EmailVerificationPage(
           email: state.uri.queryParameters['email'] ?? '',
+          registration: state.uri.queryParameters['mode'] == 'register',
         ),
       ),
       GoRoute(

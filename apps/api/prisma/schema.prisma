@@ -94,7 +94,7 @@ model UserDevice {
 
 model EmailVerification {
   id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @db.Uuid
+  userId     String?   @db.Uuid
   email      String    @db.Citext
   codeHash   String
   testCode   String?

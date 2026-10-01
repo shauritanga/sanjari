@@ -12,8 +12,10 @@ import '../../l10n/locale_controller.dart';
 import 'session_provider.dart';
 
 class EmailVerificationPage extends ConsumerStatefulWidget {
-  const EmailVerificationPage({super.key, required this.email});
+  const EmailVerificationPage(
+      {super.key, required this.email, this.registration = false});
   final String email;
+  final bool registration;
 
   @override
   ConsumerState<EmailVerificationPage> createState() =>
@@ -66,6 +68,15 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
     if (_code.text.length != 6 || _busy) return;
     setState(() => _busy = true);
     try {
+      if (widget.registration) {
+        await ref
+            .read(sessionProvider)
+            .verifyEmailRegistrationCode(widget.email, _code.text);
+        if (mounted)
+          context.go(
+              '/auth/signup?email=${Uri.encodeComponent(widget.email)}&emailVerified=true');
+        return;
+      }
       final result = await ref
           .read(sessionProvider)
           .verifyEmailAndStartSession(widget.email, _code.text);

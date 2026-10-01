@@ -90,6 +90,17 @@ export class AuthController {
     return { data: { accountExists: await this.authService.emailAccountExists(dto.email) } };
   }
 
+  @Post('email/register/request')
+  async requestEmailRegistration(@Body() dto: EmailAddressDto): Promise<{ data: { accepted: true } }> {
+    await this.authService.requestEmailRegistration(dto.email);
+    return { data: { accepted: true } };
+  }
+
+  @Post('email/register/verify')
+  async verifyEmailRegistration(@Body() dto: VerifyEmailDto): Promise<{ data: { verified: true } }> {
+    return { data: await this.authService.verifyEmailRegistration(dto.email, dto.code) };
+  }
+
   @Post('password-reset/request')
   async requestPasswordReset(@Body() dto: EmailAddressDto): Promise<{ data: { accepted: true } }> {
     await this.authService.requestPasswordReset(dto.email);

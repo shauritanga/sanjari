@@ -37,8 +37,10 @@ class _EmailPageState extends ConsumerState<EmailPage> {
     try {
       final session = ref.read(sessionProvider);
       if (!await session.emailAccountExists(email)) {
+        await session.requestEmailRegistrationCode(email);
         if (mounted) {
-          context.push('/auth/signup?email=${Uri.encodeComponent(email)}');
+          context.push(
+              '/auth/email/verify?email=${Uri.encodeComponent(email)}&mode=register');
         }
         return;
       }

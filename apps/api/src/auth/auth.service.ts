@@ -367,6 +367,18 @@ export class AuthService {
     return Boolean(await this.prisma.user.findUnique({ where: { email: normalized }, select: { id: true } }));
   }
 
+  async requestEmailRegistration(email: string): Promise<void> {
+    if (await this.emailAccountExists(email)) {
+      throw new ConflictException({ code: 'ACCOUNT_EXISTS', message: 'An account already exists for this email.' });
+    }
+    await this.emailVerification.issueForRegistration(email);
+  }
+
+  async verifyEmailRegistration(email: string, code: string): Promise<{ verified: true }> {
+    await this.emailVerification.verifyForRegistration(email, code);
+    return { verified: true };
+  }
+
   async requestEmailChange(userId: string, newEmail: string): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     await this.emailVerification.requestChange(userId, user.email, newEmail);

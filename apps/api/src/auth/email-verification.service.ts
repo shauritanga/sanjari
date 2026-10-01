@@ -42,6 +42,27 @@ export class EmailVerificationService {
     await this.email.sendVerificationCode(email, code);
   }
 
+  async issueForRegistration(email: string): Promise<void> {
+    const normalized = email.trim().toLowerCase();
+    const code = randomInt(100000, 1000000).toString();
+    const codeHash = await hash(code);
+    const testCode = this.config?.get<boolean>('AUTH_TEST_CODE_VISIBILITY', false) ? code : null;
+    const expiresAt = new Date(Date.now() + verificationLifetimeMs);
+    await this.prisma.emailVerification.updateMany({ where: { userId: null, email: normalized, verifiedAt: null }, data: { expiresAt } });
+    await this.prisma.emailVerification.create({ data: { userId: null, email: normalized, codeHash, testCode, expiresAt } });
+    await this.email.sendVerificationCode(normalized, code);
+  }
+
+  async verifyForRegistration(email: string, code: string): Promise<void> {
+    const normalized = email.trim().toLowerCase();
+    const verification = await this.prisma.emailVerification.findFirst({ where: { userId: null, email: normalized, verifiedAt: null }, orderBy: { createdAt: 'desc' } });
+    if (!verification || verification.expiresAt <= new Date() || verification.attempts >= maximumAttempts) invalidCode();
+    let valid = false;
+    try { valid = await verify(verification.codeHash, code); } catch { valid = false; }
+    if (!valid) { await this.prisma.emailVerification.update({ where: { id: verification.id }, data: { attempts: { increment: 1 } } }); invalidCode(); }
+    await this.prisma.emailVerification.update({ where: { id: verification.id }, data: { verifiedAt: new Date(), testCode: null } });
+  }
+
   async verify(email: string, code: string): Promise<{ userId: string }> {
     const normalizedEmail = email.trim().toLowerCase();
     const verification = await this.prisma.emailVerification.findFirst({
