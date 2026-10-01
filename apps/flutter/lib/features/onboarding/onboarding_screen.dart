@@ -87,7 +87,7 @@ class OnboardingScreen extends StatelessWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                padding: const EdgeInsets.fromLTRB(24, 34, 24, 16),
                 children: [
                   if (title != null)
                     Text(
