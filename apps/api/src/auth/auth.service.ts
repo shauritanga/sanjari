@@ -355,6 +355,13 @@ export class AuthService {
     await this.emailVerification.resend(email);
   }
 
+  async requestEmailLogin(email: string): Promise<void> {
+    const normalized = email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email: normalized } });
+    if (!user || !['active', 'deactivated', 'pending_verification'].includes(user.status)) return;
+    await this.emailVerification.issue(user.id, normalized);
+  }
+
   async requestEmailChange(userId: string, newEmail: string): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     await this.emailVerification.requestChange(userId, user.email, newEmail);

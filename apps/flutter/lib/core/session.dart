@@ -161,6 +161,9 @@ class SessionController extends ChangeNotifier {
     return destination;
   }
 
+  Future<void> requestEmailLoginCode(String email) =>
+      _api.post('/auth/email/login/request', {'email': email});
+
   Future<void> requestPhoneLoginCode(String phoneNumber) =>
       _api.post('/auth/phone/login/request', {'phoneNumber': phoneNumber});
 

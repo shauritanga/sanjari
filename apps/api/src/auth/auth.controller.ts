@@ -79,6 +79,12 @@ export class AuthController {
     return { data: { accepted: true } };
   }
 
+  @Post('email/login/request')
+  async requestEmailLogin(@Body() dto: EmailAddressDto): Promise<{ data: { accepted: true } }> {
+    await this.authService.requestEmailLogin(dto.email);
+    return { data: { accepted: true } };
+  }
+
   @Post('password-reset/request')
   async requestPasswordReset(@Body() dto: EmailAddressDto): Promise<{ data: { accepted: true } }> {
     await this.authService.requestPasswordReset(dto.email);

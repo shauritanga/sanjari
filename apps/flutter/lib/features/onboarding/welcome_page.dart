@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
@@ -38,42 +39,65 @@ class WelcomePage extends StatelessWidget {
               _AuthButton(
                 background: _plum,
                 foreground: Colors.white,
-                icon: HugeIcons.strokeRoundedCall,
-                label: 'Login with Phone',
-                onPressed: () => context.push('/auth/phone'),
-              ),
-              const SizedBox(height: 12),
-              _AuthButton(
-                background: _pink,
-                foreground: _plum,
                 iconWidget: const _GoogleMark(),
-                label: 'Login with Google',
+                label: 'Continue with Google',
                 onPressed: () => ScaffoldMessenger.of(context)
                   ..hideCurrentSnackBar()
                   ..showSnackBar(const SnackBar(
                     content: Text('Google sign-in is coming soon.'),
                   )),
               ),
+              const SizedBox(height: 12),
+              _AuthButton(
+                background: _pink,
+                foreground: _plum,
+                icon: HugeIcons.strokeRoundedMail01,
+                label: 'Continue with Email',
+                onPressed: () => context.push('/auth/email'),
+              ),
               const SizedBox(height: 24),
-              Wrap(
-                alignment: WrapAlignment.center,
-                children: [
-                  const Text('Don’t have an account? ',
-                      style: TextStyle(color: _muted, fontSize: 16)),
-                  GestureDetector(
-                    onTap: () => context.push('/onboarding/age'),
-                    child: const Text('Sign Up',
-                        style: TextStyle(
-                            color: Color(0xFFD36BC4),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700)),
-                  ),
-                ],
+              _LegalNotice(
+                onTerms: () => context.push('/legal/terms'),
+                onPrivacy: () => context.push('/legal/privacy-policy'),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LegalNotice extends StatelessWidget {
+  const _LegalNotice({required this.onTerms, required this.onPrivacy});
+
+  final VoidCallback onTerms;
+  final VoidCallback onPrivacy;
+
+  @override
+  Widget build(BuildContext context) {
+    const base =
+        TextStyle(color: WelcomePage._muted, fontSize: 13, height: 1.45);
+    const link =
+        TextStyle(color: WelcomePage._plum, fontWeight: FontWeight.w700);
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          const TextSpan(text: 'By continuing you agree to our '),
+          TextSpan(
+              text: 'Terms',
+              style: link,
+              recognizer: TapGestureRecognizer()..onTap = onTerms),
+          const TextSpan(text: ' and '),
+          TextSpan(
+              text: 'Privacy Policy',
+              style: link,
+              recognizer: TapGestureRecognizer()..onTap = onPrivacy),
+          const TextSpan(text: '.'),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

@@ -10,6 +10,8 @@ import 'core/theme.dart';
 import 'features/auth/app_lock.dart';
 import 'features/auth/lock_page.dart';
 import 'features/auth/login_page.dart';
+import 'features/auth/email_page.dart';
+import 'features/auth/email_verification_page.dart';
 import 'features/auth/password_reset_page.dart';
 import 'features/auth/phone_page.dart';
 import 'features/auth/phone_verification_page.dart';
@@ -90,6 +92,7 @@ GoRouter buildRouter(SessionController session, LocaleController locales) {
       final onSplash = location == '/splash';
       final onAuth = location.startsWith('/auth');
       final onOnboarding = location.startsWith('/onboarding');
+      final onLegal = location.startsWith('/legal');
       final onLock = location == '/lock';
 
       if (status == AuthStatus.unknown) return onSplash ? null : '/splash';
@@ -103,7 +106,7 @@ GoRouter buildRouter(SessionController session, LocaleController locales) {
                 null) {
           return '/onboarding/date-of-birth';
         }
-        return onAuth || onOnboarding ? null : '/onboarding/welcome';
+        return onAuth || onOnboarding || onLegal ? null : '/onboarding/welcome';
       }
       // Authenticated.
       if (onSplash || onAuth) return session.startupLocation;
@@ -131,6 +134,16 @@ GoRouter buildRouter(SessionController session, LocaleController locales) {
       GoRoute(
         path: '/auth/login',
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: '/auth/email',
+        builder: (context, state) => const EmailPage(),
+      ),
+      GoRoute(
+        path: '/auth/email/verify',
+        builder: (context, state) => EmailVerificationPage(
+          email: state.uri.queryParameters['email'] ?? '',
+        ),
       ),
       GoRoute(
         path: '/onboarding/welcome',
@@ -252,6 +265,20 @@ GoRouter buildRouter(SessionController session, LocaleController locales) {
       ),
       GoRoute(
         path: '/settings/legal/privacy-policy',
+        builder: (context, state) => const LegalPage(
+          titleKey: 'privacyPolicy',
+          sections: privacySections,
+        ),
+      ),
+      GoRoute(
+        path: '/legal/terms',
+        builder: (context, state) => const LegalPage(
+          titleKey: 'termsOfService',
+          sections: termsSections,
+        ),
+      ),
+      GoRoute(
+        path: '/legal/privacy-policy',
         builder: (context, state) => const LegalPage(
           titleKey: 'privacyPolicy',
           sections: privacySections,
